@@ -1,0 +1,9 @@
+# Embedded platform
+ninja
+mbed-tools
+prettytable 
+intelhex
+
+# Image processing and machine learning
+opencv-python
+ultralytics
