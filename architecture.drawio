@@ -1,0 +1,124 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0" version="24.8.6">
+  <diagram name="Página-1" id="kC3UclbcegakCufOiwE2">
+    <mxGraphModel dx="1235" dy="662" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="n1hKOVxzPUeWemky5NAp-23" value="Raspberry Pi 5" style="verticalAlign=top;align=center;shape=cube;size=10;direction=south;html=1;boundedLbl=1;spacingLeft=5;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry y="200" width="980" height="460" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-1" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;&lt;b&gt;Semaphores&lt;br&gt;&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;Gets data from intelligent semaphores&lt;br&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="280" y="240" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-2" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="n1hKOVxzPUeWemky5NAp-1">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-3" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;&lt;b&gt;Traffic communication&lt;br&gt;&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;Handles the communication with the enviromental server&lt;br&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="520" y="240" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-4" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="n1hKOVxzPUeWemky5NAp-3">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-5" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;&lt;b&gt;Remote communication&lt;br&gt;&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;Fowards targeted messages remotely for moitoring purposes. Can get messages from remote and foward them within the application&lt;br&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="760" y="225" width="180" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-6" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="n1hKOVxzPUeWemky5NAp-5">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;endArrow=none;endFill=0;" edge="1" parent="1" source="n1hKOVxzPUeWemky5NAp-7" target="n1hKOVxzPUeWemky5NAp-9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="495" y="360" />
+              <mxPoint x="130" y="360" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;endArrow=none;endFill=0;" edge="1" parent="1" source="n1hKOVxzPUeWemky5NAp-7" target="n1hKOVxzPUeWemky5NAp-1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="495" y="360" />
+              <mxPoint x="370" y="360" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;endArrow=none;endFill=0;" edge="1" parent="1" source="n1hKOVxzPUeWemky5NAp-7" target="n1hKOVxzPUeWemky5NAp-3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="495" y="360" />
+              <mxPoint x="610" y="360" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;endArrow=none;endFill=0;" edge="1" parent="1" source="n1hKOVxzPUeWemky5NAp-7" target="n1hKOVxzPUeWemky5NAp-5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="495" y="360" />
+              <mxPoint x="850" y="360" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;endArrow=none;endFill=0;" edge="1" parent="1" source="n1hKOVxzPUeWemky5NAp-7" target="n1hKOVxzPUeWemky5NAp-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;endArrow=none;endFill=0;dashed=1;" edge="1" parent="1" source="n1hKOVxzPUeWemky5NAp-7" target="n1hKOVxzPUeWemky5NAp-28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-7" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;&lt;b&gt;Gateway&lt;br&gt;&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;Handles the communication between processes&lt;br&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="405" y="400" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-8" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="n1hKOVxzPUeWemky5NAp-7">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-9" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;&lt;b&gt;Camera&lt;br&gt;&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;Handles all the image receiving&lt;br&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="240" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-10" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="n1hKOVxzPUeWemky5NAp-9">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-11" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;&lt;b&gt;Serial handler&lt;br&gt;&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;Handles the communication with the control board&lt;br&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="405" y="560" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-12" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="n1hKOVxzPUeWemky5NAp-11">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0;exitDx=0;exitDy=45;exitPerimeter=0;endArrow=none;endFill=0;" edge="1" parent="1" source="n1hKOVxzPUeWemky5NAp-24" target="n1hKOVxzPUeWemky5NAp-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-24" value="Nucleo board" style="verticalAlign=top;align=center;shape=cube;size=10;direction=south;html=1;boundedLbl=1;spacingLeft=5;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="440" y="720" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;endArrow=none;endFill=0;dashed=1;" edge="1" parent="1" source="n1hKOVxzPUeWemky5NAp-26" target="n1hKOVxzPUeWemky5NAp-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-26" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;&lt;b&gt;Lane detection&lt;br&gt;&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;Detects the lane using OpenCV&lt;br&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;dashed=1;strokeColor=default;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="160" y="400" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-27" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="n1hKOVxzPUeWemky5NAp-26">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-28" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;&lt;b&gt;Object detection&lt;br&gt;&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;Detects and classifies different objects using OpenCV + YOLO&lt;br&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;dashed=1;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="650" y="400" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n1hKOVxzPUeWemky5NAp-29" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="n1hKOVxzPUeWemky5NAp-28">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
