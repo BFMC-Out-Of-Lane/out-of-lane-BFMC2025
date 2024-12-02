@@ -1,0 +1,65 @@
+<!-- Copyright (c) 2019, Bosch Engineering Center Cluj and BFMC orginazers
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
+
+<div class="cluster-container" [ngClass]="{'pulse-red': this.warningSignal}">
+  <app-map class="cluster-map" [cursorRotation]="cursorRotation" />
+
+  <div class="cluster-digital-container">
+    <div class="cluster-digital-text-container">
+      <h1 class="cluster-digital-text">{{battery}}</h1>
+      <p class="cluster-digital-unit">%</p>
+    </div>
+    <div class="cluster-digital-text-container">
+      <h1 class="cluster-digital-text">{{speed}}</h1>
+      <p class="cluster-digital-unit">cm/s</p>
+    </div>
+  </div>
+  
+  <div class="cluster-instruments">
+    <div class="cluster-instruments-main">
+      <app-battery-level class="cluster-battery-level" />
+      <app-speedometer class="cluster-speedometer" />
+    </div>
+    <div class="cluster-instruments-secondary">
+      <app-instant-consumption class="cluster-instant-consumption" />
+      <div class="cluster-instruments-switches">
+        <app-state-switch class="cluster-state-switch" />
+        <app-kl-switch class="cluster-kl-switch" />
+      </div>
+    </div>
+  </div>
+
+  <app-car class="cluster-car" [position]="carPosition" [leftLaneOn]="carLeftLaneOn" [rightLaneOn]="carRightLaneOn" />
+  <app-steering class="cluster-steering" />
+  <app-record class="cluster-record" />
+  <app-live-camera class="cluster-live-camera" />
+  <app-warning-light class="cluster-warning-light" />
+  <app-hardware-data class="cluster-hardware-data" />
+  <app-time-speed-steer class="cluster-time-speed-steer" />
+  <app-side-marker class="cluster-side-marker" />
+</div>

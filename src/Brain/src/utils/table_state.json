@@ -1,0 +1,92 @@
+[
+    {
+        "channel": "ToggleInstant",
+        "value": "True",
+        "initialValue": "True",
+        "interval": 0,
+        "type": "dropdown",
+        "values": [
+            "True",
+            "False"
+        ],
+        "command": "instant",
+        "checked": false,
+        "hasChanged": false
+    },
+    {
+        "channel": "ToggleBatteryLvl",
+        "value": "True",
+        "initialValue": "True",
+        "interval": 0,
+        "type": "dropdown",
+        "values": [
+            "True",
+            "False"
+        ],
+        "command": "battery",
+        "checked": false,
+        "hasChanged": false
+    },
+    {
+        "channel": "ToggleImuData",
+        "value": "True",
+        "initialValue": "True",
+        "interval": 0,
+        "type": "dropdown",
+        "values": [
+            "True",
+            "False"
+        ],
+        "command": "imu",
+        "checked": false,
+        "hasChanged": false
+    },
+    {
+        "channel": "ToggleResourceMonitor",
+        "value": "True",
+        "initialValue": "True",
+        "interval": 0,
+        "type": "dropdown",
+        "values": [
+            "True",
+            "False"
+        ],
+        "command": "resourceMonitor",
+        "checked": false,
+        "hasChanged": false
+    },
+    {
+        "channel": "Brightness",
+        "value": 50,
+        "initialValue": 50,
+        "interval": 0,
+        "type": "slider",
+        "values": [
+            0,
+            100
+        ],
+        "checked": false,
+        "hasChanged": false
+    },
+    {
+        "channel": "Contrast",
+        "value": 0,
+        "initialValue": 0,
+        "interval": 0,
+        "type": "slider",
+        "values": [
+            0,
+            3200
+        ],
+        "checked": false,
+        "hasChanged": false
+    },
+    {
+        "channel": "init",
+        "type": "Config",
+        "batteryCapacity": {
+            "capacity": 9000
+        },
+        "hasChanged": false
+    }
+]

@@ -1,0 +1,67 @@
+<!-- Copyright (c) 2019, Bosch Engineering Center Cluj and BFMC orginazers
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
+
+<div class="state-switch">
+  <label *ngIf="!isMobile" class="state-switch-text">Driving Mode</label>
+  <div *ngIf="!isMobile" class="state-switch-body">
+    <ng-container *ngFor="let state of states; let i = index">
+      <input type="radio" 
+            id="state-switch-{{i}}" 
+            name="state" 
+            [value]="i" 
+            [checked]="currentStateIndex === i"
+            (change)="setState(i)">
+      <label for="state-switch-{{i}}">{{ state }}</label>
+    </ng-container>
+
+    <a *ngIf="!isMobile" class="slide" aria-hidden="true" 
+      [style.left]="getSliderPosition(currentStateIndex)" 
+      [style.width]="getSliderWidth()"
+      [style.backgroundColor]="getSliderColor()">
+    </a>
+  </div> 
+  
+  <div *ngIf="isMobile" class="button-container">
+    <button *ngIf="isMobile" class = "control-button" (click)="increaseSpeed()">
+      <mat-icon>arrow_upward</mat-icon>
+    </button>
+    <button *ngIf="isMobile" class = "control-button" (click)="decreaseSpeed()">
+      <mat-icon>arrow_downward</mat-icon>
+    </button>
+    <button *ngIf="isMobile" class = "control-button" (mousedown)="onButtonPress('left')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('left')" (touchend)="onButtonRelease()">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <button *ngIf="isMobile" class = "control-button" (mousedown)="onButtonPress('right')" (mouseup)="onButtonRelease()" (touchstart)="onButtonPress('right')" (touchend)="onButtonRelease()">
+      <mat-icon>arrow_forward</mat-icon>
+    </button>
+  </div>
+
+  <div *ngIf="isMobile" class="stop-button-container">
+    <button *ngIf="isMobile" class = "stop-button" (click)="setState(0)">stop car</button>
+  </div>
+</div>

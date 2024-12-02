@@ -1,0 +1,88 @@
+/* Copyright (c) 2019, Bosch Engineering Center Cluj and BFMC orginazers
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+
+.my-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-left: 0.1vw solid gray;
+  border-right: 0.1vw solid gray;
+  border-bottom: 0.1vw solid gray;
+}
+
+.header {
+  border-bottom: 0.1vw solid gray;
+  padding: 0.8vw;
+  font-size: 1vw;
+  text-align: center;
+}
+
+.cell {
+  padding: 0.8vw;
+  font-size: 1vw;
+  text-align: center;
+  vertical-align: middle;
+  border: none;
+}
+
+.button-group {
+  display: flex;
+  justify-content: space-between;
+}
+
+.full-width-button {
+  flex: 1;
+  padding: 1vw;
+  margin: 0.5vw;
+  font-size: 1vw;
+  background-color: #a77cec;
+  color: white;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+.full-width-button:hover {
+  background-color: #6497b1; 
+}
+
+.slider-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.layer-front,
+.layer-back {
+  margin: 0 1vw;
+}
+
+input[type="range"] {
+  flex-grow: 1;
+  margin: 0 1vw;
+}

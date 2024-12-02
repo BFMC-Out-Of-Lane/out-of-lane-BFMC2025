@@ -1,0 +1,102 @@
+/* Copyright (c) 2019, Bosch Engineering Center Cluj and BFMC orginazers
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+
+.battery-level {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.battery-level-body { 
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.battery-level-indicator-svg { 
+    display: flex;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+#battery-level-needle-group {
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0) 100%);
+    -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 70%, rgba(0, 0, 0, 0) 100%);
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+}
+
+.battery-level-text { 
+    font-size: 25px;
+    text-anchor: middle;
+    fill: white;
+}
+
+.battery-level-unit-text { 
+    font-size: 15px;
+    opacity: 0.5;
+    text-anchor: middle;
+    fill: white;
+}
+
+.battery-level-big-lines { 
+    stroke: rgb(188, 188, 188);
+    stroke-width: 2px;
+    stroke-opacity: 0.8;
+    mask-image: linear-gradient(200deg, rgba(0, 0, 0, 0) 10%, rgba(0, 0, 0, 1) 40%);
+    -webkit-mask-image: linear-gradient(200deg, rgba(0, 0, 0, 0) 10%, rgba(0, 0, 0, 1) 40%);
+    mask-size: 110% 110%;
+    mask-repeat: no-repeat;
+}
+
+.battery-level-small-lines { 
+    stroke: rgb(191, 191, 191);
+    stroke-width: 1px;
+    stroke-opacity: 0.6;
+    mask-image: linear-gradient(200deg, rgba(0, 0, 0, 0) 10%, rgba(0, 0, 0, 1) 40%);
+    -webkit-mask-image: linear-gradient(200deg, rgba(0, 0, 0, 0) 10%, rgba(0, 0, 0, 1) 40%);
+    mask-size: 110% 110%;
+    mask-repeat: no-repeat;
+}
+
+#battery-level-path { 
+    stroke: rgb(188, 188, 188);
+    stroke-width: 8px;
+    fill: transparent;
+    stroke-linecap: round;
+    filter: drop-shadow(-3px 3px 3px rgb(0, 0, 0, 0.5));
+}
+
+#battery-level-needle { 
+    position: relative;
+    stroke: red;
+    stroke-width: 3px;
+    stroke-linecap: round;
+    filter: drop-shadow(0px 0px 2px rgb(255, 0, 0, 0.8));
+}

@@ -1,0 +1,62 @@
+<!-- Copyright (c) 2019, Bosch Engineering Center Cluj and BFMC orginazers
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+    this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
+
+<div class="battery-level">
+  <div class="battery-level-body">
+    <svg class="battery-level-indicator-svg" viewBox="0 0 400 170">
+
+      <line class="battery-level-big-lines" x1="327" y1="130" x2="350" y2="90" />
+      <line class="battery-level-big-lines" x1="270" y1="130" x2="293" y2="90" />
+      <line class="battery-level-big-lines" x1="213" y1="130" x2="236" y2="90" />
+      <line class="battery-level-big-lines" x1="156" y1="130" x2="180" y2="90" />
+      <line class="battery-level-big-lines" x1="89" y1="108" x2="120" y2="78" />
+      <line class="battery-level-big-lines" x1="37" y1="42" x2="72" y2="35" />
+
+      <line class="battery-level-small-lines" x1="242" y1="130" x2="254" y2="110" />
+      <line class="battery-level-small-lines" x1="185" y1="130" x2="197" y2="110" />
+      <line class="battery-level-small-lines" x1="125" y1="125" x2="136.5" y2="108" />
+      <line class="battery-level-small-lines" x1="55" y1="79" x2="75" y2="68" />
+      <line class="battery-level-small-lines" x1="298" y1="130" x2="310" y2="110" />
+
+      <text class="battery-level-text" x="357" y="77">0</text>
+      <text class="battery-level-text" x="300" y="77">20</text>
+      <text class="battery-level-text" x="243" y="77">40</text>
+      <text class="battery-level-text" x="187" y="77">60</text>
+      <text class="battery-level-text" x="143" y="67">80</text>
+      <text class="battery-level-text" x="112" y="37">100</text>
+
+      <g id="battery-level-needle-group">
+        <rect x="0" y="0" width="12" height="53" fill="none" />
+        <line id="battery-level-needle" x1="6" y1="3" x2="6" y2="53" />
+      </g>
+
+      <path id="battery-level-path" d="M390 130 Q235 130 150 130 T 20 10" />
+      <text class="battery-level-unit-text" x="370" y="120">%</text>
+    </svg>
+  </div>
+</div>
