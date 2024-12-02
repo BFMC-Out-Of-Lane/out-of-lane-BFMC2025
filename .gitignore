@@ -1,0 +1,8 @@
+# devenv
+.devenv/
+.devenv.flake.nix
+devenv.lock
+
+# YOLO
+runs/
+*.pt
