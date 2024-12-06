@@ -4,12 +4,13 @@ import numpy as np
 
 class LineDetector:
 
-    def __init__(self, pixel_precission, radian_precission, threshold, min_line_length, max_line_length):
+    def __init__(self, pixel_precission, radian_precission, threshold, min_line_length, max_line_length, roi):
         self.pixel_precission = pixel_precission
         self.radian_precission = radian_precission
         self.threshold = threshold
         self.min_line_length = min_line_length
         self.max_line_length = max_line_length
+        self.roi = roi
 
     def _detect_edges(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
@@ -19,13 +20,12 @@ class LineDetector:
         return canny
 
     def _apply_roi(self, image):
-        height = self.image.shape[0]
-        triangle = np.array([(20, height), (564, height), (330, 160)])
+        triangle = np.array(self.roi)
         mask = np.zeros_like(image)
         cv2.fillPoly(mask, [triangle], 255)
-        masked_image = cv2.bitwise_and(image, mask)
+        self.masked_image = cv2.bitwise_and(image, mask)
 
-        return masked_image
+        return self.masked_image
 
     def _to_coordinates(self, line_parameters):
         slope, intercept = line_parameters
@@ -39,6 +39,11 @@ class LineDetector:
     def _average_slope_intercept(self, lines):
         left_fit = []
         right_fit = []
+
+        # TODO: Handle case when lines is None i.e. no lines detected
+        if lines is None:
+            return np.array([])
+
         for line in lines:
             x1, y1, x2, y2 = line.reshape(4)
             parameters = np.polyfit((x1, x2), (y1, y2), 1)
@@ -49,6 +54,10 @@ class LineDetector:
             else:
                 right_fit.append((slope, intercept))
 
+        # TODO: Handle case when left_fit or right_fit is empty i.e. no lines detected
+        if not left_fit or not right_fit:
+            return np.array([])
+
         left_fit_average = np.average(left_fit, axis=0)
         right_fit_average = np.average(right_fit, axis=0)
         left_line = self._to_coordinates(left_fit_average)
@@ -58,10 +67,8 @@ class LineDetector:
 
     def detect_lines(self, image):
         self.image = np.copy(image)
-
-        edged_image = self._detect_edges(self.image)
-        cropped_image = self._apply_roi(edged_image)
-        lines = cv2.HoughLinesP(cropped_image, self.pixel_precission, self.radian_precission, self.threshold, np.array(
+        edged_image = self._detect_edges(self._apply_roi(self.image))
+        lines = cv2.HoughLinesP(edged_image, self.pixel_precission, self.radian_precission, self.threshold, np.array(
             []), minLineLength=self.min_line_length, maxLineGap=self.max_line_length)
 
         return lines
