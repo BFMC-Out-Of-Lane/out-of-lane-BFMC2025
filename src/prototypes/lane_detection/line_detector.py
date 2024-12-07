@@ -98,27 +98,17 @@ class LineDetector:
 
         return lines
 
-    def display_lines(self, lines):
-        line_image = np.zeros_like(self.image)
+    def display_lines(self, image):
+        lines = self.detect_lines(image)
+        avg_lines = self._average_slope_intercept(lines)
+        line_image = np.zeros_like(image)
         if lines is not None and lines.all():
             for line in lines:
                 x1, y1, x2, y2 = line.reshape(4)
                 cv2.line(line_image, (x1, y1), (x2, y2), (255, 0, 0), 10)
 
-        return line_image
+            for avg_line in avg_lines:
+                x1, y1, x2, y2 = avg_line
+                cv2.line(line_image, (x1, y1), (x2, y2), (0, 255, 0), 10)
 
-    def display_lines_on_image(self, image):
-        return cv2.addWeighted(image, 0.8, self.display_lines(self.detect_lines(image)), 1, 1)
-
-    def display_average_lines(self, lines):
-        lines = self._average_slope_intercept(lines)
-        line_image = np.zeros_like(self.image)
-        if lines.all():
-            for line in lines:
-                x1, y1, x2, y2 = line
-                cv2.line(line_image, (x1, y1), (x2, y2), (255, 0, 0), 10)
-
-        return line_image
-
-    def display_average_lines_on_image(self, image):
-        return cv2.addWeighted(image, 0.8, self.display_average_lines(self.detect_lines(image)), 1, 1)
+        return cv2.addWeighted(image, 0.8, line_image, 1, 1)

@@ -21,8 +21,8 @@ class LaneDetector:
     def detect_lane(self, image):
         return self.line_detector.detect_lines(image)
 
-    def display_lines_on_image(self, lines):
-        return self.line_detector.display_average_lines_on_image(lines)
+    def display_lines(self, lines):
+        return self.line_detector.display_lines(lines)
 
 
 if __name__ == '__main__':
@@ -42,7 +42,7 @@ if __name__ == '__main__':
             break
 
         _, frame = cap.read()
-        image_w_lines = lane_detector.display_lines_on_image(frame)
+        image_w_lines = lane_detector.display_lines(frame)
         cv2.imshow('image', image_w_lines)
         # cv2.imshow('warped', lane_detector.line_detector.warped_image.T)
 
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     #     (575, 337),  # Bottom-right corner
     #     (371, 184)  # Top-right corner
     # ])
-    # image_w_lines = lane_detector.display_lines_on_image(image)
+    # image_w_lines = lane_detector.display_lines(image)
     # cv2.imshow('image', image_w_lines)
     # cv2.imshow('warped', lane_detector.line_detector.warped_image)
     # cv2.waitKey(0)
