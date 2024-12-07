@@ -4,12 +4,13 @@ import numpy as np
 
 class LineDetector:
 
-    def __init__(self, pixel_precission, radian_precission, threshold, min_line_length, max_line_length, roi):
+    def __init__(self, pixel_precission, radian_precission, threshold, min_line_length, max_line_length, end_of_lines, roi):
         self.pixel_precission = pixel_precission
         self.radian_precission = radian_precission
         self.threshold = threshold
         self.min_line_length = min_line_length
         self.max_line_length = max_line_length
+        self.end_of_lines = end_of_lines
         self.roi = roi
 
     def _detect_edges(self, image):
@@ -20,17 +21,39 @@ class LineDetector:
         return canny
 
     def _apply_roi(self, image):
-        triangle = np.array(self.roi)
+        trapezoid = np.array(self.roi)
         mask = np.zeros_like(image)
-        cv2.fillPoly(mask, [triangle], 255)
+        cv2.fillPoly(mask, [trapezoid], 255)
         self.masked_image = cv2.bitwise_and(image, mask)
 
         return self.masked_image
 
+    def _warp_image(self, image):
+        # padding from side of the image in pixels
+        padding = int(0.10 * image.shape[0])
+        self.desired_roi_points = np.float32([
+            [padding, 0],  # Top-left corner
+            [padding, image.shape[0]],  # Bottom-left corner
+            [image.shape[0]-padding, image.shape[1]],  # Bottom-right corner
+            [image.shape[0]-padding, 0],  # Top-right corner
+        ])
+        # Calculate the transformation matrix
+        self.transformation_matrix = cv2.getPerspectiveTransform(
+            np.float32(self.roi), self.desired_roi_points)
+        # Warp the image
+        self.warped_image = cv2.warpPerspective(
+            image, self.transformation_matrix, image.shape, flags=(cv2.INTER_LINEAR))
+        # Convert image to binary
+        (_, binary_warped) = cv2.threshold(
+            self.warped_image, 127, 255, cv2.THRESH_BINARY)
+        self.warped_image = binary_warped
+
+        return self.warped_image
+
     def _to_coordinates(self, line_parameters):
         slope, intercept = line_parameters
         y1 = self.image.shape[0]
-        y2 = int(y1 * 3 / 5)
+        y2 = int(y1 * self.end_of_lines)
         x1 = int((y1 - intercept) / slope)
         x2 = int((y2 - intercept) / slope)
 
@@ -67,23 +90,25 @@ class LineDetector:
 
     def detect_lines(self, image):
         self.image = np.copy(image)
-        edged_image = self._detect_edges(self._apply_roi(self.image))
-        lines = cv2.HoughLinesP(edged_image, self.pixel_precission, self.radian_precission, self.threshold, np.array(
+        self.edged_image = self._detect_edges(self.image)
+        self.cropped_image = self._apply_roi(self.edged_image)
+        # self.warped_image = self._warp_image(self.cropped_image)
+        lines = cv2.HoughLinesP(self.cropped_image, self.pixel_precission, self.radian_precission, self.threshold, np.array(
             []), minLineLength=self.min_line_length, maxLineGap=self.max_line_length)
 
         return lines
 
     def display_lines(self, lines):
         line_image = np.zeros_like(self.image)
-        if lines.all():
+        if lines is not None and lines.all():
             for line in lines:
                 x1, y1, x2, y2 = line.reshape(4)
                 cv2.line(line_image, (x1, y1), (x2, y2), (255, 0, 0), 10)
 
         return line_image
 
-    def display_lines_on_image(self, lines):
-        return cv2.addWeighted(self.image, 0.8, self.display_lines(lines), 1, 1)
+    def display_lines_on_image(self, image):
+        return cv2.addWeighted(image, 0.8, self.display_lines(self.detect_lines(image)), 1, 1)
 
     def display_average_lines(self, lines):
         lines = self._average_slope_intercept(lines)
@@ -95,5 +120,5 @@ class LineDetector:
 
         return line_image
 
-    def display_average_lines_on_image(self, lines):
-        return cv2.addWeighted(self.image, 0.8, self.display_average_lines(lines), 1, 1)
+    def display_average_lines_on_image(self, image):
+        return cv2.addWeighted(image, 0.8, self.display_average_lines(self.detect_lines(image)), 1, 1)
