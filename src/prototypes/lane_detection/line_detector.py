@@ -20,36 +20,6 @@ class LineDetector:
 
         return canny
 
-    def _apply_roi(self, image):
-        trapezoid = np.array(self.roi)
-        mask = np.zeros_like(image)
-        cv2.fillPoly(mask, [trapezoid], 255)
-        self.masked_image = cv2.bitwise_and(image, mask)
-
-        return self.masked_image
-
-    def _warp_image(self, image):
-        # padding from side of the image in pixels
-        padding = int(0.10 * image.shape[0])
-        self.desired_roi_points = np.float32([
-            [padding, 0],  # Top-left corner
-            [padding, image.shape[0]],  # Bottom-left corner
-            [image.shape[0]-padding, image.shape[1]],  # Bottom-right corner
-            [image.shape[0]-padding, 0],  # Top-right corner
-        ])
-        # Calculate the transformation matrix
-        self.transformation_matrix = cv2.getPerspectiveTransform(
-            np.float32(self.roi), self.desired_roi_points)
-        # Warp the image
-        self.warped_image = cv2.warpPerspective(
-            image, self.transformation_matrix, image.shape, flags=(cv2.INTER_LINEAR))
-        # Convert image to binary
-        (_, binary_warped) = cv2.threshold(
-            self.warped_image, 127, 255, cv2.THRESH_BINARY)
-        self.warped_image = binary_warped
-
-        return self.warped_image
-
     def _to_coordinates(self, line_parameters):
         slope, intercept = line_parameters
         y1 = self.image.shape[0]
@@ -91,8 +61,8 @@ class LineDetector:
     def detect_lines(self, image):
         self.image = np.copy(image)
         self.edged_image = self._detect_edges(self.image)
-        self.cropped_image = self._apply_roi(self.edged_image)
-        # self.warped_image = self._warp_image(self.cropped_image)
+        self.cropped_image = self.roi.mask(self.edged_image)
+        # self.warped_image = self.roi.warp_image(self.cropped_image)
         lines = cv2.HoughLinesP(self.cropped_image, self.pixel_precission, self.radian_precission, self.threshold, np.array(
             []), minLineLength=self.min_line_length, maxLineGap=self.max_line_length)
 

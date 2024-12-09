@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from line_detector import LineDetector
+from region_of_interest import RegionOfInterest
 
 FILENAME = 'test2.mp4'
 
@@ -28,13 +29,7 @@ class LaneDetector:
 if __name__ == '__main__':
 
     cap = cv2.VideoCapture(FILENAME)
-
-    roi = [
-        (550, 330), 
-        (190, 720),
-        (1100, 720), 
-        (600, 330), 
-        ]
+    roi = RegionOfInterest((550, 330), (190, 720), (1100, 720), (600, 330))
     lane_detector = LaneDetector(roi)
 
     while cap.isOpened():
@@ -47,13 +42,9 @@ if __name__ == '__main__':
         # cv2.imshow('warped', lane_detector.line_detector.warped_image.T)
 
     # image = cv2.imread('test1.jpg')
-    # lane_detector = LaneDetector([
-    #     (274, 184),  # Top-left corner
-    #     (0, 337),  # Bottom-left corner
-    #     (575, 337),  # Bottom-right corner
-    #     (371, 184)  # Top-right corner
-    # ])
+    # roi = RegionOfInterest((274, 184), (0, 337), (575, 337), (371, 184))
+    # lane_detector = LaneDetector(roi)
     # image_w_lines = lane_detector.display_lines(image)
     # cv2.imshow('image', image_w_lines)
-    # cv2.imshow('warped', lane_detector.line_detector.warped_image)
+    # # cv2.imshow('warped', lane_detector.line_detector.warped_image.T)
     # cv2.waitKey(0)
