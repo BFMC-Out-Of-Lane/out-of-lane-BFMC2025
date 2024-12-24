@@ -58,9 +58,11 @@ from src.hardware.serialhandler.processSerialHandler import processSerialHandler
 from src.data.Semaphores.Semaphores import processSemaphores
 from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
 from src.utils.ipManager.IpReplacement import IPManager
-# ------ New component imports starts here ------#
 
+# ------ New component imports starts here ------#
+from src.decision.decision_making.process_decision_maker import processDecisionMaker
 # ------ New component imports ends here ------#
+
 # ======================================== SETTING UP ====================================
 allProcesses = list()
 
@@ -80,7 +82,7 @@ TrafficCommunication = False
 SerialHandler = False
 
 # ------ New component flags starts here ------#
- 
+DecisionMaker = True 
 # ------ New component flags ends here ------#
 
 # ===================================== SETUP PROCESSES ==================================
@@ -121,7 +123,9 @@ if SerialHandler:
     allProcesses.append(processSerialHandler)
 
 # ------ New component runs starts here ------#
- 
+if DecisionMaker:
+    processDecisionMaker = processDecisionMaker(queueList, logging, debugging = False)
+    allProcesses.append(processDecisionMaker)
 # ------ New component runs ends here ------#
 
 # ===================================== START PROCESSES ==================================
