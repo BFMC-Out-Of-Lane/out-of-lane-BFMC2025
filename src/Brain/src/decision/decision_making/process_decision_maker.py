@@ -3,10 +3,10 @@ if __name__ == "__main__":
     sys.path.insert(0, "../../..")
 
 from src.templates.workerprocess import WorkerProcess
-from src.decision.decision_making.threads.threaddecision_making import threaddecision_making
+from src.decision.decision_making.threads.thread_decision_maker import threadDecisionMaker
 
 
-class processdecision_making(WorkerProcess):
+class processDecisionMaker(WorkerProcess):
     """This process handles decision_making.
     Args:
         queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
@@ -18,15 +18,15 @@ class processdecision_making(WorkerProcess):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
-        super(processdecision_making, self).__init__(self.queuesList)
+        super(processDecisionMaker, self).__init__(self.queuesList)
 
     def run(self):
         """Apply the initializing methods and start the threads."""
-        super(processdecision_making, self).run()
+        super(processDecisionMaker, self).run()
 
     def _init_threads(self):
         """Create the decision_making Publisher thread and add to the list of threads."""
-        decision_makingTh = threaddecision_making(
+        decision_makingTh = threadDecisionMaker(
             self.queuesList, self.logging, self.debugging
         )
         self.threads.append(decision_makingTh)
