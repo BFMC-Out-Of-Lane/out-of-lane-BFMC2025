@@ -221,7 +221,7 @@ class ImuAck(Enum):
 class WarningSignal(Enum):
     Queue = "General"
     Owner = "threadRead"
-    msgID = 7
+    msgID = 8
     msgType = "str"
 
 ################################# From Locsys ##################################
@@ -241,7 +241,7 @@ class EnableButton(Enum):
 class WarningSignal(Enum):
     Queue = "General"
     Owner = "brain"
-    msgID = 3
+    msgID = 2
     msgType = "str"
 
 ### It will have this format: {"WarningName":"name1", "WarningID": 1}
