@@ -1,7 +1,8 @@
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import (mainCamera)
-from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
+from src.utils.messages.allMessages import UltrasonicSensors, mainCamera
 from src.utils.messages.messageHandlerSender import messageHandlerSender
+from src.utils.messages.messageHandlerSubscriber import \
+    messageHandlerSubscriber
 
 
 class threadDecisionMaker(ThreadWithStop):
@@ -16,13 +17,17 @@ class threadDecisionMaker(ThreadWithStop):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
+        self.suscribers = {}
         self.subscribe()
         super(threadDecisionMaker, self).__init__()
 
     def run(self):
         while self._running:
-            pass
+            ultrasonic_message = self.suscribers["UltrasonicSensors"].receive()
+            if ultrasonic_message is not None and self.debugging:
+                self.logging.info(f"UltrasonicSensors: {ultrasonic_message}")
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""
-        pass
+        self.suscribers["UltrasonicSensors"] = messageHandlerSubscriber(
+            self.queuesList, UltrasonicSensors, "lastOnly", True)

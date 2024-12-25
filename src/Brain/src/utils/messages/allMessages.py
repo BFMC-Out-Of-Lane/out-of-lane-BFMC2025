@@ -224,6 +224,12 @@ class WarningSignal(Enum):
     msgID = 8
     msgType = "str"
 
+class UltrasonicSensors(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 9
+    msgType = "dict"
+
 ################################# From Locsys ##################################
 class Location(Enum):
     Queue = "General"
