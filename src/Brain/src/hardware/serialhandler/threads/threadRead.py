@@ -173,8 +173,7 @@ class threadRead(ThreadWithStop):
 
         elif action == "ultrasonic":
             splittedValue = value.split(";")
-            data = {"front": splittedValue[0], "rear": splittedValue[1], "speed": splittedValue[2]}
-            print(data)
+            data = {"front": splittedValue[0], "rear": splittedValue[1]}
             self.ultrasonicSensorsSender.send(data)
 
         elif action == "shutdown":

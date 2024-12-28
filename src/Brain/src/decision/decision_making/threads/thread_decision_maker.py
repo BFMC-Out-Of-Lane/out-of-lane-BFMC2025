@@ -23,6 +23,7 @@ class threadDecisionMaker(ThreadWithStop):
 
     def run(self):
         while self._running:
+            print("is running")
             ultrasonic_message = self.suscribers["UltrasonicSensors"].receive()
             if ultrasonic_message is not None and self.debugging:
                 self.logging.info(f"UltrasonicSensors: {ultrasonic_message}")
