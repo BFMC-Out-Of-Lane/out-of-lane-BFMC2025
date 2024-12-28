@@ -1,9 +1,0 @@
-{
-    "target_overrides": {
-        "*": {
-            "platform.callback-nontrivial": true,
-            "platform.heap-stats-enabled": true,
-            "platform.stack-stats-enabled": true
-        }
-    }
-}
