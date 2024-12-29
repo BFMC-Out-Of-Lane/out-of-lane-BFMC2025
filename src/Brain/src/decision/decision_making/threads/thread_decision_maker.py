@@ -49,7 +49,8 @@ class threadDecisionMaker(ThreadWithStop):
             front = int(ultrasonic_message["front"])
             rear = int(ultrasonic_message["rear"])
             if self.debugging:
-                self.logging.info(f"threadDecisionMaker: {ultrasonic_message, current_speed}")
+                self.logging.info(
+                    f'{{"threadDecisionMaker": {{ "CurrentSpeed": {current_speed}, "UltrasonicSensors": {ultrasonic_message}}} }}')
 
             if current_speed > 0:
                 if front < MIN_DISTANCE_TO_STOP:
