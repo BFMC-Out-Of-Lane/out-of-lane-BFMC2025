@@ -3,3 +3,6 @@ docs/build/
 __pycache__
 **/*.pyc
 /src/dashboard/frontend/node_modules
+
+/historyFile.txt
+/src/dashboard/frontend/.angular/cache/

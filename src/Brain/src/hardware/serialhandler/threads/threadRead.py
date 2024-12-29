@@ -26,23 +26,17 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
-import time
-import threading
-import re
 import os
+import re
+import threading
+import time
 
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import (
-    BatteryLvl,
-    ImuData,
-    ImuAck,
-    InstantConsumption,
-    EnableButton,
-    ResourceMonitor,
-    CurrentSpeed,
-    CurrentSteer,
-    WarningSignal
-)
+from src.utils.messages.allMessages import (BatteryLvl, CurrentSpeed,
+                                            CurrentSteer, EnableButton, ImuAck,
+                                            ImuData, InstantConsumption,
+                                            ResourceMonitor, UltrasonicSensors,
+                                            WarningSignal)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 
 
@@ -56,7 +50,7 @@ class threadRead(ThreadWithStop):
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, f_serialCon, f_logFile, queueList, logger, debugger = False):
+    def __init__(self, f_serialCon, f_logFile, queueList, logger, debugger=False):
         self.serialCon = f_serialCon
         self.logFile = f_logFile
         self.buff = ""
@@ -77,16 +71,17 @@ class threadRead(ThreadWithStop):
         self.currentSpeedSender = messageHandlerSender(self.queuesList, CurrentSpeed)
         self.currentSteerSender = messageHandlerSender(self.queuesList, CurrentSteer)
         self.warningSender = messageHandlerSender(self.queuesList, WarningSignal)
+        self.ultrasonicSensorsSender = messageHandlerSender(self.queuesList, UltrasonicSensors)
 
         self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
-                               "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer" : "between -25 and 25", 
+                               "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer": "between -25 and 25",
                                "speed": "between -500 and 500", "break": "between -250 and 250"}
-        
+
         self.warningPattern = r'^(-?[0-9]+)H(-?[0-5]?[0-9])M(-?[0-5]?[0-9])S$'
         self.resourceMonitorPattern = r'Heap \((\d+\.\d+)\);Stack \((\d+\.\d+)\)'
 
         self.Queue_Sending()
-        
+
         super(threadRead, self).__init__()
 
     # ====================================== RUN ==========================================
@@ -104,7 +99,7 @@ class threadRead(ThreadWithStop):
                         self.sendqueue(self.buff)
                 if self.isResponse:
                     self.buff += read_chr
-            except Exception as e :
+            except Exception as e:
                 print(e)
 
     # ==================================== SENDING =======================================
@@ -117,7 +112,7 @@ class threadRead(ThreadWithStop):
     def sendqueue(self, buff):
         """This function select which type of message we receive from NUCLEO and send the data further."""
 
-        action, value = buff.split(":") # @action:value;;
+        action, value = buff.split(":")  # @action:value;;
         action = action[1:]
         value = value[:-2]
         if self.debugger:
@@ -153,7 +148,7 @@ class threadRead(ThreadWithStop):
 
         elif action == "imu":
             splittedValue = value.split(";")
-            if(len(buff)>20):
+            if (len(buff) > 20):
                 data = {
                     "roll": splittedValue[0],
                     "pitch": splittedValue[1],
@@ -165,38 +160,44 @@ class threadRead(ThreadWithStop):
                 self.imuDataSender.send(str(data))
             else:
                 self.imuAckSender.send(splittedValue[0])
-                
+
         elif action == "kl":
             self.checkValidValue(action, value)
 
         elif action == "warning":
             data = re.match(self.warningPattern, value)
             if data:
-                print(f"WARNING! Shutting down in {data.group(1)} hours {data.group(2)} minutes {data.group(3)} seconds")
-                self.warningSender.send(action,data)
-                
+                print(
+                    f"WARNING! Shutting down in {data.group(1)} hours {data.group(2)} minutes {data.group(3)} seconds")
+                self.warningSender.send(action, data)
+
+        elif action == "ultrasonic":
+            splittedValue = value.split(";")
+            data = {"front": splittedValue[0], "rear": splittedValue[1]}
+            self.ultrasonicSensorsSender.send(data)
+
         elif action == "shutdown":
             print("SHUTTING DOWN!")
             time.sleep(3)
             os.system("sudo shutdown -h now")
-            
+
     def checkValidValue(self, action, message):
         if message == "syntax error":
             print(f"WARNING! Invalid value for {action.upper()} (expected {self.expectedValues[action]})")
             return False
-    
+
         if message == "kl 15/30 is required!!":
             print(f"WARNING! KL set to 15 or 30 is required to perform {action.upper()} action")
             return False
-        
+
         if message == "ack":
             return False
         return True
-    
+
     def isFloat(self, string):
-        try: 
+        try:
             float(string)
         except ValueError:
             return False
-        
+
         return True
