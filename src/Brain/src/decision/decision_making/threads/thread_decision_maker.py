@@ -34,8 +34,8 @@ class threadDecisionMaker(ThreadWithStop):
             ultrasonic_message = self.subscribers["UltrasonicSensors"].receive()
             if ultrasonic_message:
                 current_speed = int(self.current_speed)
-                front = int(ultrasonic_message["front"]) * 10
-                rear = int(ultrasonic_message["rear"]) * 10
+                front = int(ultrasonic_message["front"])
+                rear = int(ultrasonic_message["rear"])
                 if self.debugging:
                     self.logging.info(f"threadDecisionMaker: {ultrasonic_message, current_speed}")
 
