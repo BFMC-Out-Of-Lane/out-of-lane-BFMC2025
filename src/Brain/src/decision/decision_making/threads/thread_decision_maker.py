@@ -34,8 +34,8 @@ class threadDecisionMaker(ThreadWithStop):
             ultrasonic_message = self.subscribers["UltrasonicSensors"].receive()
             if ultrasonic_message:
                 current_speed = int(self.current_speed)
-                front = int(ultrasonic_message["front"])
-                rear = int(ultrasonic_message["rear"])
+                front = int(ultrasonic_message["front"]) * 10
+                rear = int(ultrasonic_message["rear"]) * 10
                 if self.debugging:
                     self.logging.info(f"threadDecisionMaker: {ultrasonic_message, current_speed}")
 
@@ -43,12 +43,12 @@ class threadDecisionMaker(ThreadWithStop):
                     if front < MIN_DISTANCE_UNTIL_BREAK:
                         self.speed_sender.send("0")  # stop the vehicle if front distance is less than 5 cm
                     elif int(current_speed) > front:
-                        self.speed_sender.send(front)
+                        self.speed_sender.send(str(front))
                 elif current_speed < 0:
                     if rear < MIN_DISTANCE_UNTIL_BREAK:
                         self.speed_sender.send("0")  # stop the vehicle if front distance is less than 5 cm
                     elif current_speed > rear:
-                        self.speed_sender.send(rear)
+                        self.speed_sender.send(str(rear))
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""
