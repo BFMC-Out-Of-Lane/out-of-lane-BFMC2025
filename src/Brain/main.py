@@ -61,6 +61,7 @@ from src.utils.ipManager.IpReplacement import IPManager
 
 # ------ New component imports starts here ------#
 from src.decision.decision_making.process_decision_maker import processDecisionMaker
+from src.vision.lane_detection.process_lane_detection import processLaneDetection
 # ------ New component imports ends here ------#
 
 # ======================================== SETTING UP ====================================
@@ -82,7 +83,8 @@ TrafficCommunication = False
 SerialHandler = True
 
 # ------ New component flags starts here ------#
-DecisionMaker = True 
+DecisionMaker = True
+LaneDetection = True
 # ------ New component flags ends here ------#
 
 # ===================================== SETUP PROCESSES ==================================
@@ -126,6 +128,10 @@ if SerialHandler:
 if DecisionMaker:
     processDecisionMaker = processDecisionMaker(queueList, logging, debugging = True)
     allProcesses.append(processDecisionMaker)
+
+if LaneDetection:
+    processLaneDetection = processLaneDetection(queueList, logging, debugging = True)
+    allProcesses.append(processLaneDetection)
 # ------ New component runs ends here ------#
 
 # ===================================== START PROCESSES ==================================

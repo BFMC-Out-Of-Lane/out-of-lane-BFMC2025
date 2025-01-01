@@ -1,8 +1,11 @@
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import (mainCamera)
-from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
+from src.utils.messages.allMessages import mainCamera
 from src.utils.messages.messageHandlerSender import messageHandlerSender
-class threadlane_detection(ThreadWithStop):
+from src.utils.messages.messageHandlerSubscriber import \
+    messageHandlerSubscriber
+
+
+class threadLaneDetection(ThreadWithStop):
     """This thread handles lane_detection.
     Args:
         queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
@@ -15,7 +18,7 @@ class threadlane_detection(ThreadWithStop):
         self.logging = logging
         self.debugging = debugging
         self.subscribe()
-        super(threadlane_detection, self).__init__()
+        super(threadLaneDetection, self).__init__()
 
     def run(self):
         while self._running:
