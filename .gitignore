@@ -8,3 +8,6 @@ devenv.lock
 
 # Python
 __pycache__/
+
+# Gazebo simulator
+Simulator/
