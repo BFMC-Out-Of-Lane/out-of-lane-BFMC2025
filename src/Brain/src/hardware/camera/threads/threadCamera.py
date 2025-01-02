@@ -43,6 +43,7 @@ from src.utils.messages.allMessages import (
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.templates.threadwithstop import ThreadWithStop
+from src.hardware.camera.lane_detection.lane_detector import LaneDetector
 
 
 class threadCamera(ThreadWithStop):
@@ -63,6 +64,7 @@ class threadCamera(ThreadWithStop):
         self.recording = False
 
         self.video_writer = ""
+        self.lane_detector = LaneDetector()
 
         self.recordingSender = messageHandlerSender(self.queuesList, Recording)
         self.mainCameraSender = messageHandlerSender(self.queuesList, mainCamera)
@@ -156,13 +158,19 @@ class threadCamera(ThreadWithStop):
                 serialRequest = cv2.cvtColor(serialRequest, cv2.COLOR_YUV2BGR_I420)
 
                 _, mainEncodedImg = cv2.imencode(".jpg", mainRequest)                   
-                _, serialEncodedImg = cv2.imencode(".jpg", serialRequest)
+                # _, serialEncodedImg = cv2.imencode(".jpg", serialRequest)
 
                 mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8")
-                serialEncodedImageData = base64.b64encode(serialEncodedImg).decode("utf-8")
+                # serialEncodedImageData = base64.b64encode(serialEncodedImg).decode("utf-8")
 
                 self.mainCameraSender.send(mainEncodedImageData)
-                self.serialCameraSender.send(serialEncodedImageData)
+                # self.serialCameraSender.send(serialEncodedImageData)
+
+                # TODO: This should be tested
+                processed_image = self.lane_detector.process_image(serialRequest)
+                _, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)
+                serial_encoded_processed_image_data = base64.b64encode(serial_encoded_processed_image).decode("utf-8")
+                self.serialCameraSender.send(serial_encoded_processed_image_data)
 
             send = not send
 

@@ -1,8 +1,7 @@
 import cv2
 import numpy as np
 
-from Brain.src.vision.lane_detection.lane_detection_interface import \
-    LaneDetectionInterface
+from src.hardware.camera.lane_detection.lane_detection_interface import LaneDetectionInterface
 
 
 def threshold_image(image):
