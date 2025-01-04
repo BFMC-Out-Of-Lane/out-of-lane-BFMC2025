@@ -11,3 +11,5 @@ __pycache__/
 
 # Gazebo simulator
 Simulator/
+
+src/Brain/src/dashboard/frontend/.angular/cache/
