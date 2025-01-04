@@ -57,9 +57,9 @@ class threadDecisionMaker(ThreadWithStop):
                 if front < MIN_DISTANCE_TO_STOP:
                     self.speed_sender.send("0")  # stop the vehicle if front distance is less than 5 cm
                 elif current_speed > front:
-                    self.speed_sender.send(str(front))
+                    self.speed_sender.send(str(round(front * 0.25)))
             elif current_speed < 0:
                 if rear < MIN_DISTANCE_TO_STOP:
                     self.speed_sender.send("0")  # stop the vehicle if front distance is less than 5 cm
                 elif abs(current_speed) > rear:
-                    self.speed_sender.send(str(-rear))
+                    self.speed_sender.send(str(round(-rear * 0.25)))
