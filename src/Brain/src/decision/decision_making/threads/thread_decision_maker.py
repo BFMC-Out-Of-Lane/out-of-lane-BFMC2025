@@ -5,7 +5,7 @@ from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
-MIN_DISTANCE_TO_STOP = 25
+MIN_DISTANCE_TO_STOP = 100
 
 
 class threadDecisionMaker(ThreadWithStop):
@@ -50,15 +50,16 @@ class threadDecisionMaker(ThreadWithStop):
             rear = int(ultrasonic_message["rear"])
             if self.debugging:
                 self.logging.info(
-                    f'{{"threadDecisionMaker": {{ "CurrentSpeed": {current_speed}, "UltrasonicSensors": {ultrasonic_message}}} }}')
+                    f'{{"threadDecisionMaker": {{ "CurrentSpeed": {current_speed}, "UltrasonicSensors": {ultrasonic_message}}} }}'
+                )
 
             if current_speed > 0:
                 if front < MIN_DISTANCE_TO_STOP:
                     self.speed_sender.send("0")  # stop the vehicle if front distance is less than 5 cm
-                elif int(current_speed) > front:
+                elif current_speed > front:
                     self.speed_sender.send(str(front))
             elif current_speed < 0:
                 if rear < MIN_DISTANCE_TO_STOP:
                     self.speed_sender.send("0")  # stop the vehicle if front distance is less than 5 cm
-                elif current_speed > rear:
-                    self.speed_sender.send(str(rear))
+                elif abs(current_speed) > rear:
+                    self.speed_sender.send(str(-rear))
