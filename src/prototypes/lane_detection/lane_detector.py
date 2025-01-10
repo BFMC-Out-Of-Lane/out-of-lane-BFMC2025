@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 from lane_detection_interface import LaneDetectionInterface
+from lane import Lane
+
 
 def threshold_image(image):
     # Apply Gaussian blur to the frame to reduce noise
@@ -111,7 +113,9 @@ def fit_polynomial(binary_warped):
     right_fit = np.polyfit(righty, rightx, 2)
     return left_fit, right_fit, out_img, leftx, lefty, rightx, righty
 
-def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit):
+def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane):
+    left_fit = left_lane.best_fit
+    right_fit = right_lane.best_fit
     if left_fit is None or right_fit is None:
         return original_image
     
@@ -172,17 +176,23 @@ def warp_image(image, M):
     warped = cv2.warpPerspective(image, M, (width, height))
     return warped
 
+left_lane = Lane()
+right_lane = Lane()
+
 def process_frame(frame):
     M, Minv = get_perspective_transform(frame)
     warped = warp_image(frame, M)
     binary_warped = threshold_image(warped)
     left_fit, right_fit, out_img, leftx, lefty, rightx, righty = fit_polynomial(binary_warped)
-    result = draw_lane(frame, binary_warped, Minv, left_fit, right_fit)
+    left_lane.add_fit(left_fit)
+    right_lane.add_fit(right_fit)
+    result = draw_lane(frame, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane)
     return result
 
 
 class LaneDetector(LaneDetectionInterface):
     def __init__(self):
+    
         pass
 
     def process_image(self, cv_image):
