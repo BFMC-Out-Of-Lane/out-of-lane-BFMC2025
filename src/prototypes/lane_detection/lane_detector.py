@@ -2,49 +2,68 @@ import cv2
 import numpy as np
 from lane_detection_interface import LaneDetectionInterface
 from lane import Lane
+import matplotlib.pyplot as plt
+
 
 
 def threshold_image(image):
-    # Apply Gaussian blur to the frame to reduce noise
+    # Apply Gaussian blur
     blurred_frame = cv2.GaussianBlur(image, (5, 5), 0)
+    # cv2.imshow('Blurred Frame', blurred_frame)
 
+    # Convert to HLS color space
     hls = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2HLS)
-    s_channel = hls[:, :, 2]
     l_channel = hls[:, :, 1]
-
-    white_mask = cv2.inRange(l_channel, 200, 255)
-    """
-    Yellow mask is not needed for simulator or race track
-
+    
+    # Threshold the L channel to get white colors
+    _, white_mask = cv2.threshold(l_channel, 200, 255, cv2.THRESH_BINARY)
+    
+    # Threshold the S channel to get yellow colors
+    s_channel = hls[:, :, 2]
     lower_yellow = np.array([15, 30, 115])
-        upper_yellow = np.array([35, 204, 255])
-        yellow_mask = cv2.inRange(hls, lower_yellow, upper_yellow)
+    upper_yellow = np.array([35, 204, 255])
+    yellow_mask = cv2.inRange(hls, lower_yellow, upper_yellow)
 
-    combined_mask = cv2.bitwise_or(white_mask, yellow_mask)
-     """
-
+    # Combine the masks
+    color_mask = cv2.bitwise_or(white_mask, yellow_mask)
+    
+    # Edge detection using Sobel operator
     gray = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
-    blurred_gray = cv2.GaussianBlur(gray, (5, 5), 0)
-    sobelx = cv2.Sobel(blurred_gray, cv2.CV_64F, 1, 0)
+    sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0)
     abs_sobelx = np.absolute(sobelx)
-    # Avoid division by zero
-    max_abs_sobelx = np.max(abs_sobelx)
-    if max_abs_sobelx == 0:
-        max_abs_sobelx = 1
-    scaled_sobel = np.uint8(255 * abs_sobelx / max_abs_sobelx)
-
-    thresh_min = 20
-    thresh_max = 100
-    sxbinary = np.zeros_like(scaled_sobel)
-    sxbinary[(scaled_sobel >= thresh_min) & (scaled_sobel <= thresh_max)] = 255
-
-    combined_binary = cv2.bitwise_or(white_mask, sxbinary)
+    abs_sobelx = np.uint8(255 * abs_sobelx / np.max(abs_sobelx))
+    
+    # Threshold the Sobel image
+    _, sxbinary = cv2.threshold(abs_sobelx, 20, 100, cv2.THRESH_BINARY)
+    
+    # Combine color and edge masks
+    combined_binary = cv2.bitwise_or(color_mask, sxbinary)
 
     return combined_binary
 
 def histogram(binary_warped):
-    histogram = np.sum(binary_warped[binary_warped.shape[0]//2:, :], axis=0)
+    histogram = np.sum(binary_warped, axis=0) # histogram SHOULD be of the entire binary image because masking is done in the threshold_image function
+    render_histogram(histogram)
     return histogram
+
+def render_histogram(histogram):
+    fig = plt.figure(figsize=(8, 4))
+    plt.plot(histogram)
+    plt.title('Histogram')
+    plt.xlabel('Pixel Position')
+    plt.ylabel('Summed Pixel Values')
+    plt.tight_layout()
+    
+    # Render the plot to an image buffer
+    fig.canvas.draw()
+    # Convert to a numpy array
+    img = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+    img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    plt.close(fig)  # Close the figure to free memory
+    
+    # Convert to BGR format for OpenCV
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    cv2.imshow('Histogram', img)
 
 def sliding_window(binary_warped, histogram):
     out_img = np.dstack((binary_warped, binary_warped, binary_warped))
@@ -151,7 +170,7 @@ def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit, left_lan
 
 def get_perspective_transform(image):
     height, width = image.shape[:2]
-    top_left = [250, 300]
+    top_left = [170, 300]
     top_right = [450, 300]
     bottom_right = [width * 1, height]
     bottom_left = [width * 0, height]
@@ -179,11 +198,14 @@ def warp_image(image, M):
 left_lane = Lane()
 right_lane = Lane()
 
+
 def process_frame(frame):
     M, Minv = get_perspective_transform(frame)
     warped = warp_image(frame, M)
     binary_warped = threshold_image(warped)
+    cv2.imshow('Binary Warped', binary_warped)
     left_fit, right_fit, out_img, leftx, lefty, rightx, righty = fit_polynomial(binary_warped)
+    cv2.imshow('Sliding Window', out_img)
     left_lane.add_fit(left_fit)
     right_lane.add_fit(right_fit)
     result = draw_lane(frame, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane)
