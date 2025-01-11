@@ -42,8 +42,12 @@ def threshold_image(image):
     return combined_binary
 
 def histogram(binary_warped):
-    histogram = np.sum(binary_warped, axis=0) # histogram SHOULD be of the entire binary image because masking is done in the threshold_image function
-    render_histogram(histogram)
+    # histogram SHOULD be of the entire binary image because masking is done in the threshold_image function
+    # however, a few rows should be removed at least in the simulator to avoid the hood of the car
+    bottom_limit = int(binary_warped.shape[0]*0.97)
+    #cv2.line(binary_warped, (0, bottom_limit), (binary_warped.shape[1], bottom_limit), (255, 0, 0), 2)
+    histogram = np.sum(binary_warped[:bottom_limit], axis=0) 
+    #render_histogram(histogram)
     return histogram
 
 def render_histogram(histogram):
@@ -203,6 +207,8 @@ def process_frame(frame):
     M, Minv = get_perspective_transform(frame)
     warped = warp_image(frame, M)
     binary_warped = threshold_image(warped)
+    binary_unwarped = warp_image(binary_warped, Minv)
+    cv2.imshow('Binary Unwarped', binary_unwarped)
     cv2.imshow('Binary Warped', binary_warped)
     left_fit, right_fit, out_img, leftx, lefty, rightx, righty = fit_polynomial(binary_warped)
     cv2.imshow('Sliding Window', out_img)
