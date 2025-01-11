@@ -3,10 +3,11 @@ if __name__ == "__main__":
     sys.path.insert(0, "../../..")
 
 from src.templates.workerprocess import WorkerProcess
-from src.vision.lane_detection.threads.threadlane_detection import threadlane_detection
+from src.decision.decision_making.threads.thread_decision_maker import threadDecisionMaker
 
-class processlane_detection(WorkerProcess):
-    """This process handles lane_detection.
+
+class processDecisionMaker(WorkerProcess):
+    """This process handles decision_making.
     Args:
         queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
         logging (logging object): Made for debugging.
@@ -17,15 +18,15 @@ class processlane_detection(WorkerProcess):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
-        super(processlane_detection, self).__init__(self.queuesList)
+        super(processDecisionMaker, self).__init__(self.queuesList)
 
     def run(self):
         """Apply the initializing methods and start the threads."""
-        super(processlane_detection, self).run()
+        super(processDecisionMaker, self).run()
 
     def _init_threads(self):
-        """Create the lane_detection Publisher thread and add to the list of threads."""
-        lane_detectionTh = threadlane_detection(
+        """Create the decision_making Publisher thread and add to the list of threads."""
+        decision_makingTh = threadDecisionMaker(
             self.queuesList, self.logging, self.debugging
         )
-        self.threads.append(lane_detectionTh)
+        self.threads.append(decision_makingTh)

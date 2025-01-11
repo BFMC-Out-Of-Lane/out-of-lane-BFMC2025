@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class LaneDetectionInterface(ABC):
     """
     Interface for image processors.

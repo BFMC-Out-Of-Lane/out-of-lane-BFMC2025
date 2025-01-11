@@ -1,7 +1,11 @@
 # Out of Lane BFMC 2025
 Repository for our team's project for the Bosch Future Mobility Challenge 2025.
 
-## Usage
+## Brain
+### Usage
+
+## Testing enviroment
+### Usage
 1. Install on your machine:
     * gcc
     * a cross-compiler for the Nucleo-F401RE ([find the suitable one here](https://developer.arm.com/downloads/-/gnu-rm))

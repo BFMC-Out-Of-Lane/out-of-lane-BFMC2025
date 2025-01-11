@@ -272,4 +272,8 @@ export class StateSwitchComponent {
 
     return '#2b8fd1';
   }
+
+  public setSpeed(newSpeed: number): void {
+    this.speed = newSpeed
+  }
 }
