@@ -5,7 +5,7 @@ from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
-MIN_DISTANCE_TO_STOP = 200
+MIN_DISTANCE_TO_STOP = 100
 
 
 class threadDecisionMaker(ThreadWithStop):
