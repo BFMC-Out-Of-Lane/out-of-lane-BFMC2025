@@ -13,3 +13,17 @@ __pycache__/
 Simulator/
 
 src/Brain/src/dashboard/frontend/.angular/cache/
+src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/.tsbuildinfo
+src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/_metadata.json
+src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/@angular_animations.js
+src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/@angular_cdk_platform.js
+src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/@angular_common.js
+src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/@angular_core.js
+src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/@angular_forms.js
+src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/@angular_material_icon.js
+src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/@angular_platform-browser_animations_async.js
+src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/@angular_platform-browser.js
+src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/browser-CDZO4TIQ.js
+src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/browser-CDZO4TIQ.js.map
+src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/ngx-socket-io.js
+src/Brain/src/dashboard/frontend/src/app/webSocket/web-socket.service.ts
