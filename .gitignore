@@ -2,6 +2,7 @@
 .devenv/
 .devenv.flake.nix
 devenv.lock
+.idea/
 
 # YOLO
 *.pt

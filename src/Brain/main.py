@@ -61,6 +61,7 @@ from src.utils.ipManager.IpReplacement import IPManager
 
 # ------ New component imports starts here ------#
 from src.decision.decision_making.process_decision_maker import processDecisionMaker
+from src.vision.TrafficSigns.processTrafficSigns import processTrafficSigns
 # ------ New component imports ends here ------#
 
 # ======================================== SETTING UP ====================================
@@ -79,10 +80,10 @@ Dashboard = True
 Camera = True
 Semaphores = False
 TrafficCommunication = False
-SerialHandler = True
+SerialHandler = False
 
 # ------ New component flags starts here ------#
-DecisionMaker = True 
+DecisionMaker = False
 # ------ New component flags ends here ------#
 
 # ===================================== SETUP PROCESSES ==================================
