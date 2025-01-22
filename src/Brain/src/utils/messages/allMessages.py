@@ -225,7 +225,7 @@ class WarningSignal(Enum):
     msgType = "str"
 
 class UltrasonicSensors(Enum):
-    Queue = "General"
+    Queue = "Critical"
     Owner = "threadRead"
     msgID = 9
     msgType = "dict"
