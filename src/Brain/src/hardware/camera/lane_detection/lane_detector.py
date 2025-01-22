@@ -138,10 +138,11 @@ def fit_polynomial(binary_warped):
     right_fit = np.polyfit(righty, rightx, 2)
     return left_fit, right_fit, out_img, leftx, lefty, rightx, righty
 
-def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane):
+def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane, average_lane):
     left_fit = left_lane.best_fit
     right_fit = right_lane.best_fit
-    if left_fit is None or right_fit is None:
+    average_lane = average_lane.best_fit
+    if left_fit is None or right_fit is None or average_lane is None:
         return original_image
 
     # Generate y-values for plotting
@@ -151,6 +152,7 @@ def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit, left_lan
     try:
         left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
         right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
+        average_fitx = average_lane[0] * ploty ** 2 + average_lane[1] * ploty + average_lane[2]
     except TypeError:
         # If the fit fails, just return the original image
         return original_image
@@ -162,16 +164,24 @@ def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit, left_lan
     # Create points for the left and right lines
     left_line_pts = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
     right_line_pts = np.array([np.transpose(np.vstack([right_fitx, ploty]))])
+    average_lane_pts = np.array([np.transpose(np.vstack([average_fitx, ploty]))])
 
     # Warp the lane lines back onto the original image
     left_line_pts = cv2.perspectiveTransform(left_line_pts, Minv)
     right_line_pts = cv2.perspectiveTransform(right_line_pts, Minv)
+    average_lane_pts = cv2.perspectiveTransform(average_lane_pts, Minv)
 
     # Draw the lane lines onto the original image
     result = original_image.copy()
     cv2.polylines(result, [np.int32(left_line_pts)], isClosed=False, color=(255, 0, 0), thickness=10)
     cv2.polylines(result, [np.int32(right_line_pts)], isClosed=False, color=(0, 0, 255), thickness=10)
-
+    cv2.polylines(result, [np.int32(average_lane_pts)], isClosed=False, color=(0, 255, 0), thickness=10)
+    # TODO find a way to not duplicate code for finding X value
+    fixed_x = 200  # Example fixed X value
+    fixed_y = average_lane[0] * fixed_x ** 2 + average_lane[1] * fixed_x + average_lane[2]
+    point = np.array([[[fixed_y, fixed_x]]], dtype=np.float32)
+    point = cv2.perspectiveTransform(point, Minv)
+    cv2.circle(result, (int(point[0][0][0]), int(point[0][0][1])), radius=5, color=(0, 255, 255), thickness=-1)
     return result
 
 
@@ -205,6 +215,7 @@ def warp_image(image, M):
 
 left_lane = Lane()
 right_lane = Lane()
+average_lane = Lane()
 
 
 def process_frame(frame):
@@ -218,8 +229,14 @@ def process_frame(frame):
     cv2.imshow('Sliding Window', out_img)
     left_lane.add_fit(left_fit)
     right_lane.add_fit(right_fit)
-    result = draw_lane(frame, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane)
-    return result
+    if left_lane.best_fit is not None or right_lane.best_fit is not None:
+        average_lane.add_fit(np.mean([left_lane.best_fit, right_lane.best_fit], axis=0))
+
+    # Returns a point of the average polynomial at a fixed X value in terms of X in the image space
+    fixed_x = 200  # Example fixed X value
+    fixed_y = average_lane.best_fit[0] * fixed_x ** 2 + average_lane.best_fit[1] * fixed_x + average_lane.best_fit[2]
+    result = draw_lane(frame, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane, average_lane)
+    return result, fixed_y
 
 
 class LaneDetector(LaneDetectionInterface):
