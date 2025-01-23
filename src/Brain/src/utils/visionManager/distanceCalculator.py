@@ -41,6 +41,7 @@ class DistanceCalculation(BaseSolution):
 
         self.fixed_point = (0, 0)  # Initialize fixed point for distance calculation
         self.pixels_distance = 0  # Initialize distance in pixels
+        self.detected_class = None  # Initialize detected class
 
         """
         Handles mouse events to select regions in a real-time video stream for distance calculation.
@@ -110,11 +111,13 @@ class DistanceCalculation(BaseSolution):
             # Anota la distancia en la imagen
             # self.annotator.plot_distance_and_line(self.pixels_distance, [box_center, self.fixed_point])
 
+            self.detected_class = self.names[int(cls)]
+            # print(f"Objeto detectado: {self.names[int(cls)]}, Distancia en píxeles: {self.pixels_distance}")
             # Salir del bucle después de procesar el primer objeto
             break
 
         # self.display_output(im0)  # Muestra la salida con la función de la clase bas
 
-        return im0  # Devuelve la imagen procesada para más uso
+        return im0, self.detected_class, self.pixels_distance  # Devuelve la imagen procesada para más uso
 
 

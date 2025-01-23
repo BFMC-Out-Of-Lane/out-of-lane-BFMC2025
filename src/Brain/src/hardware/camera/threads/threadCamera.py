@@ -43,7 +43,7 @@ from src.utils.messages.allMessages import (
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.templates.threadwithstop import ThreadWithStop
-
+from src.utils.visionManager.distanceCalculator import DistanceCalculation
 
 class threadCamera(ThreadWithStop):
     """Thread which will handle camera functionalities.\n
@@ -72,6 +72,12 @@ class threadCamera(ThreadWithStop):
         self._init_camera()
         self.Queue_Sending()
         self.Configs()
+        
+        # self.isDetectorActive = True
+        # self.isDebugging = True
+        self.distanceCalculator = DistanceCalculation()  # Initialize with an instance of DistanceCalculation
+        self.distanceToObject = None
+        
 
     def subscribe(self):
         """Subscribe function. In this function we make all the required subscribe to process gateway"""
@@ -164,6 +170,15 @@ class threadCamera(ThreadWithStop):
                 self.mainCameraSender.send(mainEncodedImageData)
                 self.serialCameraSender.send(serialEncodedImageData)
 
+                # if self.isDetectorActive == True:
+                # processed_frame, detected_class, self.distanceToObject = self.distanceCalculator.calculate(serialRequest)
+                # self.distanceToObject = {
+                #     "clss": detected_class,
+                #     "pixels_distance": self.distanceToObject
+                #     }
+                #     # if self.debugging:
+                # self.logger.info(f'{{"threadTrafficSigns": {{ "Obj detected": {self.distanceToObject["clss"]}, "Distance object-car": {self.distanceToObject["pixels_distance"]}}} }}')
+
             send = not send
 
     # =============================== START ===============================================
@@ -182,5 +197,16 @@ class threadCamera(ThreadWithStop):
             lores={"size": (512, 270)},
             encode="lores",
         )
+
+        # if self.isDetectorActive == True:
+        # self.distanceCalculator = DistanceCalculation(model="yolov8n",
+        #                                             show=True,
+        #                                             conf = 0.3,
+        #                                             # classes = [11],
+        #                                             vid_stride=10,
+        #                                             stream_buffer=True,
+        #                                             # max_det=1,
+        #                                             save=True,
+        #                                             )
         self.camera.configure(config)
         self.camera.start()
