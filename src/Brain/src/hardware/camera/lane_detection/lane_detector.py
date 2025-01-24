@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from lane_detection_interface import LaneDetectionInterface
-from lane import Lane
+from lane import Line
 import matplotlib.pyplot as plt
 
 
@@ -213,9 +213,9 @@ def warp_image(image, M):
     warped = cv2.warpPerspective(image, M, (width, height))
     return warped
 
-left_lane = Lane()
-right_lane = Lane()
-average_lane = Lane()
+left_lane = Line()
+right_lane = Line()
+average_lane = Line()
 
 
 def process_frame(frame):

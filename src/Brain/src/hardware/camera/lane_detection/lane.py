@@ -1,6 +1,6 @@
 import numpy as np
 
-class Lane:
+class Line:
     def __init__(self, n_frames=5, max_missing=5):
         self.n_frames = n_frames       # Number of frames to keep
         self.max_missing = max_missing # Max missing frames before reset

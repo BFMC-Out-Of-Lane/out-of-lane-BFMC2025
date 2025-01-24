@@ -26,24 +26,20 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
-import cv2
-import threading
 import base64
-import picamera2
+import threading
 import time
 
-from src.utils.messages.allMessages import (
-    mainCamera,
-    serialCamera,
-    Recording,
-    Record,
-    Brightness,
-    Contrast,
-)
-from src.utils.messages.messageHandlerSender import messageHandlerSender
-from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
-from src.templates.threadwithstop import ThreadWithStop
+import cv2
+import picamera2
 from src.hardware.camera.lane_detection.lane_detector import LaneDetector
+from src.templates.threadwithstop import ThreadWithStop
+from src.utils.messages.allMessages import (Brightness, Contrast, LaneKeeping,
+                                            Record, Recording, mainCamera,
+                                            serialCamera)
+from src.utils.messages.messageHandlerSender import messageHandlerSender
+from src.utils.messages.messageHandlerSubscriber import \
+    messageHandlerSubscriber
 
 
 class threadCamera(ThreadWithStop):
@@ -69,6 +65,7 @@ class threadCamera(ThreadWithStop):
         self.recordingSender = messageHandlerSender(self.queuesList, Recording)
         self.mainCameraSender = messageHandlerSender(self.queuesList, mainCamera)
         self.serialCameraSender = messageHandlerSender(self.queuesList, serialCamera)
+        self.lane_keeping_sender = messageHandlerSender(self.queuesList, LaneKeeping)
 
         self.subscribe()
         self._init_camera()
@@ -87,7 +84,7 @@ class threadCamera(ThreadWithStop):
 
         self.recordingSender.send(self.recording)
         threading.Timer(1, self.Queue_Sending).start()
-        
+
     # =============================== STOP ================================================
     def stop(self):
         if self.recording:
@@ -110,7 +107,7 @@ class threadCamera(ThreadWithStop):
                 }
             )
         if self.contrastSubscriber.isDataInPipe():
-            message = self.contrastSubscriber.receive() # de modificat marti uc camera noua 
+            message = self.contrastSubscriber.receive()  # de modificat marti uc camera noua
             if self.debugger:
                 self.logger.info(str(message))
             self.camera.set_controls(
@@ -130,7 +127,7 @@ class threadCamera(ThreadWithStop):
         while self._running:
             try:
                 recordRecv = self.recordSubscriber.receive()
-                if recordRecv is not None: 
+                if recordRecv is not None:
                     self.recording = bool(recordRecv)
                     if recordRecv == False:
                         self.video_writer.release()
@@ -150,14 +147,15 @@ class threadCamera(ThreadWithStop):
 
             if send:
                 mainRequest = self.camera.capture_array("main")
-                serialRequest = self.camera.capture_array("lores")  # Will capture an array that can be used by OpenCV library
+                # Will capture an array that can be used by OpenCV library
+                serialRequest = self.camera.capture_array("lores")
 
                 if self.recording == True:
                     self.video_writer.write(mainRequest)
 
                 serialRequest = cv2.cvtColor(serialRequest, cv2.COLOR_YUV2BGR_I420)
 
-                _, mainEncodedImg = cv2.imencode(".jpg", mainRequest)                   
+                _, mainEncodedImg = cv2.imencode(".jpg", mainRequest)
                 # _, serialEncodedImg = cv2.imencode(".jpg", serialRequest)
 
                 mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8")
@@ -167,7 +165,12 @@ class threadCamera(ThreadWithStop):
                 # self.serialCameraSender.send(serialEncodedImageData)
 
                 # TODO: This should be tested
-                processed_image = self.lane_detector.process_image(serialRequest)
+                processed_image, aiming_point = self.lane_detector.process_image(serialRequest)
+                serial_image_width = serialRequest.shape[1]
+                serial_image_center = serial_image_width // 2
+                aiming_point = aiming_point - serial_image_center
+                self.lane_keeping_sender.send(aiming_point)
+                # TODO: This should send the processed image to the dashboard, but it does not seem to work
                 _, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)
                 serial_encoded_processed_image_data = base64.b64encode(serial_encoded_processed_image).decode("utf-8")
                 self.serialCameraSender.send(serial_encoded_processed_image_data)
