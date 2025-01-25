@@ -1,9 +1,10 @@
 import cv2
-import numpy as np
-from lane_detection_interface import LaneDetectionInterface
-from lane import Line
 import matplotlib.pyplot as plt
+import numpy as np
+from src.hardware.camera.lane_detection.lane_detection_interface import \
+    LaneDetectionInterface
 
+from Brain.src.hardware.camera.lane_detection.line import Line
 
 
 def threshold_image(image):
@@ -14,10 +15,10 @@ def threshold_image(image):
     # Convert to HLS color space
     hls = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2HLS)
     l_channel = hls[:, :, 1]
-    
+
     # Threshold the L channel to get white colors
     _, white_mask = cv2.threshold(l_channel, 200, 255, cv2.THRESH_BINARY)
-    
+
     # Threshold the S channel to get yellow colors
     s_channel = hls[:, :, 2]
     lower_yellow = np.array([15, 30, 115])
@@ -26,16 +27,16 @@ def threshold_image(image):
 
     # Combine the masks
     color_mask = cv2.bitwise_or(white_mask, yellow_mask)
-    
+
     # Edge detection using Sobel operator
     gray = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0)
     abs_sobelx = np.absolute(sobelx)
     abs_sobelx = np.uint8(255 * abs_sobelx / np.max(abs_sobelx))
-    
+
     # Threshold the Sobel image
     _, sxbinary = cv2.threshold(abs_sobelx, 20, 100, cv2.THRESH_BINARY)
-    
+
     # Combine color and edge masks
     combined_binary = cv2.bitwise_or(color_mask, sxbinary)
 
@@ -46,10 +47,11 @@ def histogram(binary_warped):
     # histogram SHOULD be of the entire binary image because masking is done in the threshold_image function
     # however, a few rows should be removed at least in the simulator to avoid the hood of the car
     bottom_limit = int(binary_warped.shape[0]*0.97)
-    #cv2.line(binary_warped, (0, bottom_limit), (binary_warped.shape[1], bottom_limit), (255, 0, 0), 2)
-    histogram = np.sum(binary_warped[:bottom_limit], axis=0) 
-    #render_histogram(histogram)
+    # cv2.line(binary_warped, (0, bottom_limit), (binary_warped.shape[1], bottom_limit), (255, 0, 0), 2)
+    histogram = np.sum(binary_warped[:bottom_limit], axis=0)
+    # render_histogram(histogram)
     return histogram
+
 
 def render_histogram(histogram):
     fig = plt.figure(figsize=(8, 4))
@@ -58,17 +60,18 @@ def render_histogram(histogram):
     plt.xlabel('Pixel Position')
     plt.ylabel('Summed Pixel Values')
     plt.tight_layout()
-    
+
     # Render the plot to an image buffer
     fig.canvas.draw()
     # Convert to a numpy array
     img = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
     img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
     plt.close(fig)  # Close the figure to free memory
-    
+
     # Convert to BGR format for OpenCV
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     cv2.imshow('Histogram', img)
+
 
 def sliding_window(binary_warped, histogram):
     out_img = np.dstack((binary_warped, binary_warped, binary_warped))
@@ -137,6 +140,7 @@ def fit_polynomial(binary_warped):
     left_fit = np.polyfit(lefty, leftx, 2)
     right_fit = np.polyfit(righty, rightx, 2)
     return left_fit, right_fit, out_img, leftx, lefty, rightx, righty
+
 
 def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane, average_lane):
     left_fit = left_lane.best_fit
@@ -213,6 +217,7 @@ def warp_image(image, M):
     warped = cv2.warpPerspective(image, M, (width, height))
     return warped
 
+
 left_lane = Line()
 right_lane = Line()
 average_lane = Line()
@@ -241,7 +246,7 @@ def process_frame(frame):
 
 class LaneDetector(LaneDetectionInterface):
     def __init__(self):
-    
+
         pass
 
     def process_image(self, cv_image):
