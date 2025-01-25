@@ -1,6 +1,6 @@
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, LaneKeeping,
-                                            SpeedMotor, UltrasonicSensors,
+                                            SpeedMotor, UltrasonicSensors, SteerMotor,
                                             mainCamera, serialCamera)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
@@ -24,6 +24,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.current_speed = "0"
         self.speed_sender = messageHandlerSender(self.queuesList, SpeedMotor)
+        self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
         self.subscribers = {}
 
         self.subscribe()
@@ -37,9 +38,7 @@ class threadDecisionMaker(ThreadWithStop):
             # TODO: This should be tested
             self.lane_offset = self.subscribers["LaneKeeping"].receive()
             if self.lane_offset:
-                self.logging.info(
-                    f'{{"threadDecisionMaker": {{ "LaneKeeping": {self.lane_offset}}} }}'
-                )
+                self.steer_sender.send(str(self.lane_offset * 2))
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""
