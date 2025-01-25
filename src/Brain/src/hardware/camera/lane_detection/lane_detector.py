@@ -1,10 +1,10 @@
 import cv2
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 from src.hardware.camera.lane_detection.lane_detection_interface import \
     LaneDetectionInterface
 
-from Brain.src.hardware.camera.lane_detection.line import Line
+from src.hardware.camera.lane_detection.line import Line
 
 
 def threshold_image(image):

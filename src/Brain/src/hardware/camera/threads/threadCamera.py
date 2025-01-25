@@ -156,13 +156,13 @@ class threadCamera(ThreadWithStop):
                 serialRequest = cv2.cvtColor(serialRequest, cv2.COLOR_YUV2BGR_I420)
 
                 _, mainEncodedImg = cv2.imencode(".jpg", mainRequest)
-                # _, serialEncodedImg = cv2.imencode(".jpg", serialRequest)
+                _, serialEncodedImg = cv2.imencode(".jpg", serialRequest)
 
                 mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8")
-                # serialEncodedImageData = base64.b64encode(serialEncodedImg).decode("utf-8")
+                serialEncodedImageData = base64.b64encode(serialEncodedImg).decode("utf-8")
 
                 self.mainCameraSender.send(mainEncodedImageData)
-                # self.serialCameraSender.send(serialEncodedImageData)
+                self.serialCameraSender.send(serialEncodedImageData)
 
                 # TODO: This should be tested
                 processed_image, aiming_point = self.lane_detector.process_image(serialRequest)
@@ -171,9 +171,9 @@ class threadCamera(ThreadWithStop):
                 aiming_point = aiming_point - serial_image_center
                 self.lane_keeping_sender.send(aiming_point)
                 # TODO: This should send the processed image to the dashboard, but it does not seem to work
-                _, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)
-                serial_encoded_processed_image_data = base64.b64encode(serial_encoded_processed_image).decode("utf-8")
-                self.serialCameraSender.send(serial_encoded_processed_image_data)
+                # _, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)
+                # serial_encoded_processed_image_data = base64.b64encode(serial_encoded_processed_image).decode("utf-8")
+                # self.serialCameraSender.send(serial_encoded_processed_image_data)
 
             send = not send
 
