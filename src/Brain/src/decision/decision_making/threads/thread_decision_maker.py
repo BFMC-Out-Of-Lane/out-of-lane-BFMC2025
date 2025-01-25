@@ -38,7 +38,7 @@ class threadDecisionMaker(ThreadWithStop):
             # TODO: This should be tested
             self.lane_offset = self.subscribers["LaneKeeping"].receive()
             if self.lane_offset:
-                self.steer_sender.send(str(self.lane_offset * 2))
+                self.steer_sender.send(str(self.lane_offset * 3))
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""
