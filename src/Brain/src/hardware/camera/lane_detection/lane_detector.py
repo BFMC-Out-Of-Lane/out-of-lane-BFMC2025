@@ -70,7 +70,7 @@ def render_histogram(histogram):
 
     # Convert to BGR format for OpenCV
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-    cv2.imshow('Histogram', img)
+    # cv2.imshow('Histogram', img)
 
 
 def sliding_window(binary_warped, histogram):
@@ -191,10 +191,10 @@ def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit, left_lan
 
 def get_perspective_transform(image):
     height, width = image.shape[:2]
-    top_left = [170, 300]
-    top_right = [450, 300]
-    bottom_right = [width * 1, height]
-    bottom_left = [width * 0, height]
+    top_left = [width * 0.4, height * 0.5]
+    top_right = [width * 0.6, height * 0.5]
+    bottom_right = [width * 0.8, height]
+    bottom_left = [width * 0.2, height]
     src = np.float32([
         top_left,
         top_right,
@@ -228,10 +228,10 @@ def process_frame(frame):
     warped = warp_image(frame, M)
     binary_warped = threshold_image(warped)
     binary_unwarped = warp_image(binary_warped, Minv)
-    cv2.imshow('Binary Unwarped', binary_unwarped)
-    cv2.imshow('Binary Warped', binary_warped)
+    # cv2.imshow('Binary Unwarped', binary_unwarped)
+    # cv2.imshow('Binary Warped', binary_warped)
     left_fit, right_fit, out_img, leftx, lefty, rightx, righty = fit_polynomial(binary_warped)
-    cv2.imshow('Sliding Window', out_img)
+    # cv2.imshow('Sliding Window', out_img)
     left_lane.add_fit(left_fit)
     right_lane.add_fit(right_fit)
     if left_lane.best_fit is not None or right_lane.best_fit is not None:
@@ -239,9 +239,10 @@ def process_frame(frame):
 
     # Returns a point of the average polynomial at a fixed X value in terms of X in the image space
     fixed_x = 200  # Example fixed X value
-    fixed_y = average_lane.best_fit[0] * fixed_x ** 2 + average_lane.best_fit[1] * fixed_x + average_lane.best_fit[2]
-    result = draw_lane(frame, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane, average_lane)
-    return result, fixed_y
+    if average_lane.best_fit is not None:
+        fixed_y = average_lane.best_fit[0] * fixed_x ** 2 + average_lane.best_fit[1] * fixed_x + average_lane.best_fit[2]
+        result = draw_lane(frame, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane, average_lane)
+        return result, fixed_y
 
 
 class LaneDetector(LaneDetectionInterface):
@@ -258,7 +259,7 @@ if __name__ == '__main__':
     # cap = cv2.VideoCapture('test2.mp4')
     # open an image with cv2
     image = cv2.imread('test1.jpg')
-    cv2.imshow("Processed Image", image)
+    # cv2.imshow("Processed Image", image)
     cv2.waitKey(1)
 
 """ 

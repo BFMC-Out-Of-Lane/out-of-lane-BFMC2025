@@ -36,7 +36,7 @@ class threadDecisionMaker(ThreadWithStop):
 
             # TODO: This should be tested
             self.lane_offset = self.subscribers["LaneKeeping"].receive()
-            if self.debugging:
+            if self.lane_offset:
                 self.logging.info(
                     f'{{"threadDecisionMaker": {{ "LaneKeeping": {self.lane_offset}}} }}'
                 )
