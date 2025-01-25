@@ -1,5 +1,5 @@
 import cv2
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
 from src.hardware.camera.lane_detection.lane_detection_interface import \
     LaneDetectionInterface
@@ -49,8 +49,8 @@ def histogram(binary_warped):
     bottom_limit = int(binary_warped.shape[0]*0.97)
     # cv2.line(binary_warped, (0, bottom_limit), (binary_warped.shape[1], bottom_limit), (255, 0, 0), 2)
     histogram = np.sum(binary_warped[:bottom_limit], axis=0)
-    # render_histogram(histogram)
-    return histogram
+    img = render_histogram(histogram)
+    return histogram, img
 
 
 def render_histogram(histogram):
@@ -71,6 +71,7 @@ def render_histogram(histogram):
     # Convert to BGR format for OpenCV
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     # cv2.imshow('Histogram', img)
+    return img
 
 
 def sliding_window(binary_warped, histogram):
@@ -133,16 +134,16 @@ def sliding_window(binary_warped, histogram):
 
 
 def fit_polynomial(binary_warped):
-    hist = histogram(binary_warped)
+    hist, img = histogram(binary_warped)
     leftx, lefty, rightx, righty, out_img = sliding_window(binary_warped, hist)
     if len(leftx) == 0 or len(rightx) == 0:
-        return None, None, out_img, None, None, None, None
+        return None, None, out_img, None, None, None, None, img
     left_fit = np.polyfit(lefty, leftx, 2)
     right_fit = np.polyfit(righty, rightx, 2)
-    return left_fit, right_fit, out_img, leftx, lefty, rightx, righty
+    return left_fit, right_fit, out_img, leftx, lefty, rightx, righty, img
 
 
-def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane, average_lane):
+def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane, average_lane, fixed_y):
     left_fit = left_lane.best_fit
     right_fit = right_lane.best_fit
     average_lane = average_lane.best_fit
@@ -180,10 +181,7 @@ def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit, left_lan
     cv2.polylines(result, [np.int32(left_line_pts)], isClosed=False, color=(255, 0, 0), thickness=10)
     cv2.polylines(result, [np.int32(right_line_pts)], isClosed=False, color=(0, 0, 255), thickness=10)
     cv2.polylines(result, [np.int32(average_lane_pts)], isClosed=False, color=(0, 255, 0), thickness=10)
-    # TODO find a way to not duplicate code for finding X value
-    fixed_x = 200  # Example fixed X value
-    fixed_y = average_lane[0] * fixed_x ** 2 + average_lane[1] * fixed_x + average_lane[2]
-    point = np.array([[[fixed_y, fixed_x]]], dtype=np.float32)
+    point = np.array([[[fixed_y, 200]]], dtype=np.float32)
     point = cv2.perspectiveTransform(point, Minv)
     cv2.circle(result, (int(point[0][0][0]), int(point[0][0][1])), radius=5, color=(0, 255, 255), thickness=-1)
     return result
@@ -191,8 +189,8 @@ def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit, left_lan
 
 def get_perspective_transform(image):
     height, width = image.shape[:2]
-    top_left = [width * 0.4, height * 0.5]
-    top_right = [width * 0.6, height * 0.5]
+    top_left = [width * 0.4, height * 0.6]
+    top_right = [width * 0.6, height * 0.6]
     bottom_right = [width * 0.8, height]
     bottom_left = [width * 0.2, height]
     src = np.float32([
@@ -230,7 +228,7 @@ def process_frame(frame):
     binary_unwarped = warp_image(binary_warped, Minv)
     # cv2.imshow('Binary Unwarped', binary_unwarped)
     # cv2.imshow('Binary Warped', binary_warped)
-    left_fit, right_fit, out_img, leftx, lefty, rightx, righty = fit_polynomial(binary_warped)
+    left_fit, right_fit, out_img, leftx, lefty, rightx, righty, histImg = fit_polynomial(binary_warped)
     # cv2.imshow('Sliding Window', out_img)
     left_lane.add_fit(left_fit)
     right_lane.add_fit(right_fit)
@@ -241,7 +239,8 @@ def process_frame(frame):
     fixed_x = 200  # Example fixed X value
     if average_lane.best_fit is not None:
         fixed_y = average_lane.best_fit[0] * fixed_x ** 2 + average_lane.best_fit[1] * fixed_x + average_lane.best_fit[2]
-        result = draw_lane(frame, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane, average_lane)
+        fixed_y = right_lane.best_fit[0] * fixed_x ** 2 + right_lane.best_fit[1] * fixed_x + right_lane.best_fit[2] - 170
+        result = draw_lane(frame, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane, average_lane, fixed_y)
         return result, fixed_y
 
 
