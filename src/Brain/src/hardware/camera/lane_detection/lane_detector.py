@@ -9,7 +9,9 @@ from lane_detection_interface import LaneDetectionInterface
 from line import Line
 
 class LaneDetector(LaneDetectionInterface):
-    def __init__(self):
+    def __init__(self, offset):
+        self.offset = offset
+
         self.left_line = Line()
         self.right_line = Line()
         self.average_line = Line()
@@ -158,12 +160,12 @@ class LaneDetector(LaneDetectionInterface):
         return left_fit, right_fit, out_img, leftx, lefty, rightx, righty, img
 
 
-    def draw_lane(self, original_image, binary_warped, Minv, left_line, right_line, average_line, aiming_point):
-        left_fit = left_line.best_fit
-        right_fit = right_line.best_fit
-        average_fit = average_line.best_fit
+    def draw_lane(self, original_image, binary_warped, Minv, aiming_point):
+        left_fit = self.left_line.best_fit
+        right_fit = self.right_line.best_fit
+        average_fit = self.average_line.best_fit
 
-        # Generate y-values for plotting
+        # Generate y-values for plottings
         ploty = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
         result = original_image.copy()
         
@@ -252,11 +254,11 @@ class LaneDetector(LaneDetectionInterface):
             self.average_line.add_fit(np.mean([left_fit, right_fit], axis=0))
             aiming_point[1] = self.average_line.best_fit[0] * aiming_point[0] ** 2 + self.average_line.best_fit[1] * aiming_point[0] + self.average_line.best_fit[2]
         elif left_fit is not None:
-            aiming_point[1] = left_fit[0] * aiming_point[0] ** 2 + left_fit[1] * aiming_point[0] + left_fit[2] + 170
+            aiming_point[1] = left_fit[0] * aiming_point[0] ** 2 + left_fit[1] * aiming_point[0] + left_fit[2] + self.offset
         elif right_fit is not None:
-            aiming_point[1] = right_fit[0] * aiming_point[0] ** 2 + right_fit[1] * aiming_point[0] + right_fit[2] - 170
+            aiming_point[1] = right_fit[0] * aiming_point[0] ** 2 + right_fit[1] * aiming_point[0] + right_fit[2] - self.offset
         
-        result = self.draw_lane(frame, binary_warped, Minv, self.left_line, self.right_line, self.average_line, aiming_point)
+        result = self.draw_lane(frame, binary_warped, Minv, aiming_point)
         
         return result, aiming_point[1]
 
