@@ -1,256 +1,264 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from src.hardware.camera.lane_detection.lane_detection_interface import \
-    LaneDetectionInterface
+# from src.hardware.camera.lane_detection.lane_detection_interface import \
+# LaneDetectionInterface
+# from src.hardware.camera.lane_detection.line import Line
 
-from src.hardware.camera.lane_detection.line import Line
-
-
-def threshold_image(image):
-    # Apply Gaussian blur
-    blurred_frame = cv2.GaussianBlur(image, (5, 5), 0)
-    # cv2.imshow('Blurred Frame', blurred_frame)
-
-    # Convert to HLS color space
-    hls = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2HLS)
-    l_channel = hls[:, :, 1]
-
-    # Threshold the L channel to get white colors
-    _, white_mask = cv2.threshold(l_channel, 200, 255, cv2.THRESH_BINARY)
-
-    # Threshold the S channel to get yellow colors
-    s_channel = hls[:, :, 2]
-    lower_yellow = np.array([15, 30, 115])
-    upper_yellow = np.array([35, 204, 255])
-    yellow_mask = cv2.inRange(hls, lower_yellow, upper_yellow)
-
-    # Combine the masks
-    color_mask = cv2.bitwise_or(white_mask, yellow_mask)
-
-    # Edge detection using Sobel operator
-    gray = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
-    sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0)
-    abs_sobelx = np.absolute(sobelx)
-    abs_sobelx = np.uint8(255 * abs_sobelx / np.max(abs_sobelx))
-
-    # Threshold the Sobel image
-    _, sxbinary = cv2.threshold(abs_sobelx, 20, 100, cv2.THRESH_BINARY)
-
-    # Combine color and edge masks
-    combined_binary = cv2.bitwise_or(color_mask, sxbinary)
-
-    return combined_binary
-
-
-def histogram(binary_warped):
-    # histogram SHOULD be of the entire binary image because masking is done in the threshold_image function
-    # however, a few rows should be removed at least in the simulator to avoid the hood of the car
-    bottom_limit = int(binary_warped.shape[0]*0.97)
-    # cv2.line(binary_warped, (0, bottom_limit), (binary_warped.shape[1], bottom_limit), (255, 0, 0), 2)
-    histogram = np.sum(binary_warped[:bottom_limit], axis=0)
-    img = render_histogram(histogram)
-    return histogram, img
-
-
-def render_histogram(histogram):
-    fig = plt.figure(figsize=(8, 4))
-    plt.plot(histogram)
-    plt.title('Histogram')
-    plt.xlabel('Pixel Position')
-    plt.ylabel('Summed Pixel Values')
-    plt.tight_layout()
-
-    # Render the plot to an image buffer
-    fig.canvas.draw()
-    # Convert to a numpy array
-    img = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-    img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-    plt.close(fig)  # Close the figure to free memory
-
-    # Convert to BGR format for OpenCV
-    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-    # cv2.imshow('Histogram', img)
-    return img
-
-
-def sliding_window(binary_warped, histogram):
-    out_img = np.dstack((binary_warped, binary_warped, binary_warped))
-    midpoint = int(histogram.shape[0] // 2)
-    leftx_base = np.argmax(histogram[:midpoint])
-    rightx_base = np.argmax(histogram[midpoint:]) + midpoint
-
-    nwindows = 9
-    window_height = int(binary_warped.shape[0] // nwindows)
-    nonzero = binary_warped.nonzero()
-    nonzeroy = np.array(nonzero[0])
-    nonzerox = np.array(nonzero[1])
-
-    leftx_current = leftx_base
-    rightx_current = rightx_base
-
-    margin = 100
-    minpix = 50  # Minimum number of pixels found to recenter window
-
-    left_lane_inds = []
-    right_lane_inds = []
-
-    for window in range(nwindows):
-        win_y_low = binary_warped.shape[0] - (window + 1) * window_height
-        win_y_high = binary_warped.shape[0] - window * window_height
-
-        win_xleft_low = leftx_current - margin
-        win_xleft_high = leftx_current + margin
-
-        win_xright_low = rightx_current - margin
-        win_xright_high = rightx_current + margin
-
-        # Draw the windows on the visualization image (Optional)
-        cv2.rectangle(out_img, (win_xleft_low, win_y_low), (win_xleft_high, win_y_high), (0, 255, 0), 2)
-        cv2.rectangle(out_img, (win_xright_low, win_y_low), (win_xright_high, win_y_high), (0, 255, 0), 2)
-
-        good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
-                          (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
-        good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
-                           (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
-
-        left_lane_inds.append(good_left_inds)
-        right_lane_inds.append(good_right_inds)
-
-        if len(good_left_inds) > minpix:
-            leftx_current = int(np.mean(nonzerox[good_left_inds]))
-        if len(good_right_inds) > minpix:
-            rightx_current = int(np.mean(nonzerox[good_right_inds]))
-
-    left_lane_inds = np.concatenate(left_lane_inds)
-    right_lane_inds = np.concatenate(right_lane_inds)
-
-    leftx = nonzerox[left_lane_inds]
-    lefty = nonzeroy[left_lane_inds]
-    rightx = nonzerox[right_lane_inds]
-    righty = nonzeroy[right_lane_inds]
-
-    return leftx, lefty, rightx, righty, out_img
-
-
-def fit_polynomial(binary_warped):
-    hist, img = histogram(binary_warped)
-    leftx, lefty, rightx, righty, out_img = sliding_window(binary_warped, hist)
-    if len(leftx) == 0 or len(rightx) == 0:
-        return None, None, out_img, None, None, None, None, img
-    left_fit = np.polyfit(lefty, leftx, 2)
-    right_fit = np.polyfit(righty, rightx, 2)
-    return left_fit, right_fit, out_img, leftx, lefty, rightx, righty, img
-
-
-def draw_lane(original_image, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane, average_lane, fixed_y):
-    left_fit = left_lane.best_fit
-    right_fit = right_lane.best_fit
-    average_lane = average_lane.best_fit
-    if left_fit is None or right_fit is None or average_lane is None:
-        return original_image
-
-    # Generate y-values for plotting
-    ploty = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
-
-    # Calculate x-values for each y-value using the polynomial coefficients
-    try:
-        left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
-        right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
-        average_fitx = average_lane[0] * ploty ** 2 + average_lane[1] * ploty + average_lane[2]
-    except TypeError:
-        # If the fit fails, just return the original image
-        return original_image
-
-    # Create an image to draw the lines on
-    warp_zero = np.zeros_like(binary_warped).astype(np.uint8)
-    color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
-
-    # Create points for the left and right lines
-    left_line_pts = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
-    right_line_pts = np.array([np.transpose(np.vstack([right_fitx, ploty]))])
-    average_lane_pts = np.array([np.transpose(np.vstack([average_fitx, ploty]))])
-
-    # Warp the lane lines back onto the original image
-    left_line_pts = cv2.perspectiveTransform(left_line_pts, Minv)
-    right_line_pts = cv2.perspectiveTransform(right_line_pts, Minv)
-    average_lane_pts = cv2.perspectiveTransform(average_lane_pts, Minv)
-
-    # Draw the lane lines onto the original image
-    result = original_image.copy()
-    cv2.polylines(result, [np.int32(left_line_pts)], isClosed=False, color=(255, 0, 0), thickness=10)
-    cv2.polylines(result, [np.int32(right_line_pts)], isClosed=False, color=(0, 0, 255), thickness=10)
-    cv2.polylines(result, [np.int32(average_lane_pts)], isClosed=False, color=(0, 255, 0), thickness=10)
-    point = np.array([[[fixed_y, 200]]], dtype=np.float32)
-    point = cv2.perspectiveTransform(point, Minv)
-    cv2.circle(result, (int(point[0][0][0]), int(point[0][0][1])), radius=5, color=(0, 255, 255), thickness=-1)
-    return result
-
-
-def get_perspective_transform(image):
-    height, width = image.shape[:2]
-    top_left = [width * 0.4, height * 0.6]
-    top_right = [width * 0.6, height * 0.6]
-    bottom_right = [width * 0.8, height]
-    bottom_left = [width * 0.2, height]
-    src = np.float32([
-        top_left,
-        top_right,
-        bottom_right,
-        bottom_left
-    ])
-    dst = np.float32([
-        [width * 0.2, 0],
-        [width * 0.8, 0],
-        [width * 0.8, height],
-        [width * 0.2, height]
-    ])
-    M = cv2.getPerspectiveTransform(src, dst)
-    Minv = cv2.getPerspectiveTransform(dst, src)  # For inverse transform
-    return M, Minv
-
-
-def warp_image(image, M):
-    height, width = image.shape[:2]
-    warped = cv2.warpPerspective(image, M, (width, height))
-    return warped
-
-
-left_lane = Line()
-right_lane = Line()
-average_lane = Line()
-
-
-def process_frame(frame):
-    M, Minv = get_perspective_transform(frame)
-    warped = warp_image(frame, M)
-    binary_warped = threshold_image(warped)
-    binary_unwarped = warp_image(binary_warped, Minv)
-    # cv2.imshow('Binary Unwarped', binary_unwarped)
-    # cv2.imshow('Binary Warped', binary_warped)
-    left_fit, right_fit, out_img, leftx, lefty, rightx, righty, histImg = fit_polynomial(binary_warped)
-    # cv2.imshow('Sliding Window', out_img)
-    left_lane.add_fit(left_fit)
-    right_lane.add_fit(right_fit)
-    if left_lane.best_fit is not None or right_lane.best_fit is not None:
-        average_lane.add_fit(np.mean([left_lane.best_fit, right_lane.best_fit], axis=0))
-
-    # Returns a point of the average polynomial at a fixed X value in terms of X in the image space
-    fixed_x = 200  # Example fixed X value
-    if average_lane.best_fit is not None:
-        fixed_y = average_lane.best_fit[0] * fixed_x ** 2 + average_lane.best_fit[1] * fixed_x + average_lane.best_fit[2]
-        fixed_y = right_lane.best_fit[0] * fixed_x ** 2 + right_lane.best_fit[1] * fixed_x + right_lane.best_fit[2] - 170
-        result = draw_lane(frame, binary_warped, Minv, left_fit, right_fit, left_lane, right_lane, average_lane, fixed_y)
-        return result, fixed_y
-
+from lane_detection_interface import LaneDetectionInterface
+from line import Line
 
 class LaneDetector(LaneDetectionInterface):
     def __init__(self):
-
-        pass
+        self.left_line = Line()
+        self.right_line = Line()
+        self.average_line = Line()
 
     def process_image(self, cv_image):
-        return process_frame(cv_image)
+        return self.process_frame(cv_image)
+
+    def threshold_image(self, image):
+        # Apply Gaussian blur
+        blurred_frame = cv2.GaussianBlur(image, (5, 5), 0)
+        # cv2.imshow('Blurred Frame', blurred_frame)
+
+        # Convert to HLS color space
+        hls = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2HLS)
+        l_channel = hls[:, :, 1]
+
+        # Threshold the L channel to get white colors
+        _, white_mask = cv2.threshold(l_channel, 200, 255, cv2.THRESH_BINARY)
+
+        # Threshold the S channel to get yellow colors
+        s_channel = hls[:, :, 2]
+        lower_yellow = np.array([15, 30, 115])
+        upper_yellow = np.array([35, 204, 255])
+        yellow_mask = cv2.inRange(hls, lower_yellow, upper_yellow)
+
+        # Combine the masks
+        color_mask = cv2.bitwise_or(white_mask, yellow_mask)
+
+        # Edge detection using Sobel operator
+        gray = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
+        sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0)
+        abs_sobelx = np.absolute(sobelx)
+        abs_sobelx = np.uint8(255 * abs_sobelx / np.max(abs_sobelx))
+
+        # Threshold the Sobel image
+        _, sxbinary = cv2.threshold(abs_sobelx, 20, 100, cv2.THRESH_BINARY)
+
+        # Combine color and edge masks
+        combined_binary = cv2.bitwise_or(color_mask, sxbinary)
+
+        return combined_binary
+
+
+    def histogram(self, binary_warped):
+        # histogram SHOULD be of the entire binary image because masking is done in the threshold_image function
+        # however, a few rows should be removed at least in the simulator to avoid the hood of the car
+        bottom_limit = int(binary_warped.shape[0]*0.97)
+        # cv2.line(binary_warped, (0, bottom_limit), (binary_warped.shape[1], bottom_limit), (255, 0, 0), 2)
+        histogram = np.sum(binary_warped[:bottom_limit], axis=0)
+        #cv2.imshow('Histogram', self.render_histogram(histogram))
+        return histogram, None
+
+
+    def render_histogram(self, histogram):
+        fig = plt.figure(figsize=(8, 4))
+        plt.plot(histogram)
+        plt.title('Histogram')
+        plt.xlabel('Pixel Position')
+        plt.ylabel('Summed Pixel Values')
+        plt.tight_layout()
+
+        # Render the plot to an image buffer
+        fig.canvas.draw()
+        # Convert to a numpy array
+        img = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        plt.close(fig)  # Close the figure to free memory
+
+        # Convert to BGR format for OpenCV
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        # cv2.imshow('Histogram', img)
+        return img
+
+
+    def sliding_window(self, binary_warped, histogram):
+        out_img = np.dstack((binary_warped, binary_warped, binary_warped))
+        midpoint = int(histogram.shape[0] // 2)
+        leftx_base = np.argmax(histogram[:midpoint])
+        rightx_base = np.argmax(histogram[midpoint:]) + midpoint
+
+        nwindows = 9
+        window_height = int(binary_warped.shape[0] // nwindows)
+        nonzero = binary_warped.nonzero()
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+
+        leftx_current = leftx_base
+        rightx_current = rightx_base
+
+        margin = 80
+        minpix = 50  # Minimum number of pixels found to recenter window
+
+        left_line_inds = []
+        right_line_inds = []
+
+        for window in range(nwindows):
+            win_y_low = binary_warped.shape[0] - (window + 1) * window_height
+            win_y_high = binary_warped.shape[0] - window * window_height
+
+            win_xleft_low = max(leftx_current - margin, 0)
+            win_xleft_high = min(leftx_current + margin, int(midpoint*0.8))
+
+            # Restrict right window to the right side of the frame
+            win_xright_low = max(rightx_current - margin, midpoint)
+            win_xright_high = min(rightx_current + margin, binary_warped.shape[1])
+
+            # Draw the windows on the visualization image (Optional)
+            cv2.rectangle(out_img, (win_xleft_low, win_y_low), (win_xleft_high, win_y_high), (0, 255, 0), 2)
+            cv2.rectangle(out_img, (win_xright_low, win_y_low), (win_xright_high, win_y_high), (0, 255, 0), 2)
+
+            good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
+                            (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
+            good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
+                            (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
+
+            left_line_inds.append(good_left_inds)
+            right_line_inds.append(good_right_inds)
+
+            if len(good_left_inds) > minpix:
+                leftx_current = int(np.mean(nonzerox[good_left_inds]))
+            if len(good_right_inds) > minpix:
+                rightx_current = int(np.mean(nonzerox[good_right_inds]))
+
+        left_line_inds = np.concatenate(left_line_inds)
+        right_line_inds = np.concatenate(right_line_inds)
+
+        leftx = nonzerox[left_line_inds]
+        lefty = nonzeroy[left_line_inds]
+        rightx = nonzerox[right_line_inds]
+        righty = nonzeroy[right_line_inds]
+
+        return leftx, lefty, rightx, righty, out_img
+
+
+    def fit_polynomial(self, binary_warped):
+        hist, img = self.histogram(binary_warped)
+        leftx, lefty, rightx, righty, out_img = self.sliding_window(binary_warped, hist)
+        #if len(leftx) == 0 or len(rightx) == 0:
+        #   return None, None, out_img, None, None, None, None, img
+        left_fit = None
+        if len(leftx) != 0:
+            left_fit = np.polyfit(lefty, leftx, 2)
+        right_fit = None
+        if len(rightx) != 0:
+            right_fit = np.polyfit(righty, rightx, 2)
+        return left_fit, right_fit, out_img, leftx, lefty, rightx, righty, img
+
+
+    def draw_lane(self, original_image, binary_warped, Minv, left_line, right_line, average_line, aiming_point):
+        left_fit = left_line.best_fit
+        right_fit = right_line.best_fit
+        average_fit = average_line.best_fit
+
+        # Generate y-values for plotting
+        ploty = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
+        result = original_image.copy()
+        
+        left_fitx = None
+        right_fitx = None
+        average_fitx = None
+        if left_fit is None and right_fit is None:
+            return original_image
+        
+        if left_fit is not None:
+            # Calculate x-values for each y-value using the polynomial coefficients
+            left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
+            # Create points for the line
+            left_line_pts = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
+            # Warp the lane line back onto the original image
+            left_line_pts = cv2.perspectiveTransform(left_line_pts, Minv)
+            # Drawing
+            cv2.polylines(result, [np.int32(left_line_pts)], isClosed=False, color=(255, 0, 0), thickness=10)
+        if right_fit is not None:
+            right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
+            right_line_pts = np.array([np.transpose(np.vstack([right_fitx, ploty]))])
+            right_line_pts = cv2.perspectiveTransform(right_line_pts, Minv)
+            cv2.polylines(result, [np.int32(right_line_pts)], isClosed=False, color=(0, 0, 255), thickness=10)
+        if left_fit is not None and right_fit is not None:
+            average_fitx = average_fit[0] * ploty ** 2 + average_fit[1] * ploty + average_fit[2]
+            average_line_pts = np.array([np.transpose(np.vstack([average_fitx, ploty]))])
+            average_line_pts = cv2.perspectiveTransform(average_line_pts, Minv)
+            cv2.polylines(result, [np.int32(average_line_pts)], isClosed=False, color=(0, 255, 0), thickness=10)
+            
+        # Create an image to draw the lines on
+        warp_zero = np.zeros_like(binary_warped).astype(np.uint8)
+        color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
+
+        # Draw the lane lines onto the original image
+        point = np.array([[[aiming_point[1], aiming_point[0]]]], dtype=np.float32)
+        point = cv2.perspectiveTransform(point, Minv)
+        cv2.circle(result, (int(point[0][0][0]), int(point[0][0][1])), radius=5, color=(0, 255, 255), thickness=-1)
+        return result
+
+    def get_perspective_transform(self, image):
+        height, width = image.shape[:2]
+        top_left = [width * 0.4, height * 0.6]
+        top_right = [width * 0.6, height * 0.6]
+        bottom_right = [width * 0.8, height*0.95]
+        bottom_left = [width * 0.2, height*0.95]
+        src = np.float32([
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left
+        ])
+        dst = np.float32([
+            [width * 0.2, 0],
+            [width * 0.8, 0],
+            [width * 0.8, height],
+            [width * 0.2, height]
+        ])
+        M = cv2.getPerspectiveTransform(src, dst)
+        Minv = cv2.getPerspectiveTransform(dst, src)  # For inverse transform
+        return M, Minv
+
+    def warp_image(self, image, M):
+        height, width = image.shape[:2]
+        warped = cv2.warpPerspective(image, M, (width, height))
+        return warped
+
+    def process_frame(self, frame):
+        M, Minv = self.get_perspective_transform(frame)
+        warped = self.warp_image(frame, M)
+        binary_warped = self.threshold_image(warped)
+        # binary_unwarped = self.warp_image(binary_warped, Minv)
+        # cv2.imshow('Binary Unwarped', binary_unwarped)
+        # cv2.imshow('Binary Warped', binary_warped)
+        left_fit, right_fit, out_img, leftx, lefty, rightx, righty, histImg = self.fit_polynomial(binary_warped)
+        cv2.imshow('Sliding Window', out_img)
+
+        self.left_line.add_fit(left_fit)
+        self.right_line.add_fit(right_fit)
+
+        left_fit = self.left_line.best_fit
+        right_fit = self.right_line.best_fit
+        
+        # Returns a point of the average polynomial at a fixed X value in terms of X in the image space
+        aiming_point = [200, 0]
+        if left_fit is not None and right_fit is not None:
+            self.average_line.add_fit(np.mean([left_fit, right_fit], axis=0))
+            aiming_point[1] = self.average_line.best_fit[0] * aiming_point[0] ** 2 + self.average_line.best_fit[1] * aiming_point[0] + self.average_line.best_fit[2]
+        elif left_fit is not None:
+            aiming_point[1] = left_fit[0] * aiming_point[0] ** 2 + left_fit[1] * aiming_point[0] + left_fit[2] + 170
+        elif right_fit is not None:
+            aiming_point[1] = right_fit[0] * aiming_point[0] ** 2 + right_fit[1] * aiming_point[0] + right_fit[2] - 170
+        
+        result = self.draw_lane(frame, binary_warped, Minv, self.left_line, self.right_line, self.average_line, aiming_point)
+        
+        return result, aiming_point[1]
 
 
 if __name__ == '__main__':
