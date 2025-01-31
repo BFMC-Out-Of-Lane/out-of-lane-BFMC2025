@@ -1,16 +1,17 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+from lane_detection_interface import LaneDetectionInterface
+from line import Line
+
 # from src.hardware.camera.lane_detection.lane_detection_interface import \
 # LaneDetectionInterface
 # from src.hardware.camera.lane_detection.line import Line
 
-from lane_detection_interface import LaneDetectionInterface
-from line import Line
 
 class LaneDetector(LaneDetectionInterface):
-    def __init__(self, offset):
-        self.offset = offset
+    def __init__(self, min_offset):
+        self.min_offset = min_offset
 
         self.left_line = Line()
         self.right_line = Line()
@@ -54,16 +55,14 @@ class LaneDetector(LaneDetectionInterface):
 
         return combined_binary
 
-
     def histogram(self, binary_warped):
         # histogram SHOULD be of the entire binary image because masking is done in the threshold_image function
         # however, a few rows should be removed at least in the simulator to avoid the hood of the car
         bottom_limit = int(binary_warped.shape[0]*0.97)
         # cv2.line(binary_warped, (0, bottom_limit), (binary_warped.shape[1], bottom_limit), (255, 0, 0), 2)
         histogram = np.sum(binary_warped[:bottom_limit], axis=0)
-        #cv2.imshow('Histogram', self.render_histogram(histogram))
+        # cv2.imshow('Histogram', self.render_histogram(histogram))
         return histogram, None
-
 
     def render_histogram(self, histogram):
         fig = plt.figure(figsize=(8, 4))
@@ -84,7 +83,6 @@ class LaneDetector(LaneDetectionInterface):
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         # cv2.imshow('Histogram', img)
         return img
-
 
     def sliding_window(self, binary_warped, histogram):
         out_img = np.dstack((binary_warped, binary_warped, binary_warped))
@@ -123,9 +121,9 @@ class LaneDetector(LaneDetectionInterface):
             cv2.rectangle(out_img, (win_xright_low, win_y_low), (win_xright_high, win_y_high), (0, 255, 0), 2)
 
             good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
-                            (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
+                              (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
             good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
-                            (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
+                               (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
 
             left_line_inds.append(good_left_inds)
             right_line_inds.append(good_right_inds)
@@ -145,11 +143,10 @@ class LaneDetector(LaneDetectionInterface):
 
         return leftx, lefty, rightx, righty, out_img
 
-
     def fit_polynomial(self, binary_warped):
         hist, img = self.histogram(binary_warped)
         leftx, lefty, rightx, righty, out_img = self.sliding_window(binary_warped, hist)
-        #if len(leftx) == 0 or len(rightx) == 0:
+        # if len(leftx) == 0 or len(rightx) == 0:
         #   return None, None, out_img, None, None, None, None, img
         left_fit = None
         if len(leftx) != 0:
@@ -159,7 +156,6 @@ class LaneDetector(LaneDetectionInterface):
             right_fit = np.polyfit(righty, rightx, 2)
         return left_fit, right_fit, out_img, leftx, lefty, rightx, righty, img
 
-
     def draw_lane(self, original_image, binary_warped, Minv, aiming_point):
         left_fit = self.left_line.best_fit
         right_fit = self.right_line.best_fit
@@ -168,13 +164,13 @@ class LaneDetector(LaneDetectionInterface):
         # Generate y-values for plottings
         ploty = np.linspace(0, binary_warped.shape[0] - 1, binary_warped.shape[0])
         result = original_image.copy()
-        
+
         left_fitx = None
         right_fitx = None
         average_fitx = None
         if left_fit is None and right_fit is None:
             return original_image
-        
+
         if left_fit is not None:
             # Calculate x-values for each y-value using the polynomial coefficients
             left_fitx = left_fit[0] * ploty ** 2 + left_fit[1] * ploty + left_fit[2]
@@ -194,10 +190,6 @@ class LaneDetector(LaneDetectionInterface):
             average_line_pts = np.array([np.transpose(np.vstack([average_fitx, ploty]))])
             average_line_pts = cv2.perspectiveTransform(average_line_pts, Minv)
             cv2.polylines(result, [np.int32(average_line_pts)], isClosed=False, color=(0, 255, 0), thickness=10)
-            
-        # Create an image to draw the lines on
-        warp_zero = np.zeros_like(binary_warped).astype(np.uint8)
-        color_warp = np.dstack((warp_zero, warp_zero, warp_zero))
 
         # Draw the lane lines onto the original image
         point = np.array([[[aiming_point[1], aiming_point[0]]]], dtype=np.float32)
@@ -240,26 +232,29 @@ class LaneDetector(LaneDetectionInterface):
         # cv2.imshow('Binary Unwarped', binary_unwarped)
         # cv2.imshow('Binary Warped', binary_warped)
         left_fit, right_fit, out_img, leftx, lefty, rightx, righty, histImg = self.fit_polynomial(binary_warped)
-        cv2.imshow('Sliding Window', out_img)
+        # cv2.imshow('Sliding Window', out_img)
 
         self.left_line.add_fit(left_fit)
         self.right_line.add_fit(right_fit)
 
         left_fit = self.left_line.best_fit
         right_fit = self.right_line.best_fit
-        
+
         # Returns a point of the average polynomial at a fixed X value in terms of X in the image space
         aiming_point = [200, 0]
         if left_fit is not None and right_fit is not None:
             self.average_line.add_fit(np.mean([left_fit, right_fit], axis=0))
-            aiming_point[1] = self.average_line.best_fit[0] * aiming_point[0] ** 2 + self.average_line.best_fit[1] * aiming_point[0] + self.average_line.best_fit[2]
+            aiming_point[1] = self.average_line.best_fit[0] * aiming_point[0] ** 2 + \
+                self.average_line.best_fit[1] * aiming_point[0] + self.average_line.best_fit[2]
         elif left_fit is not None:
-            aiming_point[1] = left_fit[0] * aiming_point[0] ** 2 + left_fit[1] * aiming_point[0] + left_fit[2] + self.offset
+            aiming_point[1] = left_fit[0] * aiming_point[0] ** 2 + \
+                left_fit[1] * aiming_point[0] + left_fit[2] + self.min_offset
         elif right_fit is not None:
-            aiming_point[1] = right_fit[0] * aiming_point[0] ** 2 + right_fit[1] * aiming_point[0] + right_fit[2] - self.offset
-        
+            aiming_point[1] = right_fit[0] * aiming_point[0] ** 2 + \
+                right_fit[1] * aiming_point[0] + right_fit[2] - self.min_offset
+
         result = self.draw_lane(frame, binary_warped, Minv, aiming_point)
-        
+
         return result, aiming_point[1]
 
 
@@ -270,17 +265,3 @@ if __name__ == '__main__':
     image = cv2.imread('test1.jpg')
     # cv2.imshow("Processed Image", image)
     cv2.waitKey(1)
-
-""" 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        result = process_frame(frame)
-        cv2.imshow('Lane Detection', result)
-        # Press 'q' to exit
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    cap.release()
-    cv2.destroyAllWindows()
- """

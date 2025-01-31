@@ -1,9 +1,10 @@
 import numpy as np
 
+
 class Line:
     def __init__(self, n_frames=5, max_missing=5):
         self.n_frames = n_frames       # Number of frames to keep
-        self.max_missing = max_missing # Max missing frames before reset
+        self.max_missing = max_missing  # Max missing frames before reset
         self.detected = False          # Was the lane detected in the last iteration?
         self.recent_fits = []          # Polynomial coefficients of the last n fits
         self.best_fit = None           # Averaged polynomial coefficients
