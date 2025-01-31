@@ -60,7 +60,7 @@ class threadCamera(ThreadWithStop):
         self.recording = False
 
         self.video_writer = ""
-        self.lane_detector = LaneDetector(min_offset=300)
+        self.lane_detector = LaneDetector(min_offset=300, distance_to_aim=200)
 
         self.recordingSender = messageHandlerSender(self.queuesList, Recording)
         self.mainCameraSender = messageHandlerSender(self.queuesList, mainCamera)

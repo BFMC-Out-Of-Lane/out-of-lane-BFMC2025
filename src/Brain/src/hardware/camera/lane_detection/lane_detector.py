@@ -10,8 +10,9 @@ from line import Line
 
 
 class LaneDetector(LaneDetectionInterface):
-    def __init__(self, min_offset):
+    def __init__(self, min_offset, distance_to_aim):
         self.min_offset = min_offset
+        self.distance_to_aim = distance_to_aim
 
         self.left_line = Line()
         self.right_line = Line()
@@ -192,7 +193,7 @@ class LaneDetector(LaneDetectionInterface):
             cv2.polylines(result, [np.int32(average_line_pts)], isClosed=False, color=(0, 255, 0), thickness=10)
 
         # Draw the lane lines onto the original image
-        point = np.array([[[aiming_point[1], aiming_point[0]]]], dtype=np.float32)
+        point = np.array([[[aiming_point['y'], aiming_point['x']]]], dtype=np.float32)
         point = cv2.perspectiveTransform(point, Minv)
         cv2.circle(result, (int(point[0][0][0]), int(point[0][0][1])), radius=5, color=(0, 255, 255), thickness=-1)
         return result
@@ -241,21 +242,21 @@ class LaneDetector(LaneDetectionInterface):
         right_fit = self.right_line.best_fit
 
         # Returns a point of the average polynomial at a fixed X value in terms of X in the image space
-        aiming_point = [200, 0]
+        aiming_point = {'x': self.distance_to_aim, 'y': 0}
         if left_fit is not None and right_fit is not None:
             self.average_line.add_fit(np.mean([left_fit, right_fit], axis=0))
-            aiming_point[1] = self.average_line.best_fit[0] * aiming_point[0] ** 2 + \
-                self.average_line.best_fit[1] * aiming_point[0] + self.average_line.best_fit[2]
+            aiming_point['y'] = self.average_line.best_fit[0] * aiming_point['x'] ** 2 + \
+                self.average_line.best_fit[1] * aiming_point['x'] + self.average_line.best_fit[2]
         elif left_fit is not None:
-            aiming_point[1] = left_fit[0] * aiming_point[0] ** 2 + \
-                left_fit[1] * aiming_point[0] + left_fit[2] + self.min_offset
+            aiming_point['y'] = left_fit[0] * aiming_point['x'] ** 2 + \
+                left_fit[1] * aiming_point['x'] + left_fit[2] + self.min_offset
         elif right_fit is not None:
-            aiming_point[1] = right_fit[0] * aiming_point[0] ** 2 + \
-                right_fit[1] * aiming_point[0] + right_fit[2] - self.min_offset
+            aiming_point['y'] = right_fit[0] * aiming_point['x'] ** 2 + \
+                right_fit[1] * aiming_point['x'] + right_fit[2] - self.min_offset
 
         result = self.draw_lane(frame, binary_warped, Minv, aiming_point)
 
-        return result, aiming_point[1]
+        return result, aiming_point['y']
 
 
 if __name__ == '__main__':
