@@ -10,10 +10,11 @@ from line import Line
 
 
 class LaneDetector(LaneDetectionInterface):
-    def __init__(self, min_offset, distance_to_aim):
+    def __init__(self, min_offset, distance_to_aim, is_simu = False):
         self.min_offset = min_offset
         self.distance_to_aim = distance_to_aim
-
+        self.is_simu = is_simu
+            
         self.left_line = Line()
         self.right_line = Line()
         self.average_line = Line()
@@ -200,15 +201,21 @@ class LaneDetector(LaneDetectionInterface):
 
     def get_perspective_transform(self, image):
         height, width = image.shape[:2]
-        top_left = [width * 0.4, height * 0.6]
-        top_right = [width * 0.6, height * 0.6]
-        bottom_right = [width * 0.8, height*0.95]
-        bottom_left = [width * 0.2, height*0.95]
+        if self.is_simu:
+            self.top_left = [170, 300]
+            self.top_right =  [450, 300]
+            self.bottom_right = [width * 1, height]
+            self.bottom_left = [width * 0.2, height]
+        else:
+            self.top_left = [width * 0.4, height * 0.6]
+            self.top_right = [width * 0.6, height * 0.6]
+            self.bottom_right = [width * 0.8, height*0.95]
+            self.bottom_left = [width * 0.2, height*0.95]
         src = np.float32([
-            top_left,
-            top_right,
-            bottom_right,
-            bottom_left
+            self.top_left,
+            self.top_right,
+            self.bottom_right,
+            self.bottom_left
         ])
         dst = np.float32([
             [width * 0.2, 0],
@@ -218,6 +225,7 @@ class LaneDetector(LaneDetectionInterface):
         ])
         M = cv2.getPerspectiveTransform(src, dst)
         Minv = cv2.getPerspectiveTransform(dst, src)  # For inverse transform
+        
         return M, Minv
 
     def warp_image(self, image, M):
