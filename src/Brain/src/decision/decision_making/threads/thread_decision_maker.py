@@ -33,12 +33,18 @@ class threadDecisionMaker(ThreadWithStop):
     def run(self):
         while self._running:
             self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
-            self._handle_ultrasonic_message()
+            # self._handle_ultrasonic_message()
 
             # TODO: This should be tested
             self.lane_offset = self.subscribers["LaneKeeping"].receive()
             if self.lane_offset:
-                self.steer_sender.send(str(self.lane_offset * 3))
+                steering = self.lane_offset * 3
+                if steering < -230:
+                    steering = -230
+                elif steering > 230:
+                    steering = 230
+                    
+                self.steer_sender.send(str(steering))
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""

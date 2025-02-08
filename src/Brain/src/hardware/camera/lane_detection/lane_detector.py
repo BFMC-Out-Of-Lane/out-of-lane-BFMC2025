@@ -1,12 +1,12 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-from lane_detection_interface import LaneDetectionInterface
-from line import Line
+# from lane_detection_interface import LaneDetectionInterface
+# from line import Line
 
-# from src.hardware.camera.lane_detection.lane_detection_interface import \
-# LaneDetectionInterface
-# from src.hardware.camera.lane_detection.line import Line
+from src.hardware.camera.lane_detection.lane_detection_interface import \
+LaneDetectionInterface
+from src.hardware.camera.lane_detection.line import Line
 
 
 class LaneDetector(LaneDetectionInterface):
@@ -112,10 +112,10 @@ class LaneDetector(LaneDetectionInterface):
             win_y_high = binary_warped.shape[0] - window * window_height
 
             win_xleft_low = max(leftx_current - margin, 0)
-            win_xleft_high = min(leftx_current + margin, int(midpoint*0.8))
+            win_xleft_high = min(leftx_current + margin, int(midpoint*0.6))
 
             # Restrict right window to the right side of the frame
-            win_xright_low = max(rightx_current - margin, midpoint)
+            win_xright_low = max(rightx_current - margin, int(midpoint * 1.4))
             win_xright_high = min(rightx_current + margin, binary_warped.shape[1])
 
             # Draw the windows on the visualization image (Optional)
@@ -207,10 +207,10 @@ class LaneDetector(LaneDetectionInterface):
             self.bottom_right = [width * 1, height]
             self.bottom_left = [width * 0.2, height]
         else:
-            self.top_left = [width * 0.4, height * 0.6]
-            self.top_right = [width * 0.6, height * 0.6]
-            self.bottom_right = [width * 0.8, height*0.95]
-            self.bottom_left = [width * 0.2, height*0.95]
+            self.top_left = [width * 0.4, height * 0.7]
+            self.top_right = [width * 0.6, height * 0.7]
+            self.bottom_right = [width * 0.8, height * 0.95]
+            self.bottom_left = [width * 0.2, height * 0.95]
         src = np.float32([
             self.top_left,
             self.top_right,
@@ -237,7 +237,7 @@ class LaneDetector(LaneDetectionInterface):
         M, Minv = self.get_perspective_transform(frame)
         warped = self.warp_image(frame, M)
         binary_warped = self.threshold_image(warped)
-        # binary_unwarped = self.warp_image(binary_warped, Minv)
+        binary_unwarped = self.warp_image(binary_warped, Minv)
         # cv2.imshow('Binary Unwarped', binary_unwarped)
         # cv2.imshow('Binary Warped', binary_warped)
         left_fit, right_fit, out_img, leftx, lefty, rightx, righty, histImg = self.fit_polynomial(binary_warped)
@@ -253,14 +253,11 @@ class LaneDetector(LaneDetectionInterface):
         aiming_point = {'x': self.distance_to_aim, 'y': 0}
         if left_fit is not None and right_fit is not None:
             self.average_line.add_fit(np.mean([left_fit, right_fit], axis=0))
-            aiming_point['y'] = self.average_line.best_fit[0] * aiming_point['x'] ** 2 + \
-                self.average_line.best_fit[1] * aiming_point['x'] + self.average_line.best_fit[2]
+            aiming_point['y'] = self.average_line.best_fit[0] * aiming_point['x'] ** 2 + self.average_line.best_fit[1] * aiming_point['x'] + self.average_line.best_fit[2]
         elif left_fit is not None:
-            aiming_point['y'] = left_fit[0] * aiming_point['x'] ** 2 + \
-                left_fit[1] * aiming_point['x'] + left_fit[2] + self.min_offset
+            aiming_point['y'] = left_fit[0] * aiming_point['x'] ** 2 + left_fit[1] * aiming_point['x'] + left_fit[2] + self.min_offset
         elif right_fit is not None:
-            aiming_point['y'] = right_fit[0] * aiming_point['x'] ** 2 + \
-                right_fit[1] * aiming_point['x'] + right_fit[2] - self.min_offset
+            aiming_point['y'] = right_fit[0] * aiming_point['x'] ** 2 + right_fit[1] * aiming_point['x'] + right_fit[2] - self.min_offset
 
         result = self.draw_lane(frame, binary_warped, Minv, aiming_point)
 

@@ -60,7 +60,7 @@ class threadCamera(ThreadWithStop):
         self.recording = False
 
         self.video_writer = ""
-        self.lane_detector = LaneDetector(min_offset=300, distance_to_aim=200)
+        self.lane_detector = LaneDetector(min_offset=180, distance_to_aim=200)
 
         self.recordingSender = messageHandlerSender(self.queuesList, Recording)
         self.mainCameraSender = messageHandlerSender(self.queuesList, mainCamera)
@@ -165,7 +165,7 @@ class threadCamera(ThreadWithStop):
                 # self.serialCameraSender.send(serialEncodedImageData)
 
                 # TODO: This should be tested
-                processed_image, aiming_point = self.lane_detector.process_image(cv2.bitwise_not(serialRequest))
+                processed_image, aiming_point = self.lane_detector.process_image(serialRequest)
                 serial_image_width = serialRequest.shape[1]
                 serial_image_center = serial_image_width // 2
                 aiming_point = round(aiming_point - serial_image_center)
