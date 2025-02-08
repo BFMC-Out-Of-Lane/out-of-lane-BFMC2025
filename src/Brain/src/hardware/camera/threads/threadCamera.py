@@ -74,9 +74,8 @@ class threadCamera(ThreadWithStop):
         self.Configs()
         
         # self.isDetectorActive = True
-        # self.isDebugging = True
-        self.distanceCalculator = DistanceCalculation()  # Initialize with an instance of DistanceCalculation
-        self.distanceToObject = None
+        # self.distanceCalculator = DistanceCalculation()  # Initialize with an instance of DistanceCalculation
+        # self.distanceToObject = None
         
 
     def subscribe(self):

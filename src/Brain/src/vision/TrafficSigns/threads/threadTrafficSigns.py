@@ -1,78 +1,78 @@
-# from src.templates.threadwithstop import ThreadWithStop
-# from src.utils.messages.allMessages import (mainCamera)
-# from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
-# from src.utils.messages.messageHandlerSender import messageHandlerSender
-# from src.utils.visionManager.distanceCalculator import DistanceCalculation
-# import cv2
-# import numpy as np
-# import base64
+from src.templates.threadwithstop import ThreadWithStop
+from src.utils.messages.allMessages import (mainCamera, serialCamera)
+from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
+from src.utils.messages.messageHandlerSender import messageHandlerSender
+from src.utils.visionManager.distanceCalculator import DistanceCalculation
+import cv2
+import numpy as np
+import base64
 
-# class threadTrafficSigns(ThreadWithStop):
-#     """This thread handles TrafficSigns.
-#     Args:
-#         queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
-#         logging (logging object): Made for debugging.
-#         debugging (bool, optional): A flag for debugging. Defaults to False.
-#     """
+class threadTrafficSigns(ThreadWithStop):
+    """This thread handles TrafficSigns.
+    Args:
+        queueList (dictionary of multiprocessing.queues.Queue): Dictionary of queues where the ID is the type of messages.
+        logging (logging object): Made for debugging.
+        debugging (bool, optional): A flag for debugging. Defaults to False.
+    """
+    # ================================ INIT ===============================================
+    def __init__(self, queueList, logging, debugging=False):
+        self.queuesList = queueList
+        self.logging = logging
+        self.debugging = debugging
+        self.subscribe()
+        super(threadTrafficSigns, self).__init__()
 
-#     def __init__(self, queueList, logging, debugging=False):
-#         self.queuesList = queueList
-#         self.logging = logging
-#         self.debugging = debugging
-#         self.subscribe()
-#         super(threadTrafficSigns, self).__init__()
+        self.isDetectorActive = True
+        self.distanceCalculator = DistanceCalculation(model="yolov8n",
+                                                    conf = 0.3,
+                                                    # classes = [11],
+                                                    vid_stride=10,
+                                                    stream_buffer= True,
+                                                    # max_det=1,
+                                                    # save=True,
+                                                    )
+        self.distanceToObject = None
 
-#     def run(self):
-#         while self._running:
-#             self._handle_camera_frames()
-#             pass
+        self.signsSender = messageHandlerSender(self.queuesList, Signs) # Send the detected signs to the decision maker
 
-#     def subscribe(self):
-#         """Subscribes to the messages you are interested in"""
-#         self.cameraSubscriber = messageHandlerSubscriber(self.queuesList, mainCamera, "lastonly", True)
-#         pass
+    def run(self):
+        while self._running:
+            self._handle_camera_frames()
+            pass
 
-#     def _handle_camera_frames(self):
-#         """Handles the camera frames, i.e.: detects traffic signs in the image"""
-#         camera_message = self.cameraSubscriber.receive()
-#         if camera_message:
-#             image_data = base64.b64decode(camera_message)
-#             np_arr = np.frombuffer(image_data, np.uint8)
-#             image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-#             self._detect_traffic_signs(image)
-#         pass
+    def subscribe(self):
+        """Subscribes to the messages you are interested in"""
+        # self.cameraSubscriber = messageHandlerSubscriber(self.queuesList, mainCamera, "lastonly", True)
+        self.cameraSubscriber = messageHandlerSubscriber(self.queuesList, serialCamera, "lastonly", True)
+        pass
 
-#     def _detect_traffic_signs(self, image):
-#         """Detects traffic signs in the image"""
+    # =============================== STOP ================================================
+    def stop(self):
+        super(threadTrafficSigns, self).stop()
 
-#         cap = cv2.VideoCapture(image)
-#         assert cap.isOpened(), "Error reading video file"
-#         w, h, fps = (int(cap.get(x)) for x in (cv2.CAP_PROP_FRAME_WIDTH, cv2.CAP_PROP_FRAME_HEIGHT, cv2.CAP_PROP_FPS))
+    def start(self):
+        super(threadTrafficSigns, self).start()
 
-#         # Init distance-calculation obj
-#         distance = DistanceCalculation(model="yolov8n_ncnn_model",
-#                                         show=True,
-#                                         conf = 0.3,
-#                                         # classes =  [11], # stop sign
-#                                         vid_stride=10,
-#                                         stream_buffer=True,
-#                                         # max_det=1,
-#                                         save=True,
-#                                         )
+    def _handle_camera_frames(self):
+        """Handles the camera frames, i.e.: detects traffic signs in the image"""
+        camera_message = self.cameraSubscriber.receive()
+        if camera_message:
+            image_data = base64.b64decode(camera_message)
+            np_arr = np.frombuffer(image_data, np.uint8)
+            image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            self._detect_traffic_signs(image)
 
-#         while cap.isOpened():
-#             success, im0 = cap.read()
-#             if not success:
-#                 print("Video frame is empty or video processing has been successfully completed.")
-#                 break
-#             im0 = distance.calculate(im0)
+    def _detect_traffic_signs(self, image):
+        """Detects traffic signs in the image"""
 
-#             if self.debugging:
-#                 self.logging.info(
-#                     f'{{"threadTrafficSigns": {{ "Obj detected": {distance.clss}, "Distance object-car": {distance.pixels_distance}}} }}'
-#                 )
-
-#         cap.release()
-#         #cv2.destroyAllWindows()
-
-#         pass
+        try:
+            if self.isDetectorActive == True:
+                    processed_frame, detected_class, self.distanceToObject = self.distanceCalculator.calculate(serialRequest)
+                    self.distanceToObject = {
+                        "clss": detected_class,
+                        "pixels_distance": self.distanceToObject
+                        }
+                        # if self.debugging:
+                    self.logger.info(f'{{"threadTrafficSigns": {{ "Obj detected": {self.distanceToObject["clss"]}, "Distance object-car": {self.distanceToObject["pixels_distance"]}}} }}')
+        except Exception as e:
+            print(e)
