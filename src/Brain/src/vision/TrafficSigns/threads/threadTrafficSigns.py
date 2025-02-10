@@ -29,11 +29,10 @@ class threadTrafficSigns(ThreadWithStop):
                                                     vid_stride=10,
                                                     stream_buffer= True,
                                                     # max_det=1,
-                                                    # save=True,
                                                     )
         self.distanceToObject = None
 
-        self.signsSender = messageHandlerSender(self.queuesList, Signs) # Send the detected signs to the decision maker
+        # self.signsSender = messageHandlerSender(self.queuesList, self.distanceToObject["clss"]) # Send the detected signs to the decision maker
 
     def run(self):
         while self._running:
@@ -67,7 +66,7 @@ class threadTrafficSigns(ThreadWithStop):
 
         try:
             if self.isDetectorActive == True:
-                    processed_frame, detected_class, self.distanceToObject = self.distanceCalculator.calculate(serialRequest)
+                    processed_frame, detected_class, self.distanceToObject = self.distanceCalculator.calculate(image)
                     self.distanceToObject = {
                         "clss": detected_class,
                         "pixels_distance": self.distanceToObject

@@ -80,11 +80,11 @@ Dashboard = True
 Camera = True
 Semaphores = False
 TrafficCommunication = False
-SerialHandler = False
+SerialHandler = True
 
 # ------ New component flags starts here ------#
 DecisionMaker = True
-TrafficSigns = False
+TrafficSigns = True
 # ------ New component flags ends here ------#
 
 # ===================================== SETUP PROCESSES ==================================
@@ -130,7 +130,7 @@ if DecisionMaker:
 
 if TrafficSigns:
     processTrafficSigns = processTrafficSigns(queueList, logging, debugging = True)
-    allProcesses.append(processDecisionMaker)
+    allProcesses.append(processTrafficSigns)
 # ------ New component runs ends here ------#
 
 # ===================================== START PROCESSES ==================================
