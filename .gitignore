@@ -3,9 +3,10 @@
 .devenv.flake.nix
 devenv.lock
 .idea/
+venv/
 
 # YOLO
-*.pt
+#*.pt
 
 # Python
 __pycache__/
@@ -28,3 +29,5 @@ src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/brows
 src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/browser-CDZO4TIQ.js.map
 src/Brain/src/dashboard/frontend/.angular/cache/18.2.9/dashboard/vite/deps/ngx-socket-io.js
 src/Brain/src/dashboard/frontend/src/app/webSocket/web-socket.service.ts
+
+prototypes/
