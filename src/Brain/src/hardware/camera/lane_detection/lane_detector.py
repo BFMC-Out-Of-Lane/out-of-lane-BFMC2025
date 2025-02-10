@@ -1,20 +1,20 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+from src.hardware.camera.lane_detection.lane_detection_interface import \
+    LaneDetectionInterface
+from src.hardware.camera.lane_detection.line import Line
+
 # from lane_detection_interface import LaneDetectionInterface
 # from line import Line
 
-from src.hardware.camera.lane_detection.lane_detection_interface import \
-LaneDetectionInterface
-from src.hardware.camera.lane_detection.line import Line
-
 
 class LaneDetector(LaneDetectionInterface):
-    def __init__(self, min_offset, distance_to_aim, is_simu = False):
+    def __init__(self, min_offset, distance_to_aim, is_simu=False):
         self.min_offset = min_offset
         self.distance_to_aim = distance_to_aim
         self.is_simu = is_simu
-            
+
         self.left_line = Line()
         self.right_line = Line()
         self.average_line = Line()
@@ -203,7 +203,7 @@ class LaneDetector(LaneDetectionInterface):
         height, width = image.shape[:2]
         if self.is_simu:
             self.top_left = [170, 300]
-            self.top_right =  [450, 300]
+            self.top_right = [450, 300]
             self.bottom_right = [width * 1, height]
             self.bottom_left = [width * 0.2, height]
         else:
@@ -225,7 +225,7 @@ class LaneDetector(LaneDetectionInterface):
         ])
         M = cv2.getPerspectiveTransform(src, dst)
         Minv = cv2.getPerspectiveTransform(dst, src)  # For inverse transform
-        
+
         return M, Minv
 
     def warp_image(self, image, M):
@@ -253,11 +253,14 @@ class LaneDetector(LaneDetectionInterface):
         aiming_point = {'x': self.distance_to_aim, 'y': 0}
         if left_fit is not None and right_fit is not None:
             self.average_line.add_fit(np.mean([left_fit, right_fit], axis=0))
-            aiming_point['y'] = self.average_line.best_fit[0] * aiming_point['x'] ** 2 + self.average_line.best_fit[1] * aiming_point['x'] + self.average_line.best_fit[2]
+            aiming_point['y'] = self.average_line.best_fit[0] * aiming_point['x'] ** 2 + \
+                self.average_line.best_fit[1] * aiming_point['x'] + self.average_line.best_fit[2]
         elif left_fit is not None:
-            aiming_point['y'] = left_fit[0] * aiming_point['x'] ** 2 + left_fit[1] * aiming_point['x'] + left_fit[2] + self.min_offset
+            aiming_point['y'] = left_fit[0] * aiming_point['x'] ** 2 + \
+                left_fit[1] * aiming_point['x'] + left_fit[2] + self.min_offset
         elif right_fit is not None:
-            aiming_point['y'] = right_fit[0] * aiming_point['x'] ** 2 + right_fit[1] * aiming_point['x'] + right_fit[2] - self.min_offset
+            aiming_point['y'] = right_fit[0] * aiming_point['x'] ** 2 + \
+                right_fit[1] * aiming_point['x'] + right_fit[2] - self.min_offset
 
         result = self.draw_lane(frame, binary_warped, Minv, aiming_point)
 
