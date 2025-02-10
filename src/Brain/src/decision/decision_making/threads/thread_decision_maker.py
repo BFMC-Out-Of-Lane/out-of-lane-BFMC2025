@@ -33,18 +33,8 @@ class threadDecisionMaker(ThreadWithStop):
     def run(self):
         while self._running:
             self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
-            # self._handle_ultrasonic_message()
-
-            # TODO: This should be tested
-            self.lane_offset = self.subscribers["LaneKeeping"].receive()
-            if self.lane_offset:
-                steering = self.lane_offset * 3
-                if steering < -230:
-                    steering = -230
-                elif steering > 230:
-                    steering = 230
-                    
-                self.steer_sender.send(str(steering))
+            self._handle_ultrasonic_message()
+            self._handle_lane_keeping_message()
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""
@@ -77,3 +67,16 @@ class threadDecisionMaker(ThreadWithStop):
                     self.speed_sender.send("0")  # stop the vehicle if front distance is less than 10 cm
                 elif abs(current_speed) > rear - MIN_DISTANCE_TO_STOP:
                     self.speed_sender.send(str(-(rear - MIN_DISTANCE_TO_STOP)))
+
+    def _handle_lane_keeping_message(self):
+        """Handles the lane keeping message, i.e.: decides the steering angle"""
+
+        self.lane_offset = self.subscribers["LaneKeeping"].receive()
+        if self.lane_offset:
+            steering = self.lane_offset * 3
+            if steering < -230:
+                steering = -230
+            elif steering > 230:
+                steering = 230
+
+            self.steer_sender.send(str(steering))
