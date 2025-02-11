@@ -23,16 +23,18 @@ class threadTrafficSigns(ThreadWithStop):
         super(threadTrafficSigns, self).__init__()
 
         self.isDetectorActive = True
-        self.distanceCalculator = DistanceCalculation(model="yolov8n",
+        #  yolo11n_best_traffic_signs_V2.pt
+        # yolov8n.pt
+        self.distanceCalculator = DistanceCalculation(model="yolov8n.pt",
                                                     conf = 0.3,
-                                                    # classes = [11],
+                                                    classes = [11],
                                                     vid_stride=10,
-                                                    stream_buffer= True,
+                                                    # stream_buffer= True,
                                                     # max_det=1,
                                                     )
         self.distanceToObject = None
 
-        # self.signsSender = messageHandlerSender(self.queuesList, self.distanceToObject["clss"]) # Send the detected signs to the decision maker
+        # self.signsSender = messageHandlerSender(self.queuesList, self.distanceToObject.clss) # Send the detected signs to the decision maker
 
     def run(self):
         while self._running:
@@ -72,6 +74,6 @@ class threadTrafficSigns(ThreadWithStop):
                         "pixels_distance": self.distanceToObject
                         }
                         # if self.debugging:
-                    self.logger.info(f'{{"threadTrafficSigns": {{ "Obj detected": {self.distanceToObject["clss"]}, "Distance object-car": {self.distanceToObject["pixels_distance"]}}} }}')
+                    self.logging.info(f'{{"threadTrafficSigns": {{ "Obj detected": {self.distanceToObject["clss"]}, "Distance object-car": {self.distanceToObject["pixels_distance"]}}} }}')
         except Exception as e:
             print(e)
