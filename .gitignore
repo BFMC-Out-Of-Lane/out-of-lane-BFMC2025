@@ -6,7 +6,7 @@ devenv.lock
 venv/
 
 # YOLO
-#*.pt
+*.pt
 
 # Python
 __pycache__/
