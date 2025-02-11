@@ -25,9 +25,9 @@ class threadTrafficSigns(ThreadWithStop):
         self.isDetectorActive = True
         #  yolo11n_best_traffic_signs_V2.pt
         # yolov8n.pt
-        self.distanceCalculator = DistanceCalculation(model="yolov8n.pt",
+        self.distanceCalculator = DistanceCalculation(model=r"/home/ool/out-of-lane-BFMC2025/src/Brain/src/vision/TrafficSigns/yolo11n_best_traffic_signs_V2.pt",
                                                     conf = 0.3,
-                                                    classes = [11],
+                                                    # classes = [11],
                                                     vid_stride=10,
                                                     # stream_buffer= True,
                                                     # max_det=1,
