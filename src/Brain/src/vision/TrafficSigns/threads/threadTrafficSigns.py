@@ -23,7 +23,8 @@ class threadTrafficSigns(ThreadWithStop):
         super(threadTrafficSigns, self).__init__()
 
         self.isDetectorActive = True
-        #  yolo11n_best_traffic_signs_V2.pt
+
+        # yolo11n_best_traffic_signs_V2.pt
         # yolov8n.pt
         self.distanceCalculator = DistanceCalculation(model=r"/home/ool/out-of-lane-BFMC2025/src/Brain/src/vision/TrafficSigns/yolo11n_best_traffic_signs_V2.pt",
                                                     conf = 0.3,
@@ -34,7 +35,7 @@ class threadTrafficSigns(ThreadWithStop):
                                                     )
         self.distanceToObject = None
 
-        # self.signsSender = messageHandlerSender(self.queuesList, self.distanceToObject.clss) # Send the detected signs to the decision maker
+        self.signsSender = messageHandlerSender(self.queuesList, self.distanceToObject) # Send the detected signs to the decision maker
 
     def run(self):
         while self._running:
@@ -73,7 +74,7 @@ class threadTrafficSigns(ThreadWithStop):
                         "clss": detected_class,
                         "pixels_distance": self.distanceToObject
                         }
-                        # if self.debugging:
-                    self.logging.info(f'{{"threadTrafficSigns": {{ "Obj detected": {self.distanceToObject["clss"]}, "Distance object-car": {self.distanceToObject["pixels_distance"]}}} }}')
+                    if self.debugging:
+                        self.logging.info(f'{{"threadTrafficSigns": {{ "Obj detected": {self.distanceToObject["clss"]}, "Distance object-car": {self.distanceToObject["pixels_distance"]}}} }}')
         except Exception as e:
             print(e)

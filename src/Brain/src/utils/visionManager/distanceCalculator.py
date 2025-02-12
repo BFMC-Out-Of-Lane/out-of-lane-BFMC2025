@@ -1,10 +1,10 @@
 
 import math
-
 import cv2
 
-from ultralytics.solutions.solutions import BaseSolution
-from ultralytics.utils.plotting import Annotator, colors
+from src.utils.visionManager.solutionsMOD import BaseSolution
+# from ultralytics.solutions.solutions import BaseSolution
+# from ultralytics.utils.plotting import Annotator, colors
 
 class DistanceCalculation(BaseSolution):
     """
@@ -22,7 +22,6 @@ class DistanceCalculation(BaseSolution):
         centroids (List[List[int]]): List to store centroids of selected bounding boxes.
 
     Methods:
-        mouse_event_for_distance: Handles mouse events for selecting objects in the video stream.
         calculate: Processes video frames and calculates the distance between selected objects.
 
     Examples:
@@ -43,30 +42,6 @@ class DistanceCalculation(BaseSolution):
         self.pixels_distance = 0  # Initialize distance in pixels
         self.detected_class = None  # Initialize detected class
 
-        """
-        Handles mouse events to select regions in a real-time video stream for distance calculation.
-
-        Args:
-            event (int): Type of mouse event (e.g., cv2.EVENT_MOUSEMOVE, cv2.EVENT_LBUTTONDOWN).
-            x (int): X-coordinate of the mouse pointer.
-            y (int): Y-coordinate of the mouse pointer.
-            flags (int): Flags associated with the event (e.g., cv2.EVENT_FLAG_CTRLKEY, cv2.EVENT_FLAG_SHIFTKEY).
-            param (Dict): Additional parameters passed to the function.
-
-        Examples:
-            >>> # Assuming 'dc' is an instance of DistanceCalculation
-            # >>> cv2.setMouseCallback("window_name", dc.mouse_event_for_distance)
-        """
-        # if event == cv2.EVENT_LBUTTONDOWN:
-        #     self.left_mouse_count += 1
-        #     if self.left_mouse_count <= 2:
-        #         for box, track_id in zip(self.boxes, self.track_ids):
-        #             if box[0] < x < box[2] and box[1] < y < box[3] and track_id not in self.selected_boxes:
-        #                 self.selected_boxes[track_id] = box
-
-        # elif event == cv2.EVENT_RBUTTONDOWN:
-        #     self.selected_boxes = {}
-        #     self.left_mouse_count = 0
 
     def calculate(self, im0):
         """
@@ -81,14 +56,8 @@ class DistanceCalculation(BaseSolution):
         Returns:
             (numpy.ndarray): The processed image frame with annotations and distance calculations.
 
-        Examples:
-            >>> import numpy as np
-            # >>> from ultralytics.solutions import DistanceCalculation
-            >>> dc = DistanceCalculation()
-            >>> frame = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
-            >>> processed_frame = dc.calculate(frame)
         """
-        self.annotator = Annotator(im0, line_width=self.line_width)  # Initialize annotator
+        # self.annotator = Annotator(im0, line_width=self.line_width)  # Initialize annotator
         self.extract_tracks(im0)  # Extract tracks
 
         # Define el punto fijo en el centro de la imagen
@@ -98,7 +67,7 @@ class DistanceCalculation(BaseSolution):
 
         # Itera sobre las cajas delimitadoras, IDs de pista y clases
         for box, track_id, cls in zip(self.boxes, self.track_ids, self.clss):
-            self.annotator.box_label(box, color=colors(int(cls), True), label=self.names[int(cls)])
+            # self.annotator.box_label(box, color=colors(int(cls), True), label=self.names[int(cls)])
 
             # Calcula el centro de la caja delimitadora
             box_center = (int((box[0] + box[2]) // 2), int((box[1] + box[3]) // 2))
