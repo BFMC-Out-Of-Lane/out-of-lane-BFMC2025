@@ -1,5 +1,8 @@
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import (mainCamera, serialCamera)
+from src.utils.messages.allMessages import (
+    mainCamera, 
+    serialCamera, 
+    trafficSigns)
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.visionManager.distanceCalculator import DistanceCalculation
@@ -16,14 +19,15 @@ class threadTrafficSigns(ThreadWithStop):
     """
     # ================================ INIT ===============================================
     def __init__(self, queueList, logging, debugging=False):
+        super(threadTrafficSigns, self).__init__()
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
         self.subscribe()
-        super(threadTrafficSigns, self).__init__()
 
         self.isDetectorActive = True
 
+        #  r"/home/ool/out-of-lane-BFMC2025/src/Brain/src/vision/
         # yolo11n_best_traffic_signs_V2.pt
         # yolov8n.pt
         self.distanceCalculator = DistanceCalculation(model=r"/home/ool/out-of-lane-BFMC2025/src/Brain/src/vision/TrafficSigns/yolo11n_best_traffic_signs_V2.pt",
@@ -33,14 +37,21 @@ class threadTrafficSigns(ThreadWithStop):
                                                     # stream_buffer= True,
                                                     # max_det=1,
                                                     )
-        self.distanceToObject = None
-
-        self.signsSender = messageHandlerSender(self.queuesList, self.distanceToObject) # Send the detected signs to the decision maker
+        self.distanceToObject = {}
+        self.signsSender = messageHandlerSender(self.queuesList, trafficSigns) # Send the detected signs to the decision maker
 
     def run(self):
+        send = True
         while self._running:
-            self._handle_camera_frames()
-            pass
+            try:
+                self._handle_camera_frames()
+            except Exception as e:
+                print(e)
+            
+            if send:
+                self.signsSender.send(self.distanceToObject)
+
+            send = not send
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""
@@ -68,13 +79,45 @@ class threadTrafficSigns(ThreadWithStop):
         """Detects traffic signs in the image"""
 
         try:
-            if self.isDetectorActive == True:
-                    processed_frame, detected_class, self.distanceToObject = self.distanceCalculator.calculate(image)
+            if self.isDetectorActive:
+                    # processed_frame, detected_class, self.distanceToObject = self.distanceCalculator.calculate(image)
+                    detected_class_number, self.distanceToObject = self.distanceCalculator.calculate(image)
+
+                    if detected_class_number:
+                        detected_class_name = self._get_class_name(detected_class_number) # Asignar nombres de clase basados en detected_class
+                    else:
+                        detected_class_name = ""
+
                     self.distanceToObject = {
-                        "clss": detected_class,
+                        "clss": detected_class_name,
                         "pixels_distance": self.distanceToObject
                         }
+
                     if self.debugging:
-                        self.logging.info(f'{{"threadTrafficSigns": {{ "Obj detected": {self.distanceToObject["clss"]}, "Distance object-car": {self.distanceToObject["pixels_distance"]}}} }}')
+                        self.logging.info(f'{{"threadTrafficSigns": {{ "Object detected": {self.distanceToObject["clss"]}, "Distance object-car": {self.distanceToObject["pixels_distance"]}}} }}')
         except Exception as e:
             print(e)
+
+    def _get_class_name(self, detected_class):
+        """Returns the class name based on the detected class integer value"""
+        match detected_class[0]:
+            case 0.0:
+                return "crosswalk"
+            case 1.0:
+                return "highway-end"
+            case 2.0:
+                return "highway-entry"
+            case 3.0:
+                return "no-entry"
+            case 4.0:
+                return "one-way"
+            case 5.0:
+                return "parking"
+            case 6.0:
+                return "priority"
+            case 7.0:
+                return "roundabout"
+            case 8.0:
+                return "stop"
+            case _:
+                return ""

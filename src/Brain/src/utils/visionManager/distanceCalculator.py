@@ -87,6 +87,8 @@ class DistanceCalculation(BaseSolution):
 
         # self.display_output(im0)  # Muestra la salida con la función de la clase bas
 
-        return im0, self.detected_class, self.pixels_distance  # Devuelve la imagen procesada para más uso
-
+        if (self.clss == []):
+            self.pixels_distance = 0
+        # return im0, self.detected_class, self.pixels_distance  # Devuelve la imagen procesada para más uso
+        return self.detected_class, self.pixels_distance
 
