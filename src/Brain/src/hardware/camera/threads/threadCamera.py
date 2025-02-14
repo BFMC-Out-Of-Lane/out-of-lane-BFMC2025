@@ -41,7 +41,6 @@ from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
-
 class threadCamera(ThreadWithStop):
     """Thread which will handle camera functionalities.\n
     Args:
@@ -70,7 +69,7 @@ class threadCamera(ThreadWithStop):
         self.subscribe()
         self._init_camera()
         self.Queue_Sending()
-        self.Configs()
+        self.Configs()    
 
     def subscribe(self):
         """Subscribe function. In this function we make all the required subscribe to process gateway"""
@@ -193,5 +192,6 @@ class threadCamera(ThreadWithStop):
             lores={"size": (512, 270)},
             encode="lores",
         )
+
         self.camera.configure(config)
         self.camera.start()

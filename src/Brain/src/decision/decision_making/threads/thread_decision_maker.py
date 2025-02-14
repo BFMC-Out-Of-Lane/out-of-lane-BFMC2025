@@ -1,12 +1,14 @@
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, LaneKeeping,
-                                            SpeedMotor, UltrasonicSensors, SteerMotor,
-                                            mainCamera, serialCamera)
+                                            SpeedMotor, SteerMotor,
+                                            UltrasonicSensors, mainCamera,
+                                            serialCamera, trafficSigns)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
 MIN_DISTANCE_TO_STOP = 200
+MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN = 250
 
 
 class threadDecisionMaker(ThreadWithStop):
@@ -35,6 +37,7 @@ class threadDecisionMaker(ThreadWithStop):
             self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
             self._handle_ultrasonic_message()
             self._handle_lane_keeping_message()
+            self._handle_traffic_signs_message()
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""
@@ -43,6 +46,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.subscribers["UltrasonicSensors"] = messageHandlerSubscriber(
             self.queuesList, UltrasonicSensors, "lastonly", True)
         self.subscribers["LaneKeeping"] = messageHandlerSubscriber(self.queuesList, LaneKeeping, "lastonly", True)
+        self.subscribers["trafficSigns"] = messageHandlerSubscriber(self.queuesList, trafficSigns, "lastonly", True)
 
     def _handle_ultrasonic_message(self):
         """Handles the ultrasonic message, i.e.: decides if the vehicle should slow down, stop or continue"""
@@ -73,10 +77,53 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.lane_offset = self.subscribers["LaneKeeping"].receive()
         if self.lane_offset:
-            steering = self.lane_offset * 3
+            steering = self.lane_offset * 3  # TODO: Add controller
             if steering < -230:
                 steering = -230
             elif steering > 230:
                 steering = 230
 
             self.steer_sender.send(str(steering))
+
+    def _handle_traffic_signs_message(self):
+        """Handles the traffic signs, i.e.: decides if the vehicle should slow down, stop or continue"""
+        try:
+            traffic_signs_message = self.subscribers["trafficSigns"].receive()
+            if traffic_signs_message:
+                detected_clss = str(traffic_signs_message["clss"])
+                pixels_distance = int(traffic_signs_message["pixels_distance"])
+                if self.debugging:
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected": {detected_clss}, "Distance object-car": {pixels_distance}}} }}')
+
+                if detected_clss == "stop" and pixels_distance < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    self.speed_sender.send("0")
+                    return
+
+                if detected_clss == "crosswalk" and pixels_distance < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    self.speed_sender.send("0")
+                    return
+
+                if detected_clss == "highway-end" and pixels_distance < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    pass
+
+                if detected_clss == "highway-entry" and pixels_distance < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    pass
+
+                if detected_clss == "one-way" and pixels_distance < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    pass
+
+                if detected_clss == "parking" and pixels_distance < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    pass
+
+                if detected_clss == "no-entry" and pixels_distance < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    pass
+
+                if detected_clss == "roundabout" and pixels_distance < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    pass
+
+                if detected_clss == "priority" and pixels_distance < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    pass
+
+        except Exception as e:
+            print(e)

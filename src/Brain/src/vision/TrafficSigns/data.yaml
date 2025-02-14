@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 9
+names: ['crosswalk', 'highway-end', 'highway-entry', 'no-entry', 'one-way', 'parking', 'priority', 'roundabout', 'stop']
+
+roboflow:
+  workspace: outoflane
+  project: signalsdetection
+  version: 3
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/outoflane/signalsdetection/dataset/3

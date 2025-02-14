@@ -61,6 +61,7 @@ from src.utils.ipManager.IpReplacement import IPManager
 
 # ------ New component imports starts here ------#
 from src.decision.decision_making.process_decision_maker import processDecisionMaker
+from src.vision.TrafficSigns.processTrafficSigns import processTrafficSigns
 # ------ New component imports ends here ------#
 
 # ======================================== SETTING UP ====================================
@@ -83,7 +84,7 @@ SerialHandler = True
 
 # ------ New component flags starts here ------#
 DecisionMaker = True
-LaneDetection = True
+TrafficSigns = True
 # ------ New component flags ends here ------#
 
 # ===================================== SETUP PROCESSES ==================================
@@ -96,7 +97,6 @@ processGateway.start()
 path = './src/dashboard/frontend/src/app/webSocket/web-socket.service.ts'
 IpChanger = IPManager(path)
 IpChanger.replace_ip_in_file()
-
 
 # Initializing dashboard
 if Dashboard:
@@ -127,6 +127,10 @@ if SerialHandler:
 if DecisionMaker:
     processDecisionMaker = processDecisionMaker(queueList, logging, debugging = False)
     allProcesses.append(processDecisionMaker)
+
+if TrafficSigns:
+    processTrafficSigns = processTrafficSigns(queueList, logging, debugging = True)
+    allProcesses.append(processTrafficSigns)
 # ------ New component runs ends here ------#
 
 # ===================================== START PROCESSES ==================================
