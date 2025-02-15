@@ -30,9 +30,9 @@ class threadTrafficSigns(ThreadWithStop):
         #  r"/home/ool/out-of-lane-BFMC2025/src/Brain/src/vision/
         # yolo11n_best_traffic_signs_V2.pt
         # yolov8n.pt
-        self.distanceCalculator = DistanceCalculation(model=r"/home/ool/out-of-lane-BFMC2025/src/Brain/src/vision/TrafficSigns/yolo11n_best_traffic_signs_V2.pt",
-                                                    conf = 0.3,
-                                                    # classes = [11],
+        self.distanceCalculator = DistanceCalculation(model="yolo11n_best_traffic_signs_V3.pt",
+                                                    conf = 0.5,
+                                                    # classes = [0,8],
                                                     vid_stride=10,
                                                     # stream_buffer= True,
                                                     # max_det=1,

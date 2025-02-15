@@ -1,5 +1,5 @@
 
-from MODs.predictorMOD import BasePredictor
+from src.utils.visionManager.predictorMOD import BasePredictor
 from ultralytics.engine.results import Results
 from ultralytics.utils import ops
 

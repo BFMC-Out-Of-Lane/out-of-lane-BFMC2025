@@ -3,7 +3,7 @@ from collections import defaultdict
 
 import cv2
 
-from  src.utils.visionManager.modelMOD import YOLO
+from src.utils.visionManager.modelMOD import YOLO
 from ultralytics.utils import ASSETS_URL, DEFAULT_CFG_DICT, DEFAULT_SOL_DICT, LOGGER
 from ultralytics.utils.checks import check_imshow, check_requirements
 

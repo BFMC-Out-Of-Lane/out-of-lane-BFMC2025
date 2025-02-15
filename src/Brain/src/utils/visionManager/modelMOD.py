@@ -1,6 +1,7 @@
 
 from pathlib import Path
 
+from src.utils.visionManager.predictMOD import DetectionPredictor
 from ultralytics.engine.model import Model
 from ultralytics.models import yolo
 from ultralytics.nn.tasks import ClassificationModel, DetectionModel, OBBModel, PoseModel, SegmentationModel, WorldModel
@@ -35,7 +36,8 @@ class YOLO(Model):
                 "model": DetectionModel,
                 "trainer": yolo.detect.DetectionTrainer,
                 "validator": yolo.detect.DetectionValidator,
-                "predictor": yolo.detect.DetectionPredictor,
+                # "predictor": yolo.detect.DetectionPredictor,
+                "predictor": DetectionPredictor,
             },
             "segment": {
                 "model": SegmentationModel,
