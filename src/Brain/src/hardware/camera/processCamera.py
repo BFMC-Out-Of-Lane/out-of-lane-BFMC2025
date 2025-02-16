@@ -30,10 +30,10 @@ if __name__ == "__main__":
     import sys
     sys.path.insert(0, "../../..")
 
-from src.templates.workerprocess import WorkerProcess
-from src.hardware.camera.threads.threadCamera import threadCamera
-
 from multiprocessing import Pipe
+
+from src.hardware.camera.threads.threadCamera import threadCamera
+from src.templates.workerprocess import WorkerProcess
 
 
 class processCamera(WorkerProcess):
@@ -60,7 +60,7 @@ class processCamera(WorkerProcess):
     def _init_threads(self):
         """Create the Camera Publisher thread and add to the list of threads."""
         camTh = threadCamera(
-         self.queuesList, self.logging, self.debugging
+            self.queuesList, self.logging, self.debugging
         )
         self.threads.append(camTh)
 
@@ -69,11 +69,12 @@ class processCamera(WorkerProcess):
 #             ++    THIS WILL RUN ONLY IF YOU RUN THE CODE FROM HERE  ++
 #                  in terminal:    python3 processCamera.py
 if __name__ == "__main__":
-    from multiprocessing import Queue, Event
-    import time
-    import logging
-    import cv2
     import base64
+    import logging
+    import time
+    from multiprocessing import Event, Queue
+
+    import cv2
     import numpy as np
 
     allProcesses = list()

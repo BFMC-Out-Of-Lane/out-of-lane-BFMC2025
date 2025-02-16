@@ -230,6 +230,13 @@ class UltrasonicSensors(Enum):
     msgID = 9
     msgType = "dict"
 
+################################# processTrafficSigns ##################################
+class trafficSigns(Enum):
+    Queue = "General"
+    Owner = "threadTrafficSigns"
+    msgID = 1
+    msgType = "dict"
+
 ################################# From Locsys ##################################
 class Location(Enum):
     Queue = "General"

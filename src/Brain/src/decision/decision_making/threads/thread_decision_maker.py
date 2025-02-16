@@ -1,11 +1,14 @@
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import (CurrentSpeed, SpeedMotor,
-                                            UltrasonicSensors, mainCamera)
+from src.utils.messages.allMessages import (CurrentSpeed, LaneKeeping,
+                                            SpeedMotor, SteerMotor,
+                                            UltrasonicSensors, mainCamera,
+                                            serialCamera, trafficSigns)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
 MIN_DISTANCE_TO_STOP = 200
+MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN = 250
 
 
 class threadDecisionMaker(ThreadWithStop):
@@ -23,6 +26,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.current_speed = "0"
         self.speed_sender = messageHandlerSender(self.queuesList, SpeedMotor)
+        self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
         self.subscribers = {}
 
         self.subscribe()
@@ -31,7 +35,9 @@ class threadDecisionMaker(ThreadWithStop):
     def run(self):
         while self._running:
             self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
-            self._handle_ultrasonic_message()
+            #self._handle_ultrasonic_message()
+            self._handle_lane_keeping_message()
+            self._handle_traffic_signs_message()
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""
@@ -39,6 +45,8 @@ class threadDecisionMaker(ThreadWithStop):
         self.subscribers["CurrentSpeed"] = messageHandlerSubscriber(self.queuesList, CurrentSpeed, "lastonly", True)
         self.subscribers["UltrasonicSensors"] = messageHandlerSubscriber(
             self.queuesList, UltrasonicSensors, "lastonly", True)
+        self.subscribers["LaneKeeping"] = messageHandlerSubscriber(self.queuesList, LaneKeeping, "lastonly", True)
+        self.subscribers["trafficSigns"] = messageHandlerSubscriber(self.queuesList, trafficSigns, "lastonly", True)
 
     def _handle_ultrasonic_message(self):
         """Handles the ultrasonic message, i.e.: decides if the vehicle should slow down, stop or continue"""
@@ -63,3 +71,96 @@ class threadDecisionMaker(ThreadWithStop):
                     self.speed_sender.send("0")  # stop the vehicle if front distance is less than 10 cm
                 elif abs(current_speed) > rear - MIN_DISTANCE_TO_STOP:
                     self.speed_sender.send(str(-(rear - MIN_DISTANCE_TO_STOP)))
+
+    def _handle_lane_keeping_message(self):
+        """Handles the lane keeping message, i.e.: decides the steering angle"""
+
+        self.lane_offset = self.subscribers["LaneKeeping"].receive()
+        if self.lane_offset:
+            steering = self.lane_offset * 3  # TODO: Add controller
+            if steering < -230:
+                steering = -230
+            elif steering > 230:
+                steering = 230
+
+            self.steer_sender.send(str(steering))
+
+    def _handle_traffic_signs_message(self):
+        """Handles the traffic signs, i.e.: decides if the vehicle should slow down, stop or continue"""
+        try:
+            traffic_signs_message = self.subscribers["trafficSigns"].receive()
+            if traffic_signs_message:
+                detected_clss = str(traffic_signs_message["clss"])
+                pixels_distance = int(traffic_signs_message["pixels_distance"])
+                if self.debugging:
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected": {detected_clss}, "Distance object-car": {pixels_distance}}} }}')
+
+                if detected_clss == "stop":
+                    self.speed_sender.send("0")
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected -------------------- CAR STOPPING": {detected_clss}}} }}')
+                    return
+                    # self.previous_speed = self.current_speed  # Guardar la velocidad antes de detenerse
+                    # self.speed_sender.send("0")  # Detener el vehículo
+                    # self.logging.info(
+                    #     f'{{"threadDecisionMaker": {{ "Object detected - CAR STOPPING": {detected_clss}}} }}')
+                    # time.sleep(3)  # Esperar 3 segundos
+                    # self.speed_sender.send(self.previous_speed)  # Restaurar la velocidad anterior
+                    # self.logging.info(
+                    #     f'{{"threadDecisionMaker": {{ "Car resuming speed": {self.previous_speed}}} }}')
+                    # return
+
+                if detected_clss == "crosswalk":
+                    self.speed_sender.send("0")
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected -------------------- CAR STOPPING": {detected_clss}}} }}')
+                    return
+
+                if detected_clss == "highway-end":
+                    self.speed_sender.send("0")
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                    return
+
+                if detected_clss == "highway-entry":
+                    self.speed_sender.send("0")
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                    return
+
+                if detected_clss == "one-way":
+                    self.speed_sender.send("0")
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                    return
+
+                if detected_clss == "parking":
+                    self.speed_sender.send("0")
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                    return
+
+                if detected_clss == "no-entry":
+                    self.speed_sender.send("0")
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                    return
+
+                if detected_clss == "roundabout":
+                    self.speed_sender.send("0")
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                    return
+
+                if detected_clss == "priority":
+                    self.speed_sender.send("0")
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                    return
+                
+                # if detected_clss == "priority" and pixels_distance < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                #     pass
+
+        except Exception as e:
+            print(e)
