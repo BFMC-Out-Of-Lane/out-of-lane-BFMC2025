@@ -241,12 +241,15 @@ class LaneDetector(LaneDetectionInterface):
         right_fit = self.right_line.best_fit
 
         if left_fit is not None and right_fit is not None:
-            pass
+            self.cross_tracking_error = (self.bottom_left_window + self.bottom_right_window) // 2
         elif left_fit is not None:
-            pass
+            self.cross_tracking_error = self.bottom_left_window + self.min_offset
         elif right_fit is not None:
-            pass
+            self.cross_tracking_error = self.bottom_right_window - self.min_offset
 
         result = self.draw_lane(frame, self.binary_warped)
+        # Draw a pink point at the center of the bottom window
+        center_point = (int(self.cross_tracking_error), frame.shape[0] - 10)
+        cv2.circle(result, center_point, 5, (255, 0, 255), -1)  # Pink color in BGR
 
-        return result, self.top_left_window, self.top_right_window, self.bottom_right_window, self.bottom_left_window
+        return result, self.cross_tracking_error
