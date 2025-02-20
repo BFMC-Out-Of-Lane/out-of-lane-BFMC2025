@@ -37,7 +37,7 @@ class threadTrafficSigns(ThreadWithStop):
                                                     # stream_buffer= True,
                                                     # max_det=1,
                                                     )
-        self.distanceToObject = {}
+        self.distanceToObjectMessage = {}
         self.signsSender = messageHandlerSender(self.queuesList, trafficSigns) # Send the detected signs to the decision maker
 
     def run(self):
@@ -49,7 +49,7 @@ class threadTrafficSigns(ThreadWithStop):
                 print(e)
             
             if send:
-                self.signsSender.send(self.distanceToObject)
+                self.signsSender.send(self.distanceToObjectMessage)
 
             send = not send
 
@@ -81,43 +81,15 @@ class threadTrafficSigns(ThreadWithStop):
         try:
             if self.isDetectorActive:
                     # processed_frame, detected_class, self.distanceToObject = self.distanceCalculator.calculate(image)
-                    detected_class_number, self.distanceToObject = self.distanceCalculator.calculate(image)
+                    #detected_class_number, self.distanceToObject = self.distanceCalculator.calculate(image)
+                    detectedClassName, distanceToObject = self.distanceCalculator.calculate(image)
 
-                    if detected_class_number:
-                        detected_class_name = self._get_class_name(detected_class_number) # Asignar nombres de clase basados en detected_class
-                    else:
-                        detected_class_name = ""
-
-                    self.distanceToObject = {
-                        "clss": detected_class_name,
-                        "pixels_distance": self.distanceToObject
+                    self.distanceToObjectMessage = {
+                        "clss": detectedClassName,
+                        "pixels_distance": distanceToObject
                         }
 
                     if self.debugging:
-                        self.logging.info(f'{{"threadTrafficSigns": {{ "Object detected": {self.distanceToObject["clss"]}, "Distance object-car": {self.distanceToObject["pixels_distance"]}}} }}')
+                        self.logging.info(f'{{"threadTrafficSigns": {{ "Object detected": {self.distanceToObjectMessage["clss"]}, "Distance object-car": {self.distanceToObject["pixels_distance"]}}} }}')
         except Exception as e:
             print(e)
-
-    def _get_class_name(self, detected_class):
-        """Returns the class name based on the detected class integer value"""
-        match detected_class[0]:
-            case 0.0:
-                return "crosswalk"
-            case 1.0:
-                return "highway-end"
-            case 2.0:
-                return "highway-entry"
-            case 3.0:
-                return "no-entry"
-            case 4.0:
-                return "one-way"
-            case 5.0:
-                return "parking"
-            case 6.0:
-                return "priority"
-            case 7.0:
-                return "roundabout"
-            case 8.0:
-                return "stop"
-            case _:
-                return ""
