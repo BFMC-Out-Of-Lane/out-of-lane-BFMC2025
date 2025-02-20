@@ -116,10 +116,9 @@ class LaneDetector(LaneDetectionInterface):
             win_y_high = binary_warped.shape[0] - window * window_height
 
             win_xleft_low = max(leftx_current - margin, 0)
-            win_xleft_high = min(leftx_current + margin, int(midpoint*0.6))
+            win_xleft_high = min(leftx_current + margin, binary_warped.shape[1])
 
-            # Restrict right window to the right side of the frame
-            win_xright_low = max(rightx_current - margin, -1)
+            win_xright_low = max(rightx_current - margin, 0)
             win_xright_high = min(rightx_current + margin, binary_warped.shape[1])
 
             # Draw the windows on the visualization image (Optional)
@@ -142,9 +141,6 @@ class LaneDetector(LaneDetectionInterface):
             if window == 0:
                 self.bottom_left_window = (win_xleft_low + win_xleft_high) / 2
                 self.bottom_right_window = (win_xright_low + win_xright_high) / 2
-            elif window == 11:
-                self.top_left_window = (win_xleft_low + win_xleft_high) / 2
-                self.top_right_window =(win_xright_low + win_xright_high) / 2
 
         left_line_inds = np.concatenate(left_line_inds)
         right_line_inds = np.concatenate(right_line_inds)
@@ -263,9 +259,5 @@ class LaneDetector(LaneDetectionInterface):
         self._calculate_tracking_params()
 
         result = self.draw_lane(frame, self.binary_warped)
-
-        # Draw a pink point at the center of the bottom window
-        center_point = (int(self.cross_tracking_error) + self.middle, frame.shape[0] - 100)
-        cv2.circle(result, center_point, 5, (255, 0, 255), -1)  # Pink color in BGR
 
         return result, self.cross_tracking_error, self.deviation
