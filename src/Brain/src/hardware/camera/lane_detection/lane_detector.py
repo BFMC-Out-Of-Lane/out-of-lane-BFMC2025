@@ -1,12 +1,17 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 # from src.hardware.camera.lane_detection.lane_detection_interface import \
     # LaneDetectionInterface
 # from src.hardware.camera.lane_detection.line import Line
 
 from lane_detection_interface import LaneDetectionInterface
 from line import Line
+
+
+def calculate_derivative(self, a, b, x):
+        return 2 * a * x + b
 
 
 class LaneDetector(LaneDetectionInterface):
@@ -224,6 +229,20 @@ class LaneDetector(LaneDetectionInterface):
         warped = cv2.warpPerspective(image, M, (width, height))
         return warped
 
+    def _calculate_tracking_params(self):
+        left_fit = self.left_line.best_fit
+        right_fit = self.right_line.best_fit
+
+        if left_fit is not None and right_fit is not None:
+            self.cross_tracking_error = (self.bottom_left_window + self.bottom_right_window) // 2
+            self.deviation = calculate_derivative((left_fit[0] + right_fit[0]) / 2, (left_fit[1] + right_fit[1]) / 2)
+        elif left_fit is not None:
+            self.cross_tracking_error = self.bottom_left_window + self.min_offset
+            self.deviation = calculate_derivative(left_fit[0], left_fit[1])
+        elif right_fit is not None:
+            self.cross_tracking_error = self.bottom_right_window - self.min_offset
+            self.deviation = calculate_derivative(right_fit[0], right_fit[1])
+
     def process_frame(self, frame):
         self.get_perspective_transform(frame)
         warped = self.warp_image(frame, self.M)
@@ -237,19 +256,12 @@ class LaneDetector(LaneDetectionInterface):
         self.left_line.add_fit(left_fit)
         self.right_line.add_fit(right_fit)
 
-        left_fit = self.left_line.best_fit
-        right_fit = self.right_line.best_fit
-
-        if left_fit is not None and right_fit is not None:
-            self.cross_tracking_error = (self.bottom_left_window + self.bottom_right_window) // 2
-        elif left_fit is not None:
-            self.cross_tracking_error = self.bottom_left_window + self.min_offset
-        elif right_fit is not None:
-            self.cross_tracking_error = self.bottom_right_window - self.min_offset
+        self._calculate_tracking_params()
 
         result = self.draw_lane(frame, self.binary_warped)
+
         # Draw a pink point at the center of the bottom window
         center_point = (int(self.cross_tracking_error), frame.shape[0] - 10)
         cv2.circle(result, center_point, 5, (255, 0, 255), -1)  # Pink color in BGR
 
-        return result, self.cross_tracking_error
+        return result, self.cross_tracking_error, math.atan(self.deviation)
