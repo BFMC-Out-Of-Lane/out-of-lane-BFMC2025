@@ -10,7 +10,7 @@ from lane_detection_interface import LaneDetectionInterface
 from line import Line
 
 
-def calculate_derivative(self, a, b, x):
+def calculate_derivative(a, b, x):
         return 2 * a * x + b
 
 
@@ -105,7 +105,7 @@ class LaneDetector(LaneDetectionInterface):
         leftx_current = leftx_base
         rightx_current = rightx_base
 
-        margin = 30
+        margin = 50
         minpix = 30  # Minimum number of pixels found to recenter window
 
         left_line_inds = []
@@ -235,13 +235,16 @@ class LaneDetector(LaneDetectionInterface):
 
         if left_fit is not None and right_fit is not None:
             self.cross_tracking_error = (self.bottom_left_window + self.bottom_right_window) // 2
-            self.deviation = calculate_derivative((left_fit[0] + right_fit[0]) / 2, (left_fit[1] + right_fit[1]) / 2)
+            self.deviation = calculate_derivative((left_fit[0] + right_fit[0]) / 2, (left_fit[1] + right_fit[1]) / 2, 1)
         elif left_fit is not None:
             self.cross_tracking_error = self.bottom_left_window + self.min_offset
-            self.deviation = calculate_derivative(left_fit[0], left_fit[1])
+            self.deviation = calculate_derivative(left_fit[0], left_fit[1], 1)
         elif right_fit is not None:
             self.cross_tracking_error = self.bottom_right_window - self.min_offset
-            self.deviation = calculate_derivative(right_fit[0], right_fit[1])
+            self.deviation = calculate_derivative(right_fit[0], right_fit[1], 1)
+
+        self.cross_tracking_error = self.cross_tracking_error - self.middle
+        self.deviation = - math.atan(self.deviation) * 180 / math.pi
 
     def process_frame(self, frame):
         self.get_perspective_transform(frame)
@@ -256,12 +259,13 @@ class LaneDetector(LaneDetectionInterface):
         self.left_line.add_fit(left_fit)
         self.right_line.add_fit(right_fit)
 
+        self.middle = frame.shape[1] // 2
         self._calculate_tracking_params()
 
         result = self.draw_lane(frame, self.binary_warped)
 
         # Draw a pink point at the center of the bottom window
-        center_point = (int(self.cross_tracking_error), frame.shape[0] - 10)
+        center_point = (int(self.cross_tracking_error) + self.middle, frame.shape[0] - 100)
         cv2.circle(result, center_point, 5, (255, 0, 255), -1)  # Pink color in BGR
 
-        return result, self.cross_tracking_error, math.atan(self.deviation)
+        return result, self.cross_tracking_error, self.deviation
