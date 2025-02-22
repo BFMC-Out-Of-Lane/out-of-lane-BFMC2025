@@ -1,12 +1,12 @@
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-# from src.hardware.camera.lane_detection.lane_detection_interface import \
-    # LaneDetectionInterface
-# from src.hardware.camera.lane_detection.line import Line
+from src.hardware.camera.lane_detection.lane_detection_interface import \
+    LaneDetectionInterface
+from src.hardware.camera.lane_detection.line import Line
 
-from lane_detection_interface import LaneDetectionInterface
-from line import Line
+# from lane_detection_interface import LaneDetectionInterface
+# from line import Line
 
 
 class LaneDetector(LaneDetectionInterface):
@@ -232,7 +232,6 @@ class LaneDetector(LaneDetectionInterface):
         # cv2.imshow('Binary Unwarped', binary_unwarped)
         # cv2.imshow('Binary Warped', binary_warped)
         left_fit, right_fit, leftx, lefty, rightx, righty, histImg = self.fit_polynomial()
-        cv2.imshow('Sliding Window', self.sliding_windows_image)
 
         self.left_line.add_fit(left_fit)
         self.right_line.add_fit(right_fit)
