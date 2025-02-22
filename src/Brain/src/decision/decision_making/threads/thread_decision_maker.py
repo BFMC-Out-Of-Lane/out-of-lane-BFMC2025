@@ -1,3 +1,4 @@
+import math
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, LaneKeeping,
                                             SpeedMotor, SteerMotor,
@@ -75,13 +76,16 @@ class threadDecisionMaker(ThreadWithStop):
     def _handle_lane_keeping_message(self):
         """Handles the lane keeping message, i.e.: decides the steering angle"""
 
-        self.lane_offset = self.subscribers["LaneKeeping"].receive()
-        if self.lane_offset:
-            steering = self.lane_offset * 3  # TODO: Add controller
-            if steering < -230:
-                steering = -230
-            elif steering > 230:
-                steering = 230
+        lane_keeping = self.subscribers["LaneKeeping"].receive()
+        if lane_keeping and int(self.current_speed) > 0:
+            self.cross_tracking_error = lane_keeping["cross_tracking_error"]
+            self.deviation = lane_keeping["deviation"]
+            if self.cross_tracking_error and self.deviation:
+                steering = (self.deviation + math.atan(1 * self.cross_tracking_error / self.current_speed)) * 180 / math.pi
+                if steering < -230:
+                    steering = -230
+                elif steering > 230:
+                    steering = 230
 
             self.steer_sender.send(str(steering))
 

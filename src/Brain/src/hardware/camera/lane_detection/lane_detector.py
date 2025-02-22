@@ -2,12 +2,12 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import math
-# from src.hardware.camera.lane_detection.lane_detection_interface import \
-    # LaneDetectionInterface
-# from src.hardware.camera.lane_detection.line import Line
+from src.hardware.camera.lane_detection.lane_detection_interface import \
+    LaneDetectionInterface
+from src.hardware.camera.lane_detection.line import Line
 
-from lane_detection_interface import LaneDetectionInterface
-from line import Line
+# from lane_detection_interface import LaneDetectionInterface
+# from line import Line
 
 MIN_POLY_PIXEL = 4000
 NUM_WINDOWS = 12
@@ -205,7 +205,7 @@ class LaneDetector(LaneDetectionInterface):
                 self.left_line.best_fit = None
 
         print("---------------------")
-        cv2.imshow("Lane Points (Warped)", self.sliding_windows_image)
+        # cv2.imshow("Lane Points (Warped)", self.sliding_windows_image)
 
     def draw_lane(self, original_image, binary_warped):
         left_fit = self.left_line.best_fit
@@ -268,7 +268,7 @@ class LaneDetector(LaneDetectionInterface):
         image_copy = image.copy()
         # Draw a closed yellow polygon (BGR color (0, 255, 255)) with thickness 3
         cv2.polylines(image_copy, [pts], isClosed=True, color=(0, 255, 255), thickness=3)
-        cv2.imshow('Cosito de poligono', image_copy)
+        # cv2.imshow('Cosito de poligono', image_copy)
 
     def warp_image(self, image, M):
         height, width = image.shape[:2]
@@ -278,6 +278,7 @@ class LaneDetector(LaneDetectionInterface):
     def _calculate_tracking_params(self):
         left_fit = self.left_line.best_fit
         right_fit = self.right_line.best_fit
+        self.cross_tracking_error = self.deviation = None
 
         if left_fit is not None and right_fit is not None:
             self.cross_tracking_error = (self.bottom_left_window + self.bottom_right_window) // 2
@@ -289,8 +290,9 @@ class LaneDetector(LaneDetectionInterface):
             self.cross_tracking_error = self.bottom_right_window - self.min_offset
             self.deviation = calculate_derivative(right_fit[0], right_fit[1], 1)
 
-        self.cross_tracking_error = self.cross_tracking_error - self.middle
-        self.deviation = - math.atan(self.deviation) * 180 / math.pi
+        if self.cross_tracking_error and self.deviation:
+            self.cross_tracking_error = self.cross_tracking_error - self.middle
+            self.deviation = - math.atan(self.deviation) * 180 / math.pi
 
     def process_frame(self, frame):
         self.get_perspective_transform(frame)
@@ -300,7 +302,7 @@ class LaneDetector(LaneDetectionInterface):
         #cv2.imshow('Binary Unwarped', binary_unwarped)
         # cv2.imshow('Binary Warped', binary_warped)
         left_fit, right_fit, leftx, lefty, rightx, righty, histImg = self.fit_polynomial()
-        cv2.imshow('Sliding Window', self.sliding_windows_image)
+        # cv2.imshow('Sliding Window', self.sliding_windows_image)
 
         self.left_line.add_fit(left_fit)
         self.right_line.add_fit(right_fit)
@@ -311,4 +313,4 @@ class LaneDetector(LaneDetectionInterface):
 
         result = self.draw_lane(frame, self.binary_warped)
 
-        return result, self.cross_tracking_error, self.deviation
+        return binary_unwarped, self.cross_tracking_error, self.deviation
