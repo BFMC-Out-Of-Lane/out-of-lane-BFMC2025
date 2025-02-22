@@ -244,14 +244,10 @@ class LaneDetector(LaneDetectionInterface):
             self.bottom_right = [width * 1, height*0.98]
             self.bottom_left = [width * 0, height*0.98]
         else:
-            # self.top_left = [width * 0.4, height * 0.7]
-            # self.top_right = [width * 0.6, height * 0.7]
-            self.top_left = [0, height * 0.7]
-            self.top_right = [width, height * 0.7]
-            # self.bottom_right = [width * 0.8, height * 0.95]
-            # self.bottom_left = [width * 0.2, height * 0.95]
-            self.bottom_right = [width, height * 0.95]
-            self.bottom_left = [0, height * 0.95]
+            self.top_left = [width * 0.2, height * 0.7]
+            self.top_right = [width * 0.8, height * 0.7]
+            self.bottom_right = [width * 0.8, height * 0.95]
+            self.bottom_left = [width * 0.2, height * 0.95]
         src = np.float32([
             self.top_left,
             self.top_right,
