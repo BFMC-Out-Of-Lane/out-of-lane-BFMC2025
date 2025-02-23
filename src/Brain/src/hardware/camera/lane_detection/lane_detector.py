@@ -44,10 +44,10 @@ class LaneDetector(LaneDetectionInterface):
         s_channel = hls[:, :, 2]
         lower_yellow = np.array([15, 30, 115])
         upper_yellow = np.array([35, 204, 255])
-        yellow_mask = cv2.inRange(hls, lower_yellow, upper_yellow)
+        #yellow_mask = cv2.inRange(hls, lower_yellow, upper_yellow)
 
         # Combine the masks
-        color_mask = cv2.bitwise_or(white_mask, yellow_mask)
+        #color_mask = cv2.bitwise_or(white_mask, yellow_mask)
 
         # Edge detection using Sobel operator
         gray = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
@@ -56,10 +56,10 @@ class LaneDetector(LaneDetectionInterface):
         abs_sobelx = np.uint8(255 * abs_sobelx / np.max(abs_sobelx))
 
         # Threshold the Sobel image
-        _, sxbinary = cv2.threshold(abs_sobelx, 20, 100, cv2.THRESH_BINARY)
+        _, sxbinary = cv2.threshold(abs_sobelx, 20, 150, cv2.THRESH_BINARY)
 
         # Combine color and edge masks
-        combined_binary = cv2.bitwise_or(color_mask, sxbinary)
+        combined_binary = cv2.bitwise_or(white_mask, sxbinary)
 
         return combined_binary
 
@@ -156,7 +156,7 @@ class LaneDetector(LaneDetectionInterface):
         hist, img = self.histogram(self.binary_warped)
         leftx, lefty, rightx, righty = self.sliding_window(self.binary_warped, hist)
         left_fit = None
-        #print("leftx: ", len(leftx), "rightx: ", len(rightx))
+        print("leftx: ", len(leftx), "rightx: ", len(rightx))
         if len(leftx) > MIN_POLY_PIXEL:
             left_fit = np.polyfit(lefty, leftx, 2)
         right_fit = None
@@ -301,7 +301,7 @@ class LaneDetector(LaneDetectionInterface):
         #cv2.imshow('Binary Unwarped', binary_unwarped)
         # cv2.imshow('Binary Warped', binary_warped)
         left_fit, right_fit, leftx, lefty, rightx, righty, histImg = self.fit_polynomial()
-        # cv2.imshow('Sliding Window', self.sliding_windows_image)
+        #cv2.imshow('Sliding Window', self.sliding_windows_image)
 
         self.left_line.add_fit(left_fit)
         self.right_line.add_fit(right_fit)
@@ -312,4 +312,4 @@ class LaneDetector(LaneDetectionInterface):
 
         result = self.draw_lane(frame, self.binary_warped)
 
-        return self.sliding_windows_image, self.cross_tracking_error, self.deviation
+        return result, self.cross_tracking_error, self.deviation
