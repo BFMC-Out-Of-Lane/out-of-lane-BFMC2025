@@ -69,6 +69,7 @@ class LaneDetector(LaneDetectionInterface):
         bottom_limit = int(binary_warped.shape[0]*0.97)
         # cv2.line(binary_warped, (0, bottom_limit), (binary_warped.shape[1], bottom_limit), (255, 0, 0), 2)
         histogram = np.sum(binary_warped[:bottom_limit], axis=0)
+        self.borarHist = histogram
         # cv2.imshow('Histogram', self.render_histogram(histogram))
         return histogram, None
 
@@ -194,6 +195,8 @@ class LaneDetector(LaneDetectionInterface):
             f"\033[31m A_right:\033[0m {rightA:2.5f}  "   
             f"\033[31m x_right:\033[0m {x_right:7.2f}  "
             f"\033[33m diff:\033[0m {diff:7.2f}  "
+            f"\033[33m xL :\033[0m {x_left:7.2f}  "
+            f"\033[33m yL :\033[0m {y:7.2f}  "
             f"\033[35m super:\033[0m {superposition}")
         if num_sups > 8:
             x_left, x_right = points[-1]
@@ -244,10 +247,10 @@ class LaneDetector(LaneDetectionInterface):
             self.bottom_right = [width * 1, height*0.98]
             self.bottom_left = [width * 0, height*0.98]
         else:
-            self.top_left = [width * 0.2, height * 0.7]
-            self.top_right = [width * 0.8, height * 0.7]
-            self.bottom_right = [width * 0.8, height * 0.95]
-            self.bottom_left = [width * 0.2, height * 0.95]
+            self.top_left = [width * 0.3, height * 0.8]
+            self.top_right = [width * 0.7, height * 0.8]
+            self.bottom_right = [width * 0.7, height * 0.98]
+            self.bottom_left = [width * 0.3, height * 0.98]
         src = np.float32([
             self.top_left,
             self.top_right,
@@ -281,13 +284,13 @@ class LaneDetector(LaneDetectionInterface):
 
         if left_fit is not None and right_fit is not None:
             self.cross_tracking_error = (self.bottom_left_window + self.bottom_right_window) // 2
-            self.deviation = calculate_derivative((left_fit[0] + right_fit[0]) / 2, (left_fit[1] + right_fit[1]) / 2, 1)
+            self.deviation = calculate_derivative((left_fit[0] + right_fit[0]) / 2, (left_fit[1] + right_fit[1]) / 2, 242)
         elif left_fit is not None:
             self.cross_tracking_error = self.bottom_left_window + self.min_offset
-            self.deviation = calculate_derivative(left_fit[0], left_fit[1], 1)
+            self.deviation = calculate_derivative(left_fit[0], left_fit[1], 242)
         elif right_fit is not None:
             self.cross_tracking_error = self.bottom_right_window - self.min_offset
-            self.deviation = calculate_derivative(right_fit[0], right_fit[1], 1)
+            self.deviation = calculate_derivative(right_fit[0], right_fit[1], 242)
 
         if self.cross_tracking_error and self.deviation:
             self.cross_tracking_error = self.cross_tracking_error - self.middle
@@ -311,5 +314,5 @@ class LaneDetector(LaneDetectionInterface):
         self._calculate_tracking_params()
 
         result = self.draw_lane(frame, self.binary_warped)
-
-        return result, self.cross_tracking_error, self.deviation
+        #hoyts = self.render_histogram(self.borarHist)
+        return self.sliding_windows_image, self.cross_tracking_error, self.deviation
