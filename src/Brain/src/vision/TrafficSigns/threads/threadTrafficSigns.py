@@ -29,8 +29,9 @@ class threadTrafficSigns(ThreadWithStop):
 
         #  r"/home/ool/out-of-lane-BFMC2025/src/Brain/src/vision/
         # yolo11n_best_traffic_signs_V2.pt
+        # yolo11n_traffic_objects_V11.pt
         # yolov8n.pt
-        self.distanceCalculator = DistanceCalculation(model="yolo11n_best_traffic_signs_V3.pt",
+        self.distanceCalculator = DistanceCalculation(model="yolo11n_traffic_objects_V11.pt",
                                                     conf = 0.5,
                                                     # classes = [0,8],
                                                     vid_stride=10,
@@ -83,6 +84,10 @@ class threadTrafficSigns(ThreadWithStop):
                     # processed_frame, detected_class, self.distanceToObject = self.distanceCalculator.calculate(image)
                     #detected_class_number, self.distanceToObject = self.distanceCalculator.calculate(image)
                     detectedClassName, distanceToObject = self.distanceCalculator.calculate(image)
+
+                    # Las variables toman los siguientes valores:
+                    # detectedClassName = ["stop-signal", "crosswalk-signal" ]
+                    # distanceToObject = [200.0, 100.0]
 
                     self.distanceToObjectMessage = {
                         "clss": detectedClassName,

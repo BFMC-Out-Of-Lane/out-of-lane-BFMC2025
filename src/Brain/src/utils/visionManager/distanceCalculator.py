@@ -65,6 +65,9 @@ class DistanceCalculation(BaseSolution):
         # Define el punto fijo en el medio de la imagen pero en la parte inferior
         # self.fixed_point = (im0.shape[1] // 2, im0.shape[0] - 1)
 
+        detected_classes = []  # Lista para almacenar las clases detectadas
+        distances_in_pixels = []  # Lista para almacenar las distancias en píxeles
+
         # Itera sobre las cajas delimitadoras, IDs de pista y clases
         for box, track_id, cls in zip(self.boxes, self.track_ids, self.clss):
             # self.annotator.box_label(box, color=colors(int(cls), True), label=self.names[int(cls)])
@@ -80,14 +83,15 @@ class DistanceCalculation(BaseSolution):
             # Anota la distancia en la imagen
             # self.annotator.plot_distance_and_line(self.pixels_distance, [box_center, self.fixed_point])
 
-            self.detected_class = self.names[int(cls)]
-            # print(f"Objeto detectado: {self.names[int(cls)]}, Distancia en píxeles: {self.pixels_distance}")
-            
-            break # Salir del bucle después de procesar el primer objeto
+            detected_classes.append(self.names[int(cls)])  # Agrega la clase detectada a la lista
+            distances_in_pixels.append(self.pixels_distance)  # Agrega la distancia en píxeles a la lista
+
+            # self.detected_class = self.names[int(cls)]
+            # break # Salir del bucle después de procesar el primer objeto
 
         if (self.clss == []):
             self.pixels_distance = 0
-        # return im0, self.detected_class, self.pixels_distance  # Devuelve la imagen procesada para más uso
         #return self.clss, self.pixels_distance
-        return self.detected_class, self.pixels_distance
+        # return self.detected_class, self.pixels_distance
+        return self.detected_classes, self.distances_in_pixels
 

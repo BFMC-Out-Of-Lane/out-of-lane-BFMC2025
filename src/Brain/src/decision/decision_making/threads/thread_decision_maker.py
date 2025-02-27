@@ -8,9 +8,13 @@ from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
+import time
+import threading
+
+
 MIN_DISTANCE_TO_STOP = 200
 MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN = 250
-
+TIME_AT_STOP_SIGN = 3 # seconds
 
 class threadDecisionMaker(ThreadWithStop):
     """This thread handles decision_making.
@@ -94,141 +98,170 @@ class threadDecisionMaker(ThreadWithStop):
 
     def _handle_traffic_signs_message(self):
         """Handles the traffic signs, i.e.: decides if the vehicle should slow down, stop or continue"""
+
+        if self.onStopSignal: 
+            return
+
+        def timer_stop_signal():
+            if self.debugging:
+                self.logging.info(
+                    f'{{"threadDecisionMaker": {{ "Object detected -------------------- CAR STOPPING": {detected_clss}}} }}')
+            self.speed_sender.send("0")
+            time.sleep(TIME_AT_STOP_SIGN)
+            self.onStopSignal = False
+
         try:
             traffic_signs_message = self.subscribers["trafficSigns"].receive()
             if traffic_signs_message:
-                detected_clss = str(traffic_signs_message["clss"])
-                pixels_distance = int(traffic_signs_message["pixels_distance"])
+                # detected_clss = str(traffic_signs_message["clss"])
+                # pixels_distance = int(traffic_signs_message["pixels_distance"])
+                detected_clss = traffic_signs_message["clss"]
+                pixels_distance = traffic_signs_message["pixels_distance"]
+
                 #if self.debugging:
                 #    self.logging.info(
                 #        f'{{"threadDecisionMaker": {{ "Object detected": {detected_clss}, "Distance object-car": {pixels_distance}}} }}')
 
-                if detected_clss == "stop":
-                    self.speed_sender.send("0")
-                    self.signal_sender.send({"WarningName":"stop", "WarningID": 20})
+                # if detected_clss == "stop":
+                #     self.speed_sender.send("0")
+                #     self.signal_sender.send({"WarningName":"stop", "WarningID": 20})
+                #     self.onStopSignal = True
+                #     if self.debugging:
+                #         self.logging.info(
+                #             f'{{"threadDecisionMaker": {{ "Object detected -------------------- CAR STOPPING": {detected_clss}}} }}')
+                #     return
+                # else:
+                #     self.onStopSignal = False
+
+                if "stop-signal" in detected_clss and not self.onStopSignal:
+                    self.signal_sender.send({"WarningName": "stop", "WarningID": 20})
+                    timer_thread = threading.Thread(target=timer_stop_signal)
+                    timer_thread.start()
                     self.onStopSignal = True
-                    
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadDecisionMaker": {{ "Object detected -------------------- CAR STOPPING": {detected_clss}}} }}')
+                            f'{{"threadDecisionMaker": "Object detected ------ CAR STOPPING": stop-signal" }}')
                     return
                 else:
                     self.onStopSignal = False
 
-                if detected_clss == "crosswalk":
+                if "crosswalk-signal" in detected_clss:
                     self.speed_sender.send("0")
-                    self.signal_sender.send({"WarningName":"crosswalk", "WarningID": 4})
+                    self.signal_sender.send({"WarningName": "crosswalk", "WarningID": 4})
 
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadDecisionMaker": {{ "Object detected -------------------- CAR STOPPING": {detected_clss}}} }}')
+                            f'{{"threadDecisionMaker": "Object detected ------ CAR STOPPING": crosswalk-signal "}}')
                     return
 
-                if detected_clss == "highway-end":
+                if "highway-end-signal" in detected_clss:
                     self.speed_sender.send("0")
-                    self.signal_sender.send({"WarningName":"highway_exit", "WarningID": 7})
+                    self.signal_sender.send({"WarningName": "highway_exit", "WarningID": 7})
 
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                            f'{{"threadDecisionMaker": "Object detected: highway-end-signal "}}')
                     return
 
-                if detected_clss == "highway-entry":
+                if "highway-entry-signal" in detected_clss:
                     self.speed_sender.send("0")
-                    self.signal_sender.send({"WarningName":"highway_entrance", "WarningID": 6})
+                    self.signal_sender.send({"WarningName": "highway_entrance", "WarningID": 6})
 
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                            f'{{"threadDecisionMaker": {{ "Object detected: highway-entry-signal"}} }}')
                     return
 
-                if detected_clss == "one-way":
+                if "one-way-signal" in detected_clss:
                     self.speed_sender.send("0")
-                    self.signal_sender.send({"WarningName":"oneway", "WarningID": 9})
+                    self.signal_sender.send({"WarningName": "oneway", "WarningID": 9})
 
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                            f'{{"threadDecisionMaker": {{ "Object detected: one-way-signal "}}}}')
                     return
 
-                if detected_clss == "parking":
+                if "parking-signal" in detected_clss:
                     self.speed_sender.send("0")
-                    self.signal_sender.send({"WarningName":"parking", "WarningID": 10})
+                    self.signal_sender.send({"WarningName": "parking", "WarningID": 10})
 
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                            f'{{"threadDecisionMaker": {{ "Object detected: parking-signal "}}}}')
                     return
 
-                if detected_clss == "no-entry":
+                if "no-entry-signal" in detected_clss:
                     self.speed_sender.send("0")
-                    self.signal_sender.send({"WarningName":"forbidden", "WarningID": 5})
+                    self.signal_sender.send({"WarningName": "forbidden", "WarningID": 5})
 
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                            f'{{"threadDecisionMaker": {{ "Object detected: no-entry-signal" }}}}')
                     return
 
-                if detected_clss == "roundabout":
+                if "roundabout-signal" in detected_clss:
                     self.speed_sender.send("0")
-                    self.signal_sender.send({"WarningName":"roundabaout", "WarningID": 15})
+                    self.signal_sender.send({"WarningName": "roundabaout", "WarningID": 15})
 
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                            f'{{"threadDecisionMaker": "Object detected: roundabout-signal" }}')
                     return
 
-                if detected_clss == "priority":
-                    self.signal_sender.send({"WarningName":"priority", "WarningID": 13})
+                if "priority-signal" in detected_clss:
+                    self.signal_sender.send({"WarningName": "priority", "WarningID": 13})
 
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                            f'{{"threadDecisionMaker": "Object detected: priority-signal }}')
                     return
-                
-                if detected_clss == "pedestrian-doll":
+
+                if "pedestrian" in detected_clss:
                     self.speed_sender.send("0")
-                    self.signal_sender.send({"WarningName":"ped_on_crosswalk", "WarningID": 12})
+                    self.signal_sender.send({"WarningName": "ped_on_crosswalk", "WarningID": 12})
                     self.pedestrianCrossing = True
 
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                            f'{{"threadDecisionMaker": "Object detected: pedestrian }}')
                     return
                 else:
                     self.pedestrianCrossing = False
-                
-                if detected_clss == "red-light":
+
+                if "crosswalk-road" in detected_clss:
+                    # self.signal_sender.send({"WarningName": "highway_lane", "WarningID": 21})
+                    if self.debugging:
+                        self.logging.info(
+                            f'{{"threadDecisionMaker":  "Object detected: crosswalk-road }}')
+                    return
+
+                if "red-light" in detected_clss:
                     self.speed_sender.send("0")
-                    self.signal_sender.send({"WarningName":"red-light", "WarningID": 22})
+                    self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
                     self.onStopLight = True
 
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                            f'{{"threadDecisionMaker": {{ "Object detected: red-light" }}}}')
                     return
                 else:
                     self.onStopLight = False
-                
-                if detected_clss == "yellow-light":
-                    #self.speed_sender.send("10")
-                    self.signal_sender.send({"WarningName":"yellow-light", "WarningID": 23})
+
+                if "yellow-light" in detected_clss:
+                    self.signal_sender.send({"WarningName": "yellow-light", "WarningID": 23})
 
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                            f'{{"threadDecisionMaker": {{ "Object detected:yellow-light" }}}}')
                     return
-                
-                if detected_clss == "green-light":
-                    self.signal_sender.send({"WarningName":"green-light", "WarningID": 24})
+
+                if "green-light" in detected_clss:
+                    self.signal_sender.send({"WarningName": "green-light", "WarningID": 24})
 
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadDecisionMaker": {{ "Object detected: {detected_clss}}} }}')
+                            f'{{"threadDecisionMaker": {{ "Object detected: green-light" }}}}')
                     return
-                
-                # if detected_clss == "priority" and pixels_distance < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
-                #     pass
 
         except Exception as e:
             print(e)
