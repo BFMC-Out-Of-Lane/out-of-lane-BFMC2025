@@ -5,6 +5,7 @@ import math
 from src.hardware.camera.lane_detection.lane_detection_interface import \
     LaneDetectionInterface
 from src.hardware.camera.lane_detection.line import Line
+from scipy.signal import find_peaks
 
 # from lane_detection_interface import LaneDetectionInterface
 # from line import Line
@@ -12,8 +13,9 @@ from src.hardware.camera.lane_detection.line import Line
 MIN_POLY_PIXEL = 4000
 NUM_WINDOWS = 12
 
+
 def calculate_derivative(a, b, x):
-        return 2 * a * x + b
+    return 2 * a * x + b
 
 
 class LaneDetector(LaneDetectionInterface):
@@ -44,19 +46,19 @@ class LaneDetector(LaneDetectionInterface):
         s_channel = hls[:, :, 2]
         lower_yellow = np.array([15, 30, 115])
         upper_yellow = np.array([35, 204, 255])
-        #yellow_mask = cv2.inRange(hls, lower_yellow, upper_yellow)
+        # yellow_mask = cv2.inRange(hls, lower_yellow, upper_yellow)
 
         # Combine the masks
-        #color_mask = cv2.bitwise_or(white_mask, yellow_mask)
+        # color_mask = cv2.bitwise_or(white_mask, yellow_mask)
 
         # Edge detection using Sobel operator
         gray = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
         sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0)
         abs_sobelx = np.absolute(sobelx)
-        abs_sobelx = np.uint8(255 * abs_sobelx / np.max(abs_sobelx))
+        abs_sobelx = np.uint8(255 * abs_sobelx / (np.max(abs_sobelx if np.max(abs_sobelx) > 0 else 0.1)))
 
         # Threshold the Sobel image
-        _, sxbinary = cv2.threshold(abs_sobelx, 20, 150, cv2.THRESH_BINARY)
+        _, sxbinary = cv2.threshold(abs_sobelx, 100, 150, cv2.THRESH_BINARY)
 
         # Combine color and edge masks
         combined_binary = cv2.bitwise_or(white_mask, sxbinary)
@@ -96,8 +98,11 @@ class LaneDetector(LaneDetectionInterface):
     def sliding_window(self, binary_warped, histogram):
         self.sliding_windows_image = np.dstack((binary_warped, binary_warped, binary_warped))
         midpoint = int(histogram.shape[0] // 2)
-        leftx_base = np.argmax(histogram[:midpoint])
-        rightx_base = np.argmax(histogram[midpoint:]) + midpoint
+
+        left_peaks = find_peaks(histogram[:midpoint], height=np.average(histogram[:midpoint]))[0]
+        right_peaks = find_peaks(histogram[midpoint:], height=np.average(histogram[midpoint:]))[0]
+        leftx_base = left_peaks[-1] if len(left_peaks) > 0 else midpoint - self.min_offset
+        rightx_base = right_peaks[0] + midpoint if len(right_peaks) > 0 else midpoint + self.min_offset
 
         nwindows = NUM_WINDOWS
         window_height = int(binary_warped.shape[0] // nwindows)
@@ -123,7 +128,7 @@ class LaneDetector(LaneDetectionInterface):
 
             win_xright_low = max(rightx_current - margin, 0)
             win_xright_high = min(rightx_current + margin, binary_warped.shape[1])
-         
+
             good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
                               (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
             good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
@@ -134,10 +139,12 @@ class LaneDetector(LaneDetectionInterface):
 
             if len(good_left_inds) > minpix:
                 leftx_current = int(np.mean(nonzerox[good_left_inds]))
-                cv2.rectangle(self.sliding_windows_image, (win_xleft_low, win_y_low), (win_xleft_high, win_y_high), (0, 255, 60), 2)
+                cv2.rectangle(self.sliding_windows_image, (win_xleft_low, win_y_low),
+                              (win_xleft_high, win_y_high), (0, 255, 60), 2)
             if len(good_right_inds) > minpix:
                 rightx_current = int(np.mean(nonzerox[good_right_inds]))
-                cv2.rectangle(self.sliding_windows_image, (win_xright_low, win_y_low), (win_xright_high, win_y_high), (0, 255, 60), 2)
+                cv2.rectangle(self.sliding_windows_image, (win_xright_low, win_y_low),
+                              (win_xright_high, win_y_high), (0, 255, 60), 2)
 
             if window == 0:
                 self.bottom_left_window = (win_xleft_low + win_xleft_high) / 2
@@ -157,14 +164,13 @@ class LaneDetector(LaneDetectionInterface):
         hist, img = self.histogram(self.binary_warped)
         leftx, lefty, rightx, righty = self.sliding_window(self.binary_warped, hist)
         left_fit = None
-        print("leftx: ", len(leftx), "rightx: ", len(rightx))
+        # print("leftx: ", len(leftx), "rightx: ", len(rightx))
         if len(leftx) > MIN_POLY_PIXEL:
             left_fit = np.polyfit(lefty, leftx, 2)
         right_fit = None
         if len(rightx) > MIN_POLY_PIXEL:
             right_fit = np.polyfit(righty, rightx, 2)
         return left_fit, right_fit, leftx, lefty, rightx, righty, img
-
 
     def buscame_un_mejor_nombre_gil(self, leftPoly, rightPoly, original_frame):
         # Calculate lane points and draw on both warped and original images
@@ -189,15 +195,15 @@ class LaneDetector(LaneDetectionInterface):
             if superposition:
                 num_sups += 1
             points.append((x_left, x_right))
-            print(
-            f"\033[34m A_left:\033[0m {leftA:2.5f}  "   
-            f"\033[34m x_left:\033[0m {x_left:7.2f}  "
-            f"\033[31m A_right:\033[0m {rightA:2.5f}  "   
-            f"\033[31m x_right:\033[0m {x_right:7.2f}  "
-            f"\033[33m diff:\033[0m {diff:7.2f}  "
-            f"\033[33m xL :\033[0m {x_left:7.2f}  "
-            f"\033[33m yL :\033[0m {y:7.2f}  "
-            f"\033[35m super:\033[0m {superposition}")
+            # print(
+            # f"\033[34m A_left:\033[0m {leftA:2.5f}  "
+            # f"\033[34m x_left:\033[0m {x_left:7.2f}  "
+            # f"\033[31m A_right:\033[0m {rightA:2.5f}  "
+            # f"\033[31m x_right:\033[0m {x_right:7.2f}  "
+            # f"\033[33m diff:\033[0m {diff:7.2f}  "
+            # f"\033[33m xL :\033[0m {x_left:7.2f}  "
+            # f"\033[33m yL :\033[0m {y:7.2f}  "
+            # f"\033[35m super:\033[0m {superposition}")
         if num_sups > 8:
             x_left, x_right = points[-1]
             x_center = (x_left + x_right) // 2
@@ -207,7 +213,7 @@ class LaneDetector(LaneDetectionInterface):
             else:
                 self.left_line.best_fit = None
 
-        print("---------------------")
+        # print("---------------------")
 
     def draw_lane(self, original_image, binary_warped):
         left_fit = self.left_line.best_fit
@@ -229,7 +235,7 @@ class LaneDetector(LaneDetectionInterface):
             left_line_pts = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
             # Warp the lane line back onto the original image
             left_line_pts = cv2.perspectiveTransform(left_line_pts, self.Minv)
-            #c Drawing
+            # c Drawing
             cv2.polylines(result, [np.int32(left_line_pts)], isClosed=False, color=(255, 0, 0), thickness=10)
         if right_fit is not None:
             right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
@@ -249,8 +255,8 @@ class LaneDetector(LaneDetectionInterface):
         else:
             self.top_left = [width * 0.3, height * 0.8]
             self.top_right = [width * 0.7, height * 0.8]
-            self.bottom_right = [width * 0.7, height * 0.98]
-            self.bottom_left = [width * 0.3, height * 0.98]
+            self.bottom_right = [width * 0.9, height * 0.98]
+            self.bottom_left = [width * 0.1, height * 0.98]
         src = np.float32([
             self.top_left,
             self.top_right,
@@ -265,11 +271,11 @@ class LaneDetector(LaneDetectionInterface):
         ])
         self.M = cv2.getPerspectiveTransform(src, dst)
         self.Minv = cv2.getPerspectiveTransform(dst, src)  # For inverse transform
-        pts = np.array([self.top_left, self.top_right, self.bottom_right, self.bottom_left], np.int32)
-        pts = pts.reshape((-1, 1, 2))
-        image_copy = image.copy()
+        # pts = np.array([self.top_left, self.top_right, self.bottom_right, self.bottom_left], np.int32)
+        # pts = pts.reshape((-1, 1, 2))
+        # image_copy = image.copy()
         # Draw a closed yellow polygon (BGR color (0, 255, 255)) with thickness 3
-        cv2.polylines(image_copy, [pts], isClosed=True, color=(0, 255, 255), thickness=3)
+        # cv2.polylines(image_copy, [pts], isClosed=True, color=(0, 255, 255), thickness=3)
         # cv2.imshow('Cosito de poligono', image_copy)
 
     def warp_image(self, image, M):
@@ -284,7 +290,8 @@ class LaneDetector(LaneDetectionInterface):
 
         if left_fit is not None and right_fit is not None:
             self.cross_tracking_error = (self.bottom_left_window + self.bottom_right_window) // 2
-            self.deviation = calculate_derivative((left_fit[0] + right_fit[0]) / 2, (left_fit[1] + right_fit[1]) / 2, 242)
+            self.deviation = calculate_derivative(
+                (left_fit[0] + right_fit[0]) / 2, (left_fit[1] + right_fit[1]) / 2, 242)
         elif left_fit is not None:
             self.cross_tracking_error = self.bottom_left_window + self.min_offset
             self.deviation = calculate_derivative(left_fit[0], left_fit[1], 242)
@@ -301,10 +308,10 @@ class LaneDetector(LaneDetectionInterface):
         warped = self.warp_image(frame, self.M)
         self.binary_warped = self.threshold_image(warped)
         binary_unwarped = self.warp_image(self.binary_warped, self.Minv)
-        #cv2.imshow('Binary Unwarped', binary_unwarped)
+        # cv2.imshow('Binary Unwarped', binary_unwarped)
         # cv2.imshow('Binary Warped', binary_warped)
         left_fit, right_fit, leftx, lefty, rightx, righty, histImg = self.fit_polynomial()
-        #cv2.imshow('Sliding Window', self.sliding_windows_image)
+        # cv2.imshow('Sliding Window', self.sliding_windows_image)
 
         self.left_line.add_fit(left_fit)
         self.right_line.add_fit(right_fit)
@@ -314,5 +321,5 @@ class LaneDetector(LaneDetectionInterface):
         self._calculate_tracking_params()
 
         result = self.draw_lane(frame, self.binary_warped)
-        #hoyts = self.render_histogram(self.borarHist)
+        # hoyts = self.render_histogram(self.borarHist)
         return self.sliding_windows_image, self.cross_tracking_error, self.deviation
