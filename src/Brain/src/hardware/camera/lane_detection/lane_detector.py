@@ -42,15 +42,6 @@ class LaneDetector(LaneDetectionInterface):
         # Threshold the L channel to get white colors
         _, white_mask = cv2.threshold(l_channel, 200, 255, cv2.THRESH_BINARY)
 
-        # Threshold the S channel to get yellow colors
-        s_channel = hls[:, :, 2]
-        lower_yellow = np.array([15, 30, 115])
-        upper_yellow = np.array([35, 204, 255])
-        # yellow_mask = cv2.inRange(hls, lower_yellow, upper_yellow)
-
-        # Combine the masks
-        # color_mask = cv2.bitwise_or(white_mask, yellow_mask)
-
         # Edge detection using Sobel operator
         gray = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
         sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0)
