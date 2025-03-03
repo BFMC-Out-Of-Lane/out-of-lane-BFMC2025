@@ -10,9 +10,6 @@ from scipy.signal import find_peaks
 # from lane_detection_interface import LaneDetectionInterface
 # from line import Line
 
-MIN_POLY_PIXEL = 4000
-NUM_WINDOWS = 12
-
 
 def calculate_derivative(a, b, x):
     return 2 * a * x + b
@@ -23,7 +20,10 @@ class LaneDetector(LaneDetectionInterface):
         self.min_offset = min_offset
         self.distance_to_aim = distance_to_aim
         self.is_simu = is_simu
-        self.max_windows_overlapping = 8
+
+        self.MAX_WINDOWS_OVERLAPPING = 8
+        self.NUM_OF_WINDOWS = 12
+        self.MIN_POLY_PIXEL = 4000
 
         self.left_line = Line()
         self.right_line = Line()
@@ -94,7 +94,7 @@ class LaneDetector(LaneDetectionInterface):
         leftx_base = left_peaks[-1] if len(left_peaks) > 0 else midpoint - self.min_offset
         rightx_base = right_peaks[0] + midpoint if len(right_peaks) > 0 else midpoint + self.min_offset
 
-        nwindows = NUM_WINDOWS
+        nwindows = self.NUM_OF_WINDOWS
         window_height = int(binary_warped.shape[0] // nwindows)
         nonzero = binary_warped.nonzero()
         nonzeroy = np.array(nonzero[0])
@@ -131,7 +131,7 @@ class LaneDetector(LaneDetectionInterface):
                 leftx_current = int(np.mean(nonzerox[good_left_inds]))
                 cv2.rectangle(self.sliding_windows_image, (win_xleft_low, win_y_low),
                               (win_xleft_high, win_y_high), (0, 255, 60), 2)
-                
+
             if len(good_right_inds) > minpix:
                 rightx_current = int(np.mean(nonzerox[good_right_inds]))
                 cv2.rectangle(self.sliding_windows_image, (win_xright_low, win_y_low),
@@ -155,13 +155,13 @@ class LaneDetector(LaneDetectionInterface):
         hist, img = self._histogram(self.binary_warped)
         leftx, lefty, rightx, righty = self._sliding_window(self.binary_warped, hist)
         left_fit = None
-        if len(leftx) > MIN_POLY_PIXEL:
+        if len(leftx) > self.MIN_POLY_PIXEL:
             left_fit = np.polyfit(lefty, leftx, 2)
 
         right_fit = None
-        if len(rightx) > MIN_POLY_PIXEL:
+        if len(rightx) > self.MIN_POLY_PIXEL:
             right_fit = np.polyfit(righty, rightx, 2)
-            
+
         return left_fit, right_fit, leftx, lefty, rightx, righty, img
 
     def _check_overlap(self, leftPoly, rightPoly):
@@ -174,11 +174,11 @@ class LaneDetector(LaneDetectionInterface):
         leftA, leftB, leftC = leftPoly
         rightA, rightB, rightC = rightPoly
         height = self.binary_warped.shape[0]
-        step = height // NUM_WINDOWS
+        step = height // self.NUM_OF_WINDOWS
 
         num_sups = 0
         points = []
-        for i in range(NUM_WINDOWS):
+        for i in range(self.NUM_OF_WINDOWS):
             y = i * step
             x_left = leftA * y ** 2 + leftB * y + leftC
             x_right = rightA * y ** 2 + rightB * y + rightC
@@ -200,7 +200,7 @@ class LaneDetector(LaneDetectionInterface):
             # f"\033[33m xL :\033[0m {x_left:7.2f}  "
             # f"\033[33m yL :\033[0m {y:7.2f}  "
             # f"\033[35m super:\033[0m {superposition}")
-        if num_sups > self.max_windows_overlapping:
+        if num_sups > self.MAX_WINDOWS_OVERLAPPING:
             x_left, x_right = points[-1]
             x_center = (x_left + x_right) // 2
             stay_with = "left" if x_center < self.binary_warped.shape[1] // 2 else "right"
@@ -252,7 +252,7 @@ class LaneDetector(LaneDetectionInterface):
             self.top_right = [width * 0.7, height * 0.8]
             self.bottom_right = [width * 0.8, height * 0.98]
             self.bottom_left = [width * 0.2, height * 0.98]
-            
+
         src = np.float32([
             self.top_left,
             self.top_right,
@@ -300,9 +300,9 @@ class LaneDetector(LaneDetectionInterface):
         # binary_unwarped = self.warp_image(self.binary_warped, self.Minv)
         # cv2.imshow('Binary Unwarped', binary_unwarped)
         # cv2.imshow('Binary Warped', binary_warped)
-        
+
         left_fit, right_fit, leftx, lefty, rightx, righty, histImg = self._fit_polynomial()
-        
+
         # cv2.imshow('Sliding Window', self.sliding_windows_image)
 
         self.left_line.add_fit(left_fit)
@@ -313,6 +313,6 @@ class LaneDetector(LaneDetectionInterface):
         self._calculate_tracking_params()
 
         result = self._draw_lane(frame, self.binary_warped)
-        
+
         # hist_image = self.render_histogram(self.histogram_data)
         return self.sliding_windows_image, self.cross_tracking_error, self.deviation
