@@ -7,6 +7,7 @@ from src.utils.messages.allMessages import (CurrentSpeed, LaneKeeping,
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
+from src.decision.decision_making.odometer import odometer
 
 MIN_DISTANCE_TO_STOP = 200
 MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN = 250
@@ -29,6 +30,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.speed_sender = messageHandlerSender(self.queuesList, SpeedMotor)
         self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
         self.subscribers = {}
+        self.odometer = odometer()
 
         self.subscribe()
         super(threadDecisionMaker, self).__init__()
@@ -36,9 +38,10 @@ class threadDecisionMaker(ThreadWithStop):
     def run(self):
         while self._running:
             self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
-            #self._handle_ultrasonic_message()
+            self._handle_ultrasonic_message()
             self._handle_lane_keeping_message()
             self._handle_traffic_signs_message()
+            self.odometer.update(int(self.current_speed))
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""
