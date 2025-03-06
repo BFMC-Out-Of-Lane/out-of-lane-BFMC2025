@@ -59,7 +59,7 @@ class threadCamera(ThreadWithStop):
         self.recording = False
 
         self.video_writer = ""
-        self.lane_detector = LaneDetector(min_offset=180, distance_to_aim=200)
+        self.lane_detector = LaneDetector(min_offset=100, distance_to_aim=200, is_simu=False)
 
         self.recordingSender = messageHandlerSender(self.queuesList, Recording)
         self.mainCameraSender = messageHandlerSender(self.queuesList, mainCamera)
@@ -164,11 +164,8 @@ class threadCamera(ThreadWithStop):
                 # self.serialCameraSender.send(serialEncodedImageData)
 
                 # TODO: This should be tested
-                processed_image, aiming_point = self.lane_detector.process_image(serialRequest)
-                serial_image_width = serialRequest.shape[1]
-                serial_image_center = serial_image_width // 2
-                aiming_point = round(aiming_point - serial_image_center)
-                self.lane_keeping_sender.send(aiming_point)
+                processed_image, cross_tracking_error, deviation = self.lane_detector.process_image(serialRequest)
+                self.lane_keeping_sender.send({"cross_tracking_error": cross_tracking_error, "deviation": deviation})
                 # TODO: This should send the processed image to the dashboard, but it does not seem to work
                 _, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)
                 serial_encoded_processed_image_data = base64.b64encode(serial_encoded_processed_image).decode("utf-8")
