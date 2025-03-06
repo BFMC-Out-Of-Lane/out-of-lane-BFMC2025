@@ -8,7 +8,7 @@ from src.utils.messages.allMessages import (CurrentSpeed, LaneKeeping,
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
-from src.decision.decision_making.odometer import odometer
+from src.decision.decision_making.odometer.odometer import Odometer
 
 import time
 import threading
@@ -41,7 +41,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
         self.signal_sender = messageHandlerSender(self.queuesList, WarningSignal)
         self.subscribers = {}
-        self.odometer = odometer()
+        self.odometer = Odometer()
 
         self.subscribe()
         super(threadDecisionMaker, self).__init__()
@@ -105,9 +105,6 @@ class threadDecisionMaker(ThreadWithStop):
 
     def _handle_traffic_signs_message(self):
         """Handles the traffic signs, i.e.: decides if the vehicle should slow down, stop or continue"""
-
-        if self.onStopSignal: 
-            return
 
         def timer_stop_signal():
             if self.debugging:
