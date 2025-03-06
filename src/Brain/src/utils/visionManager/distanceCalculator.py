@@ -93,5 +93,5 @@ class DistanceCalculation(BaseSolution):
             self.pixels_distance = 0
         #return self.clss, self.pixels_distance
         # return self.detected_class, self.pixels_distance
-        return self.detected_classes, self.distances_in_pixels
+        return detected_classes, distances_in_pixels
 

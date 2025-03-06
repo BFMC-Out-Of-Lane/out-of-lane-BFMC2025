@@ -42,17 +42,11 @@ class threadTrafficSigns(ThreadWithStop):
         self.signsSender = messageHandlerSender(self.queuesList, trafficSigns) # Send the detected signs to the decision maker
 
     def run(self):
-        send = True
         while self._running:
             try:
                 self._handle_camera_frames()
             except Exception as e:
                 print(e)
-            
-            if send:
-                self.signsSender.send(self.distanceToObjectMessage)
-
-            send = not send
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""
@@ -84,17 +78,18 @@ class threadTrafficSigns(ThreadWithStop):
                     # processed_frame, detected_class, self.distanceToObject = self.distanceCalculator.calculate(image)
                     #detected_class_number, self.distanceToObject = self.distanceCalculator.calculate(image)
                     detectedClassName, distanceToObject = self.distanceCalculator.calculate(image)
+                    if len(detectedClassName) > 0 and len(distanceToObject) > 0:
+                        # Las variables toman los siguientes valores:
+                        # detectedClassName = ["stop-signal", "crosswalk-signal" ]
+                        # distanceToObject = [200.0, 100.0]
 
-                    # Las variables toman los siguientes valores:
-                    # detectedClassName = ["stop-signal", "crosswalk-signal" ]
-                    # distanceToObject = [200.0, 100.0]
-
-                    self.distanceToObjectMessage = {
-                        "clss": detectedClassName,
-                        "pixels_distance": distanceToObject
-                        }
-
-                    if self.debugging:
-                        self.logging.info(f'{{"threadTrafficSigns": {{ "Object detected": {self.distanceToObjectMessage["clss"]}, "Distance object-car": {self.distanceToObject["pixels_distance"]}}} }}')
+                        self.distanceToObjectMessage = {
+                            "clss": detectedClassName,
+                            "pixels_distance": distanceToObject
+                            }
+                        if self.debugging:
+                            self.logging.info(f'{{"threadTrafficSigns": {{ "Object detected": {self.distanceToObjectMessage["clss"]}, "Distance object-car": {self.distanceToObjectMessage["pixels_distance"]}}} }}')
+                        
+                        self.signsSender.send(self.distanceToObjectMessage)
         except Exception as e:
             print(e)
