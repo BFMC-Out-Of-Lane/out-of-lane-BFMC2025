@@ -111,13 +111,13 @@ class threadDecisionMaker(ThreadWithStop):
     def _handle_traffic_signs_message(self):
         """Handles the traffic signs, i.e.: decides if the vehicle should slow down, stop or continue"""
 
-        def timer_stop_signal():
+        def timer_stop_signal(t):
             self.onStopSignal = True
             if self.debugging:
                 self.logging.info(
                     f'{{"threadDecisionMaker": {{ "Object detected -------------------- CAR STOPPING": {detected_clss}}} }}')
             self.speed_sender.send("0")
-            time.sleep(TIME_AT_STOP_SIGN)
+            time.sleep(t)
             self.onStopSignal = False
 
         traffic_signs_message = self.subscribers["trafficSigns"].receive()
@@ -131,53 +131,38 @@ class threadDecisionMaker(ThreadWithStop):
 
             if "stop-sign" in detected_clss and not self.onStopSignal:
                 self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
-                timer_thread = threading.Thread(target=timer_stop_signal)
-                timer_thread.start()
+                if pixels_distance < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    timer_stop_signal(TIME_AT_STOP_SIGN)
 
-            if "crosswalk-sign" in detected_clss:
-                self.speed_sender.send("0")
+            if "crosswalk-sign" in detected_clss or "crosswalk-road" in detected_clss:
+                self.speed_sender.send("100")
                 self.signal_sender.send({"WarningName": "crosswalk", "WarningID": 4})
-                if self.debugging:
-                    self.logging.info(
-                        f'{{"threadDecisionMaker": "Object detected ------ CAR STOPPING": crosswalk-signal "}}')
 
             if "highway-end-sign" in detected_clss:
-                self.speed_sender.send("0")
+                self.speed_sender.send("200")
                 self.signal_sender.send({"WarningName": "highway_exit", "WarningID": 7})
-                if self.debugging:
-                    self.logging.info(
-                        f'{{"threadDecisionMaker": "Object detected: highway-end-signal "}}')
 
             if "highway-entry-sign" in detected_clss:
-                self.speed_sender.send("0")
+                self.speed_sender.send("400")
                 self.signal_sender.send({"WarningName": "highway_entrance", "WarningID": 6})
-                if self.debugging:
-                    self.logging.info(
-                        f'{{"threadDecisionMaker": {{ "Object detected: highway-entry-sign"}} }}')
 
             if "one-way-sign" in detected_clss:
-                self.speed_sender.send("0")
                 self.signal_sender.send({"WarningName": "oneway", "WarningID": 9})
                 if self.debugging:
                     self.logging.info(
-                        f'{{"threadDecisionMaker": {{ "Object detected: one-way-signal "}}}}')
+                        f'{{"threadDecisionMaker": {{ "Object detected: one-way-sign" }}}}')
 
             if "parking-sign" in detected_clss:
                 self.speed_sender.send("0")
+                # TODO: parking method
                 self.signal_sender.send({"WarningName": "parking", "WarningID": 10})
-                if self.debugging:
-                    self.logging.info(
-                        f'{{"threadDecisionMaker": {{ "Object detected: parking-signal "}}}}')
 
             if "no-entry-sign" in detected_clss:
                 self.speed_sender.send("0")
+                # TODO: Add path plannign logic
                 self.signal_sender.send({"WarningName": "forbidden", "WarningID": 5})
-                if self.debugging:
-                    self.logging.info(
-                        f'{{"threadDecisionMaker": {{ "Object detected: no-entry-sign" }}}}')
 
             if "roundabout-sign" in detected_clss:
-                self.speed_sender.send("0")
                 self.signal_sender.send({"WarningName": "roundabaout", "WarningID": 15})
                 if self.debugging:
                     self.logging.info(
@@ -198,12 +183,6 @@ class threadDecisionMaker(ThreadWithStop):
                         f'{{"threadDecisionMaker": "Object detected: pedestrian }}')
             else:
                 self.pedestrianCrossing = False
-
-            if "crosswalk-road" in detected_clss:
-                # self.signal_sender.send({"WarningName": "highway_lane", "WarningID": 21})
-                if self.debugging:
-                    self.logging.info(
-                        f'{{"threadDecisionMaker":  "Object detected: crosswalk-road }}')
 
             if "red-light" in detected_clss:
                 self.speed_sender.send("0")
