@@ -1,22 +1,22 @@
 import math
+import threading
+import time
+
+from src.decision.decision_making.odometer.odometer import Odometer
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, LaneKeeping,
                                             SpeedMotor, SteerMotor,
-                                            UltrasonicSensors, mainCamera,
-                                            serialCamera, trafficSigns,
-                                            WarningSignal)
+                                            UltrasonicSensors, WarningSignal,
+                                            mainCamera, serialCamera,
+                                            trafficSigns)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
-from src.decision.decision_making.odometer.odometer import Odometer
-
-import time
-import threading
-
 
 MIN_DISTANCE_TO_STOP = 200
 MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN = 250
-TIME_AT_STOP_SIGN = 3 # seconds
+TIME_AT_STOP_SIGN = 3  # seconds
+
 
 class threadDecisionMaker(ThreadWithStop):
     """This thread handles decision_making.
@@ -55,6 +55,7 @@ class threadDecisionMaker(ThreadWithStop):
                 self._handle_traffic_signs_message()
             except Exception as e:
                 print(e)
+
             self.odometer.update(int(self.current_speed))
 
     def subscribe(self):
@@ -98,7 +99,8 @@ class threadDecisionMaker(ThreadWithStop):
             self.cross_tracking_error = lane_keeping["cross_tracking_error"]
             self.deviation = lane_keeping["deviation"]
             if self.cross_tracking_error and self.deviation:
-                steering = int(self.deviation + math.atan( 1 * self.cross_tracking_error / self.current_speed) * 180 / math.pi) * 10 
+                steering = int(self.deviation + math.atan(1 * self.cross_tracking_error /
+                               self.current_speed) * 180 / math.pi) * 10
                 if steering < -230:
                     steering = -230
                 elif steering > 230:
