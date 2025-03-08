@@ -144,14 +144,17 @@ class threadDecisionMaker(ThreadWithStop):
 
             if "stop-sign" in detected_object_dict:
                 # self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
-                if detected_object_dict["stop-sign"] > MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN and time.time() - self.stop_signal_timer > 3:
+                if detected_object_dict["stop-sign"] > MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN and time.time() - self.stop_signal_timer > 8:
                     timer_stop_signal(TIME_AT_STOP_SIGN)
                     self.stop_signal_timer = time.time()
-                self.parking_sign_first_detection = True
+                elif int(self.current_speed) < 200 and time.time() - self.stop_signal_timer > 3:
+                    self._send_speed(200)
+
 
             if "crosswalk-sign" in detected_object_dict or "crosswalk-road" in detected_object_dict:
                 if detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
                     self._send_speed(100)
+                    self.stop_signal_timer = time.time()
                     # self.signal_sender.send({"WarningName": "crosswalk", "WarningID": 4})
 
             if "highway-end-sign" in detected_object_dict:
@@ -225,11 +228,9 @@ class threadDecisionMaker(ThreadWithStop):
                 if self.debugging:
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object detected: green-light" }}}}')
-                    
-            return
      
-        if self.current_speed == "0":
-            self.speed_sender.send(200)
+        elif int(self.current_speed) < 200 and time.time() - self.stop_signal_timer > 3:
+            self._send_speed(200)
             
     def _activate_parking_mode(self):
         parking_status = 0
