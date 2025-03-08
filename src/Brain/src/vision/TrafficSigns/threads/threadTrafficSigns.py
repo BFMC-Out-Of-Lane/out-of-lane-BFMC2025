@@ -75,20 +75,17 @@ class threadTrafficSigns(ThreadWithStop):
 
         try:
             if self.isDetectorActive:
-                    # processed_frame, detected_class, self.distanceToObject = self.distanceCalculator.calculate(image)
-                    #detected_class_number, self.distanceToObject = self.distanceCalculator.calculate(image)
-                    detectedClassName, distanceToObject = self.distanceCalculator.calculate(image)
-                    if len(detectedClassName) > 0 and len(distanceToObject) > 0:
+                    detectedObjectDistanceDict = self.distanceCalculator.calculate(image)
+                    if detectedObjectDistanceDict:
                         # Las variables toman los siguientes valores:
                         # detectedClassName = ["stop-signal", "crosswalk-signal" ]
                         # distanceToObject = [200.0, 100.0]
 
                         self.distanceToObjectMessage = {
-                            "clss": detectedClassName,
-                            "pixels_distance": distanceToObject
+                            "objectDict": detectedObjectDistanceDict,
                             }
                         if self.debugging:
-                            self.logging.info(f'{{"threadTrafficSigns": {{ "Object detected": {self.distanceToObjectMessage["clss"]}, "Distance object-car": {self.distanceToObjectMessage["pixels_distance"]}}} }}')
+                            self.logging.info(f'{{"threadTrafficSigns": {{ "Object-Distance": {self.distanceToObjectMessage["objectDict"]}}} }}')
                         
                         self.signsSender.send(self.distanceToObjectMessage)
         except Exception as e:
