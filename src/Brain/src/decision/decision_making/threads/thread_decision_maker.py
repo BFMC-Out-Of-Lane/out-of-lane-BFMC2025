@@ -13,7 +13,7 @@ from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
 MIN_DISTANCE_TO_STOP = 200
-MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN = 250
+MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN = 30
 TIME_AT_STOP_SIGN = 3
 
 # Parking constants
@@ -94,12 +94,12 @@ class threadDecisionMaker(ThreadWithStop):
                 )
 
             if current_speed > 0:
-                if front < MIN_DISTANCE_TO_STOP:
+                if front > MIN_DISTANCE_TO_STOP:
                     self.speed_sender.send("0")  # stop the vehicle if front distance is less than 10 cm
                 elif current_speed > front - MIN_DISTANCE_TO_STOP:
                     self.speed_sender.send(str(front - MIN_DISTANCE_TO_STOP))
             elif current_speed < 0:
-                if rear < MIN_DISTANCE_TO_STOP:
+                if rear > MIN_DISTANCE_TO_STOP:
                     self.speed_sender.send("0")  # stop the vehicle if front distance is less than 10 cm
                 elif abs(current_speed) > rear - MIN_DISTANCE_TO_STOP:
                     self.speed_sender.send(str(-(rear - MIN_DISTANCE_TO_STOP)))
@@ -143,21 +143,24 @@ class threadDecisionMaker(ThreadWithStop):
 
             if "stop-sign" in detected_object_dict and not self.onStopSignal:
                 self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
-                if detected_object_dict["stop-sign"] < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                if detected_object_dict["stop-sign"] > MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
                     timer_stop_signal(TIME_AT_STOP_SIGN)
                 self.parking_sign_first_detection = True
 
             if "crosswalk-sign" in detected_object_dict or "crosswalk-road" in detected_object_dict:
-                self.speed_sender.send("100")
-                self.signal_sender.send({"WarningName": "crosswalk", "WarningID": 4})
+                if detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    self.speed_sender.send("100")
+                    self.signal_sender.send({"WarningName": "crosswalk", "WarningID": 4})
 
             if "highway-end-sign" in detected_object_dict:
-                self.speed_sender.send("200")
-                self.signal_sender.send({"WarningName": "highway_exit", "WarningID": 7})
+                if detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    self.speed_sender.send("200")
+                    self.signal_sender.send({"WarningName": "highway_exit", "WarningID": 7})
 
             if "highway-entry-sign" in detected_object_dict:
-                self.speed_sender.send("400")
-                self.signal_sender.send({"WarningName": "highway_entrance", "WarningID": 6})
+                if detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    self.speed_sender.send("400")
+                    self.signal_sender.send({"WarningName": "highway_entrance", "WarningID": 6})
 
             if "one-way-sign" in detected_object_dict:
                 self.signal_sender.send({"WarningName": "oneway", "WarningID": 9})
@@ -166,16 +169,18 @@ class threadDecisionMaker(ThreadWithStop):
                         f'{{"threadDecisionMaker": {{ "Object detected: one-way-sign" }}}}')
 
             if "parking-sign" in detected_object_dict:
-                if self.parking_sign_first_detection:
-                    self.speed_sender.send("0")
-                    self._activate_parking_mode()
-                    self.signal_sender.send({"WarningName": "parking", "WarningID": 10})
-                    self.parking_sign_first_detection = False
+                if detected_object_dict["parking-sign"] > MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    if self.parking_sign_first_detection:
+                        self.speed_sender.send("0")
+                        self._activate_parking_mode()
+                        self.signal_sender.send({"WarningName": "parking", "WarningID": 10})
+                        self.parking_sign_first_detection = False
 
             if "no-entry-sign" in detected_object_dict:
-                self.speed_sender.send("0")
-                # TODO: Add path plannign logic
-                self.signal_sender.send({"WarningName": "forbidden", "WarningID": 5})
+                if detected_object_dict["no-entry-sign"] > MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    self.speed_sender.send("0")
+                    # TODO: Add path plannign logic
+                    self.signal_sender.send({"WarningName": "forbidden", "WarningID": 5})
 
             if "roundabout-sign" in detected_object_dict:
                 self.signal_sender.send({"WarningName": "roundabaout", "WarningID": 15})
@@ -190,12 +195,13 @@ class threadDecisionMaker(ThreadWithStop):
                         f'{{"threadDecisionMaker": "Object detected: priority-signal }}')
 
             if "pedestrian" in detected_object_dict:
-                self.speed_sender.send("0")
-                self.signal_sender.send({"WarningName": "ped_on_crosswalk", "WarningID": 12})
-                self.pedestrianCrossing = True
-                if self.debugging:
-                    self.logging.info(
-                        f'{{"threadDecisionMaker": "Object detected: pedestrian }}')
+                if detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
+                    self.speed_sender.send("0")
+                    self.signal_sender.send({"WarningName": "ped_on_crosswalk", "WarningID": 12})
+                    self.pedestrianCrossing = True
+                    if self.debugging:
+                        self.logging.info(
+                            f'{{"threadDecisionMaker": "Object detected: pedestrian }}')
             else:
                 self.pedestrianCrossing = False
 

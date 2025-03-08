@@ -85,7 +85,7 @@ class DistanceCalculation(BaseSolution):
 
             # Calcula el área de la caja delimitadora
             # box_width = box[2] - box[0]
-            box_height = box[3] - box[1]
+            box_height = int(box[3] - box[1])
             # box_area = box_width * box_height
 
             # Anota la distancia en la imagen
