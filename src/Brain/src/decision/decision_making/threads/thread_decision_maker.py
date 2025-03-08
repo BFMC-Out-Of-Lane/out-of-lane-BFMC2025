@@ -191,8 +191,7 @@ class threadDecisionMaker(ThreadWithStop):
                         f'{{"threadDecisionMaker": "Object detected: priority-signal }}')
 
             if "pedestrian" in detected_object_dict:
-                if detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN and time.time() - self.stop_signal_timer > 3:
-                    self.stop_signal_timer = time.time()
+                if detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
                     self.speed_sender.send("0")
                     self.signal_sender.send({"WarningName": "ped_on_crosswalk", "WarningID": 12})
                     if self.debugging:
