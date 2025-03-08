@@ -17,14 +17,14 @@ MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN = 250
 TIME_AT_STOP_SIGN = 3
 
 # Parking constants
-PARKING_STEP1_DISTANCE = 150
-PARKING_STEP2_DISTANCE = 150
-PARKING_STEP3_DISTANCE = 150
+PARKING_STEP1_DISTANCE = 600
+PARKING_STEP2_DISTANCE = 200
+PARKING_STEP3_DISTANCE = 100
 PARKING_MODE_SPEED = 100
 MANEUVERING_SPEED = 50
 PARKING_SPOT_NUMBER = 1
 LENGTH_SPOT = 756
-DISTANCE_ENTER_PARKING_ZONE = 100 
+DISTANCE_ENTER_PARKING_ZONE = 830
 RIGHT_LANE_SIDE = 1
 ANGLE_PARKING = 230
 FORWARD = 1
@@ -47,6 +47,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.pedestrianCrossing = False
         self.onStopSignal = False
         self.onStopLight = False
+        self.parking_sign_first_detection = True
 
         self.current_speed = "0"
         self.speed_sender = messageHandlerSender(self.queuesList, SpeedMotor)
@@ -145,6 +146,7 @@ class threadDecisionMaker(ThreadWithStop):
                 self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
                 if pixels_distance < MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN:
                     timer_stop_signal(TIME_AT_STOP_SIGN)
+                self.parking_sign_first_detection = True
 
             if "crosswalk-sign" in detected_clss or "crosswalk-road" in detected_clss:
                 self.speed_sender.send("100")
@@ -165,9 +167,11 @@ class threadDecisionMaker(ThreadWithStop):
                         f'{{"threadDecisionMaker": {{ "Object detected: one-way-sign" }}}}')
 
             if "parking-sign" in detected_clss:
-                self.speed_sender.send("0")
-                self._activate_parking_mode()
-                self.signal_sender.send({"WarningName": "parking", "WarningID": 10})
+                if self.parking_sign_first_detection:
+                    self.speed_sender.send("0")
+                    self._activate_parking_mode()
+                    self.signal_sender.send({"WarningName": "parking", "WarningID": 10})
+                    self.parking_sign_first_detection = False
 
             if "no-entry-sign" in detected_clss:
                 self.speed_sender.send("0")
@@ -220,7 +224,6 @@ class threadDecisionMaker(ThreadWithStop):
 
 
     def _activate_parking_mode(self):
-        flag_parking_mode = True
         parking_status = 0
 
         """Handles the parking-mode """
@@ -229,14 +232,18 @@ class threadDecisionMaker(ThreadWithStop):
         "1-> start parking maneuver (once its located)"
         "2-> finish parking maneuver (stay quiet)"
         "3-> exit parking"
-        lane_side = self.enter_parking_zone(self,parking_status)
-        self.start_parking_maneuver(self,parking_status,lane_side)
-        self.logging.info(f'{{"threadDecisionMaker: im parked, let me rest :| "}}')
-        time.sleep(5)
-        self.exit_parking_spot(self,parking_status,lane_side)
-        flag_parking_mode = False
-        self.logging.info(f'{{"threadDecisionMaker: on track again :) " }}')
-        "ACTIVAR LANE DETECTOR PORQUE SIGUE SU CAMINO"
+
+        self.move_x_distance(1000, 100, FORWARD)
+        self.speed_sender.send("0")
+
+        # lane_side = self.enter_parking_zone()
+        # lane_side = 1
+        # self.start_parking_maneuver(lane_side)
+        # self.logging.info(f'{{"threadDecisionMaker: im parked, let me rest :| "}}')
+        # time.sleep(3)
+        # self.exit_parking_spot(lane_side)
+        # self.logging.info(f'{{"threadDecisionMaker: on track again :) " }}')
+        # "ACTIVAR LANE DETECTOR PORQUE SIGUE SU CAMINO"
 
         # if parking_status == 0:
         #     lane_side = self.enter_parking_zone(self,parking_status)
@@ -258,8 +265,9 @@ class threadDecisionMaker(ThreadWithStop):
         #     "ACTIVAR LANE DETECTOR PORQUE SIGUE SU CAMINO"
     
 
-    def move_x_distance(self, distance,speed,direction):
+    def move_x_distance(self, distance, speed, direction):
         self.speed_sender.send(str(speed*direction))
+        print(distance/speed)
         time.sleep(distance/speed)
         self.speed_sender.send("0")
 
@@ -268,7 +276,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         # ubicarse: step1. avanzar desde senda peatonal X + LongParking*EspacioElegido ---> CONSTANTE_STEP_LOCATION"
         distance_to_locate = LENGTH_SPOT*PARKING_SPOT_NUMBER + DISTANCE_ENTER_PARKING_ZONE
-        self.move_x_distance(self, distance_to_locate, PARKING_MODE_SPEED, FORWARD)
+        self.move_x_distance(distance_to_locate, PARKING_MODE_SPEED, FORWARD)
         
         self.speed_sender.send("0")
 
@@ -279,19 +287,19 @@ class threadDecisionMaker(ThreadWithStop):
 
         # 1. servos a DIRECTION_PARKING y ANGLE_PARKING y desplazarse en reversa - PARKING_STEP1_DISTANCE
         self.steer_sender.send(str(ANGLE_PARKING*lane_side))
-        self.move_x_distance(self, PARKING_STEP1_DISTANCE, MANEUVERING_SPEED, REVERSE)
+        self.move_x_distance(PARKING_STEP1_DISTANCE, MANEUVERING_SPEED, REVERSE)
 
         self.speed_sender.send("0")
 
         # 2. servos al lado opuesto ( - DIRECTION_PARKING y ANGLE_PARKING) y desplazarse revesra --> - PARKING_STEP2_DISTANCE
         self.steer_sender.send(str(ANGLE_PARKING*lane_side*(-1)))
-        self.move_x_distance(self, PARKING_STEP2_DISTANCE, MANEUVERING_SPEED, REVERSE)
+        self.move_x_distance(PARKING_STEP2_DISTANCE, MANEUVERING_SPEED, REVERSE)
 
         self.speed_sender.send("0")
 
         # 3. desplazarse delante ---> PARKING_STEP3_DISTANCE
         self.steer_sender.send("0")
-        self.move_x_distance(self, PARKING_STEP3_DISTANCE, MANEUVERING_SPEED, FORWARD)
+        self.move_x_distance(PARKING_STEP3_DISTANCE, MANEUVERING_SPEED, FORWARD)
 
         self.speed_sender.send("0")
         
@@ -300,19 +308,19 @@ class threadDecisionMaker(ThreadWithStop):
 
         # 3b. desplazarse para atras ---> - PARKING_STEP3_DISTANCE"
         self.steer_sender.send("0")
-        self.move_x_distance(self, PARKING_STEP3_DISTANCE, MANEUVERING_SPEED, REVERSE)
+        self.move_x_distance(PARKING_STEP3_DISTANCE, MANEUVERING_SPEED, REVERSE)
 
         self.speed_sender.send("0")
 
         # 2b. servos al lado opuesto ( - DIRECTION_PARKING y ANGLE_PARKING) y desplazarse adelante --> PARKING_STEP2_DISTANCE"
         self.steer_sender.send(str(ANGLE_PARKING*lane_side*(-1)))
-        self.move_x_distance(self, PARKING_STEP2_DISTANCE, MANEUVERING_SPEED, FORWARD)
+        self.move_x_distance(PARKING_STEP2_DISTANCE, MANEUVERING_SPEED, FORWARD)
 
         self.speed_sender.send("0")
 
         # 1. servos a DIRECTION_PARKING y ANGLE_PARKING y desplazarse adelante PARKING_STEP1_DISTANCE"
         self.steer_sender.send(str(ANGLE_PARKING*lane_side))
-        self.move_x_distance(self, PARKING_STEP1_DISTANCE, MANEUVERING_SPEED, FORWARD)
+        self.move_x_distance(PARKING_STEP1_DISTANCE, MANEUVERING_SPEED, FORWARD)
         self.steer_sender.send("0")
         self.speed_sender.send("0")
 
@@ -336,7 +344,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         for angle, distance, direction in steps:
             self.steer_sender.send(str(angle))
-            self.move_x_distance(self, distance, MANEUVERING_SPEED, direction)
+            self.move_x_distance(distance, MANEUVERING_SPEED, direction)
             self.speed_sender.send("0")
 
         self.steer_sender.send("0")

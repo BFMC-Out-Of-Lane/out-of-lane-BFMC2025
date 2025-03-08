@@ -84,7 +84,7 @@ SerialHandler = True
 
 # ------ New component flags starts here ------#
 DecisionMaker = True
-TrafficSigns = False
+TrafficSigns = True
 # ------ New component flags ends here ------#
 
 # ===================================== SETUP PROCESSES ==================================
@@ -125,11 +125,11 @@ if SerialHandler:
 
 # ------ New component runs starts here ------#
 if DecisionMaker:
-    processDecisionMaker = processDecisionMaker(queueList, logging, debugging = False)
+    processDecisionMaker = processDecisionMaker(queueList, logging, debugging = True)
     allProcesses.append(processDecisionMaker)
 
 if TrafficSigns:
-    processTrafficSigns = processTrafficSigns(queueList, logging, debugging = True)
+    processTrafficSigns = processTrafficSigns(queueList, logging, debugging = False)
     allProcesses.append(processTrafficSigns)
 # ------ New component runs ends here ------#
 

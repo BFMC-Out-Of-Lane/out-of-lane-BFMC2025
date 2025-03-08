@@ -315,4 +315,4 @@ class LaneDetector(LaneDetectionInterface):
         result = self._draw_lane(frame, self.binary_warped)
 
         # hist_image = self.render_histogram(self.histogram_data)
-        return self.sliding_windows_image, self.cross_tracking_error, self.deviation
+        return result, self.cross_tracking_error, self.deviation
