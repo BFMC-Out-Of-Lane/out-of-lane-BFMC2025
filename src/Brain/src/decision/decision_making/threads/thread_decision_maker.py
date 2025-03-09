@@ -13,7 +13,7 @@ from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
 MIN_DISTANCE_TO_STOP = 200
-MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN = 30
+MIN_DISTANCE_TO_STOP_TRAFFIC_SIGN = 25
 TIME_AT_STOP_SIGN = 3
 
 # Parking constants
@@ -69,7 +69,7 @@ class threadDecisionMaker(ThreadWithStop):
                     self._handle_lane_keeping_message()
                     self._handle_traffic_signs_message()
                 except Exception as e:
-                    print(e)
+                    self.logging.error(f'{{"threadDecisionMaker": {str(e)}}}')
 
             self.odometer.update(int(self.current_speed))
 
@@ -114,7 +114,7 @@ class threadDecisionMaker(ThreadWithStop):
             self.cross_tracking_error = lane_keeping["cross_tracking_error"]
             self.deviation = lane_keeping["deviation"]
             if self.cross_tracking_error and self.deviation:
-                steering = int(self.deviation + math.atan(1 * self.cross_tracking_error /
+                steering = int(self.deviation + math.atan(0.6 * self.cross_tracking_error /
                                self.current_speed) * 180 / math.pi) * 10
                 if steering < -230:
                     steering = -230
