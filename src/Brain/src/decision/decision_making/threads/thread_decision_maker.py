@@ -18,7 +18,7 @@ MIN_DISTANCE_TO_CROSSWALK = 70
 TIME_AT_STOP_SIGN = 3
 
 # Parking constants
-PARKING_STEP1_DISTANCE = 600
+PARKING_STEP1_DISTANCE = 400
 PARKING_STEP2_DISTANCE = 200
 PARKING_STEP3_DISTANCE = 100
 PARKING_MODE_SPEED = 100
@@ -30,6 +30,7 @@ RIGHT_LANE_SIDE = 1
 ANGLE_PARKING = 230
 FORWARD = 1
 REVERSE = -1
+TIME_BEING_PARKED = 5
 
 class threadDecisionMaker(ThreadWithStop):
     """This thread handles decision_making.
@@ -244,31 +245,28 @@ class threadDecisionMaker(ThreadWithStop):
         "3-> exit parking"
 
         self._send_speed(0)
-        self._start_parking_maneuver(RIGHT_LANE_SIDE)
-
+        lane_side = RIGHT_LANE_SIDE
         # lane_side = self.enter_parking_zone()
-        # lane_side = 1
-        # self.start_parking_maneuver(lane_side)
-        # self.logging.info(f'{{"threadDecisionMaker: im parked, let me rest :| "}}')
-        # time.sleep(3)
-        # self.exit_parking_spot(lane_side)
-        # self.logging.info(f'{{"threadDecisionMaker: on track again :) " }}')
-        # "ACTIVAR LANE DETECTOR PORQUE SIGUE SU CAMINO"
-
+        self._start_parking_maneuver(lane_side)
+        self.logging.info(f'{{"threadDecisionMaker: im parked, let me rest :| "}}')
+        time.sleep(TIME_BEING_PARKED)
+        self._exit_parking_spot(lane_side)
+        self.logging.info(f'{{"threadDecisionMaker: on track again :) " }}')
+        
         # if parking_status == 0:
-        #     lane_side = self.enter_parking_zone(self,parking_status)
+        #     lane_side = self._enter_parking_zone()
         #     parking_status = 1
         # elif parking_status == 1:
-        #     self.start_parking_maneuver(self,parking_status,lane_side)
-        #     # parking_maneuver(self, lane_side)
+        #     self._start_parking_maneuver(lane_side)
+        #     # _parking_maneuver(lane_side)
         #     parking_status = 2
         # elif parking_status == 2:
         #     self.logging.info(f'{{"threadDecisionMaker: im parked, let me rest :| "}}')
         #     time.sleep(5)
         #     parking_status = 3
         # elif parking_status == 3:
-        #     self.exit_parking_spot(self,parking_status,lane_side)
-        #     # parking_maneuver(self, lane_side, False)
+        #     self._exit_parking_spot(lane_side)
+        #     # _parking_maneuver(lane_side, False)
         #     parking_status = -1
         #     flag_parking_mode = False
         #     self.logging.info(f'{{"threadDecisionMaker: on track again :) " }}')
@@ -294,19 +292,25 @@ class threadDecisionMaker(ThreadWithStop):
         self.logging.info(f'{{"carActions: parking maneuver" }}')
 
         # 1. servos a DIRECTION_PARKING y ANGLE_PARKING y desplazarse en reversa - PARKING_STEP1_DISTANCE
+        self.logging.info(f'{{"carActions: STEP1" }}')
         self.steer_sender.send(str(ANGLE_PARKING*lane_side))
+        time.sleep(1)
         self._move_x_distance(PARKING_STEP1_DISTANCE, MANEUVERING_SPEED, REVERSE)
 
         self._send_speed(0)
 
         # 2. servos al lado opuesto ( - DIRECTION_PARKING y ANGLE_PARKING) y desplazarse revesra --> - PARKING_STEP2_DISTANCE
+        self.logging.info(f'{{"carActions: STEP2" }}')
         self.steer_sender.send(str(ANGLE_PARKING*lane_side*(-1)))
+        time.sleep(1)
         self._move_x_distance(PARKING_STEP2_DISTANCE, MANEUVERING_SPEED, REVERSE)
 
         self._send_speed(0)
 
         # 3. desplazarse delante ---> PARKING_STEP3_DISTANCE
-        self.steer_sender.send("0")
+        self.logging.info(f'{{"carActions: STEP3" }}')
+        self.steer_sender.send(str(ANGLE_PARKING*lane_side))
+        time.sleep(1)
         self._move_x_distance(PARKING_STEP3_DISTANCE, MANEUVERING_SPEED, FORWARD)
 
         self._send_speed(0)
@@ -315,22 +319,31 @@ class threadDecisionMaker(ThreadWithStop):
         self.logging.info(f'{{"carActions: im trying to leave the spot" }}')
 
         # 3b. desplazarse para atras ---> - PARKING_STEP3_DISTANCE"
-        self.steer_sender.send("0")
+        self.logging.info(f'{{"carActions: STEP3-e" }}')
+        self.steer_sender.send(str(ANGLE_PARKING*lane_side))
+        time.sleep(1)
         self._move_x_distance(PARKING_STEP3_DISTANCE, MANEUVERING_SPEED, REVERSE)
 
         self._send_speed(0)
 
         # 2b. servos al lado opuesto ( - DIRECTION_PARKING y ANGLE_PARKING) y desplazarse adelante --> PARKING_STEP2_DISTANCE"
+        self.logging.info(f'{{"carActions: STEP2-e" }}')
         self.steer_sender.send(str(ANGLE_PARKING*lane_side*(-1)))
+        time.sleep(1)
         self._move_x_distance(PARKING_STEP2_DISTANCE, MANEUVERING_SPEED, FORWARD)
 
         self._send_speed(0)
 
         # 1. servos a DIRECTION_PARKING y ANGLE_PARKING y desplazarse adelante PARKING_STEP1_DISTANCE"
+        self.logging.info(f'{{"carActions: STEP1-e" }}')
         self.steer_sender.send(str(ANGLE_PARKING*lane_side))
+        time.sleep(1)
         self._move_x_distance(PARKING_STEP1_DISTANCE, MANEUVERING_SPEED, FORWARD)
-        self.steer_sender.send("0")
+
         self._send_speed(0)
+
+        self.steer_sender.send("0")
+        time.sleep(1)
 
 
     def _parking_maneuver(self, lane_side, is_starting=True):
@@ -340,18 +353,19 @@ class threadDecisionMaker(ThreadWithStop):
         if is_starting:
             steps = [
                 (ANGLE_PARKING * lane_side, PARKING_STEP1_DISTANCE, REVERSE),
-                (ANGLE_PARKING * lane_side * -1, PARKING_STEP2_DISTANCE, REVERSE),
-                (0, PARKING_STEP3_DISTANCE, FORWARD)
+                (ANGLE_PARKING * lane_side * (-1), PARKING_STEP2_DISTANCE, REVERSE),
+                (ANGLE_PARKING * lane_side, PARKING_STEP3_DISTANCE, FORWARD)
             ]
         else:
             steps = [
-                (0, PARKING_STEP3_DISTANCE, REVERSE),
-                (ANGLE_PARKING * lane_side * -1, PARKING_STEP2_DISTANCE, FORWARD),
+                (ANGLE_PARKING * lane_side, PARKING_STEP3_DISTANCE, REVERSE),
+                (ANGLE_PARKING * lane_side * (-1), PARKING_STEP2_DISTANCE, FORWARD),
                 (ANGLE_PARKING * lane_side, PARKING_STEP1_DISTANCE, FORWARD)
             ]
 
         for angle, distance, direction in steps:
             self.steer_sender.send(str(angle))
+            time.sleep(1)
             self._move_x_distance(distance, MANEUVERING_SPEED, direction)
             self._send_speed(0)
 
