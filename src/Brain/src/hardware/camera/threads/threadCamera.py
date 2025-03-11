@@ -36,7 +36,7 @@ from src.hardware.camera.lane_detection.lane_detector import LaneDetector
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (Brightness, Contrast, LaneKeeping,
                                             Record, Recording, mainCamera,
-                                            serialCamera)
+                                            serialCamera, trafficSigns)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
@@ -77,6 +77,7 @@ class threadCamera(ThreadWithStop):
         self.recordSubscriber = messageHandlerSubscriber(self.queuesList, Record, "lastOnly", True)
         self.brightnessSubscriber = messageHandlerSubscriber(self.queuesList, Brightness, "lastOnly", True)
         self.contrastSubscriber = messageHandlerSubscriber(self.queuesList, Contrast, "lastOnly", True)
+        self.trafficSubscriber = messageHandlerSubscriber(self.queuesList, trafficSigns, "lastonly", True)
 
     def Queue_Sending(self):
         """Callback function for recording flag."""
@@ -164,7 +165,8 @@ class threadCamera(ThreadWithStop):
                 # self.serialCameraSender.send(serialEncodedImageData)
 
                 # TODO: This should be tested
-                processed_image, cross_tracking_error, deviation = self.lane_detector.process_image(serialRequest)
+                traffic_sign = self.trafficSubscriber.receive()
+                processed_image, cross_tracking_error, deviation = self.lane_detector.process_image(serialRequest, traffic_sign)
                 self.lane_keeping_sender.send({"cross_tracking_error": cross_tracking_error, "deviation": deviation})
                 # TODO: This should send the processed image to the dashboard, but it does not seem to work
                 _, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)

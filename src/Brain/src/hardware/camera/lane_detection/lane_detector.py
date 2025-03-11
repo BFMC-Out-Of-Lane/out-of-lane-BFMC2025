@@ -28,7 +28,7 @@ class LaneDetector(LaneDetectionInterface):
         self.left_line = Line()
         self.right_line = Line()
 
-    def process_image(self, cv_image):
+    def process_image(self, cv_image,traffic_sign):
         return self.process_frame(cv_image)
 
     def _threshold_image(self, image):
@@ -91,6 +91,8 @@ class LaneDetector(LaneDetectionInterface):
 
         left_peaks = find_peaks(histogram[:midpoint], height=np.average(histogram[:midpoint]))[0]
         right_peaks = find_peaks(histogram[midpoint:], height=np.average(histogram[midpoint:]))[0]
+        # if cross_walk
+        # leftx_base = left_peaks[0] y right_peaks[-1]
         leftx_base = left_peaks[-1] if len(left_peaks) > 0 else midpoint - self.min_offset
         rightx_base = right_peaks[0] + midpoint if len(right_peaks) > 0 else midpoint + self.min_offset
 
@@ -293,7 +295,8 @@ class LaneDetector(LaneDetectionInterface):
             self.cross_tracking_error = self.cross_tracking_error - self.middle
             self.deviation = - math.atan(self.deviation) * 180 / math.pi
 
-    def process_frame(self, frame):
+    def process_frame(self, frame, traffic_sign):
+        print("traffic sign", traffic_sign)
         self._get_perspective_transform(frame)
         warped = self._warp_image(frame, self.M)
         self.binary_warped = self._threshold_image(warped)
