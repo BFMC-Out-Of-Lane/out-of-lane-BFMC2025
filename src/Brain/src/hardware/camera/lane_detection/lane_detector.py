@@ -2,13 +2,13 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import math
-from src.hardware.camera.lane_detection.lane_detection_interface import \
-    LaneDetectionInterface
-from src.hardware.camera.lane_detection.line import Line
+#from src.hardware.camera.lane_detection.lane_detection_interface import \
+#    LaneDetectionInterface
+#from src.hardware.camera.lane_detection.line import Line
 from scipy.signal import find_peaks
 
-# from lane_detection_interface import LaneDetectionInterface
-# from line import Line
+from lane_detection_interface import LaneDetectionInterface
+from line import Line
 
 
 def calculate_derivative(a, b, x):
@@ -63,6 +63,13 @@ class LaneDetector(LaneDetectionInterface):
         # however, a few rows should be removed at least in the simulator to avoid the hood of the car
         bottom_limit = int(binary_warped.shape[0]*0.97)
         histogram = np.sum(binary_warped[:bottom_limit], axis=0)
+        histogram = histogram / histogram.sum()
+        lower_threshold = 0.001
+        upper_threshold = 0.003 
+        flat_area = np.where((histogram > lower_threshold) & (histogram < upper_threshold))[0]
+        for intensity in flat_area:
+            histogram[intensity] = 0
+        histogram /= histogram.sum()
         self.histogram_data = histogram
         return histogram, None
 
@@ -94,8 +101,7 @@ class LaneDetector(LaneDetectionInterface):
         right_peaks = find_peaks(histogram[midpoint:], height=0)[0]
         if self.traffic_sign is not None and "crosswalk-road" in self.traffic_sign and self.traffic_sign["crosswalk-road"] > 50:
             leftx_base = left_peaks[0] if len(left_peaks) > 0 else midpoint - self.min_offset
-            rightx_base = right_peaks[-1] + midpoint if len(right_peaks) > 0 else midpoint + self.min_offset
-            print("leftX ", leftx_base, "rightX ", rightx_base)
+            rightx_base = right_peaks[-1] + midpoint if len(right_peaks) > 0 else midpoint + self.min_offset  
         else:
             leftx_base = left_peaks[-1] if len(left_peaks) > 0 else midpoint - self.min_offset
             rightx_base = right_peaks[0] + midpoint if len(right_peaks) > 0 else midpoint + self.min_offset
@@ -109,12 +115,35 @@ class LaneDetector(LaneDetectionInterface):
         leftx_current = leftx_base
         rightx_current = rightx_base
 
-        margin = 50
-        minpix = 5  # Minimum number of pixels found to recenter window
+        margin = 200
+        minpix = 1  # Minimum number of pixels found to recenter window
 
         left_line_inds = []
         right_line_inds = []
+        # ---------- DANGER
+        win_y_low = binary_warped.shape[0] - window_height
+        win_y_high = binary_warped.shape[0]
 
+        win_xleft_low = max(leftx_current - margin, 0)
+        win_xleft_high = min(leftx_current + margin, binary_warped.shape[1])
+
+        win_xright_low = max(rightx_current - margin, 0)
+        win_xright_high = min(rightx_current + margin, binary_warped.shape[1])
+
+        good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
+                            (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
+        good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
+                            (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
+        if len(good_left_inds) > minpix:
+            leftx_current = int(np.mean(nonzerox[good_left_inds]))
+            cv2.rectangle(self.sliding_windows_image, (win_xleft_low, win_y_low),
+                            (win_xleft_high, win_y_high), (60, 255, 250), 2)
+
+        if len(good_right_inds) > minpix:
+            rightx_current = int(np.mean(nonzerox[good_right_inds]))
+            cv2.rectangle(self.sliding_windows_image, (win_xright_low, win_y_low),
+                            (win_xright_high, win_y_high), (60, 255, 250), 2)
+        # ---------- DANGER
         for window in range(nwindows):
             win_y_low = binary_warped.shape[0] - (window + 1) * window_height
             win_y_high = binary_warped.shape[0] - window * window_height
@@ -311,7 +340,7 @@ class LaneDetector(LaneDetectionInterface):
 
         left_fit, right_fit, leftx, lefty, rightx, righty, histImg = self._fit_polynomial()
 
-        # cv2.imshow('Sliding Window', self.sliding_windows_image)
+        cv2.imshow('Sliding Window', self.sliding_windows_image)
 
         self.left_line.add_fit(left_fit)
         self.right_line.add_fit(right_fit)
@@ -322,5 +351,29 @@ class LaneDetector(LaneDetectionInterface):
 
         result = self._draw_lane(frame, self.binary_warped)
 
-        hist_image = self._render_histogram(self.histogram_data)
+        #hist_image = self._render_histogram(self.histogram_data)
+        #cv2.imshow('Histogram', hist_image)
         return result, self.cross_tracking_error, self.deviation
+
+# hist /= hist.sum()
+# `# Visualizar el histograma original
+# plt.figure(figsize=(10, 6))
+# plt.plot(hist)
+# plt.title("Histograma Original")
+# plt.xlabel("Intensidad de píxel")
+# plt.ylabel("Frecuencia")
+# plt.show()
+
+# # Umbral para detectar la meseta plana
+# lower_threshold = 0.005  # Un umbral bajo para detectar áreas planas
+# upper_threshold = 0.05   # Un umbral alto para detectar mesetas altas
+
+# # Identificar las intensidades de la meseta plana
+# flat_area = np.where((hist > lower_threshold) & (hist < upper_threshold))[0]
+
+# # Establecer los valores de la meseta plana a cero
+# for intensity in flat_area:
+#     hist[intensity] = 0
+
+# # Normalizar el histograma modificado
+# hist /= hist.sum()
