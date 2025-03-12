@@ -20,6 +20,7 @@ class LaneDetector(LaneDetectionInterface):
         self.min_offset = min_offset
         self.distance_to_aim = distance_to_aim
         self.is_simu = is_simu
+        self.traffic_sign = None
 
         self.MAX_WINDOWS_OVERLAPPING = 8
         self.NUM_OF_WINDOWS = 12
@@ -29,7 +30,7 @@ class LaneDetector(LaneDetectionInterface):
         self.right_line = Line()
 
     def process_image(self, cv_image,traffic_sign):
-        return self.process_frame(cv_image)
+        return self.process_frame(cv_image, traffic_sign)
 
     def _threshold_image(self, image):
         # Apply Gaussian blur
@@ -89,12 +90,15 @@ class LaneDetector(LaneDetectionInterface):
         self.sliding_windows_image = np.dstack((binary_warped, binary_warped, binary_warped))
         midpoint = int(histogram.shape[0] // 2)
 
-        left_peaks = find_peaks(histogram[:midpoint], height=np.average(histogram[:midpoint]))[0]
-        right_peaks = find_peaks(histogram[midpoint:], height=np.average(histogram[midpoint:]))[0]
-        # if cross_walk
-        # leftx_base = left_peaks[0] y right_peaks[-1]
-        leftx_base = left_peaks[-1] if len(left_peaks) > 0 else midpoint - self.min_offset
-        rightx_base = right_peaks[0] + midpoint if len(right_peaks) > 0 else midpoint + self.min_offset
+        left_peaks = find_peaks(histogram[:midpoint], height=0)[0]
+        right_peaks = find_peaks(histogram[midpoint:], height=0)[0]
+        if self.traffic_sign is not None and "crosswalk-road" in self.traffic_sign and self.traffic_sign["crosswalk-road"] > 50:
+            leftx_base = left_peaks[0] if len(left_peaks) > 0 else midpoint - self.min_offset
+            rightx_base = right_peaks[-1] + midpoint if len(right_peaks) > 0 else midpoint + self.min_offset
+            print("leftX ", leftx_base, "rightX ", rightx_base)
+        else:
+            leftx_base = left_peaks[-1] if len(left_peaks) > 0 else midpoint - self.min_offset
+            rightx_base = right_peaks[0] + midpoint if len(right_peaks) > 0 else midpoint + self.min_offset
 
         nwindows = self.NUM_OF_WINDOWS
         window_height = int(binary_warped.shape[0] // nwindows)
@@ -296,7 +300,8 @@ class LaneDetector(LaneDetectionInterface):
             self.deviation = - math.atan(self.deviation) * 180 / math.pi
 
     def process_frame(self, frame, traffic_sign):
-        print("traffic sign", traffic_sign)
+        if traffic_sign is not None:
+            self.traffic_sign = traffic_sign["objectDict"]
         self._get_perspective_transform(frame)
         warped = self._warp_image(frame, self.M)
         self.binary_warped = self._threshold_image(warped)
@@ -317,5 +322,5 @@ class LaneDetector(LaneDetectionInterface):
 
         result = self._draw_lane(frame, self.binary_warped)
 
-        # hist_image = self.render_histogram(self.histogram_data)
+        hist_image = self._render_histogram(self.histogram_data)
         return result, self.cross_tracking_error, self.deviation
