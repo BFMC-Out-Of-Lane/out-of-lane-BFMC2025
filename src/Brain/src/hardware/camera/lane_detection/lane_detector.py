@@ -69,7 +69,6 @@ class LaneDetector(LaneDetectionInterface):
         flat_area = np.where((histogram > lower_threshold) & (histogram < upper_threshold))[0]
         for intensity in flat_area:
             histogram[intensity] = 0
-        histogram /= histogram.sum()
         self.histogram_data = histogram
         return histogram, None
 
