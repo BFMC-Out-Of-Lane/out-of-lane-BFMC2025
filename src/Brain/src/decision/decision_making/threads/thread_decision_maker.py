@@ -35,6 +35,7 @@ FORWARD = 1
 REVERSE = -1
 TIME_BEING_PARKED = 5
 
+
 class threadDecisionMaker(ThreadWithStop):
     """This thread handles decision_making.
     Args:
@@ -52,7 +53,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.current_speed = "0"
         self.driving_mode = "stop"
-        
+
         self.speed_sender = messageHandlerSender(self.queuesList, SpeedMotor)
         self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
         self.signal_sender = messageHandlerSender(self.queuesList, WarningSignal)
@@ -82,7 +83,8 @@ class threadDecisionMaker(ThreadWithStop):
         """Subscribes to the messages you are interested in"""
 
         self.subscribers["CurrentSpeed"] = messageHandlerSubscriber(self.queuesList, CurrentSpeed, "lastonly", True)
-        self.subscribers["UltrasonicSensors"] = messageHandlerSubscriber(self.queuesList, UltrasonicSensors, "lastonly", True)
+        self.subscribers["UltrasonicSensors"] = messageHandlerSubscriber(
+            self.queuesList, UltrasonicSensors, "lastonly", True)
         self.subscribers["LaneKeeping"] = messageHandlerSubscriber(self.queuesList, LaneKeeping, "lastonly", True)
         self.subscribers["trafficSigns"] = messageHandlerSubscriber(self.queuesList, trafficSigns, "lastonly", True)
         self.subscribers["DrivingMode"] = messageHandlerSubscriber(self.queuesList, DrivingMode, "lastonly", True)
@@ -139,7 +141,7 @@ class threadDecisionMaker(ThreadWithStop):
             time.sleep(t)
 
         traffic_signs_message = self.subscribers["trafficSigns"].receive()
-        
+
         if traffic_signs_message is not None:
             detected_object_dict = traffic_signs_message["objectDict"]
 
@@ -155,12 +157,10 @@ class threadDecisionMaker(ThreadWithStop):
                 elif int(self.current_speed) < 200 and time.time() - self.signal_timer > 3:
                     self._send_speed(200)
 
-
-            if "crosswalk-sign" in detected_object_dict or "crosswalk-road" in detected_object_dict:
-                if detected_object_dict["crosswalk-road"] > MIN_DISTANCE_TO_CROSSWALK or detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_SIGN:
-                    self._send_speed(100)
-                    self.signal_timer = time.time()
-                    # self.signal_sender.send({"WarningName": "crosswalk", "WarningID": 4})
+            if ("crosswalk-sign" in detected_object_dict and detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_SIGN) or ("crosswalk-road" in detected_object_dict and detected_object_dict["crosswalk-road"] > MIN_DISTANCE_TO_CROSSWALK):
+                self._send_speed(100)
+                self.signal_timer = time.time()
+                # self.signal_sender.send({"WarningName": "crosswalk", "WarningID": 4})
 
             if "highway-end-sign" in detected_object_dict:
                 if detected_object_dict["highway-end-sign"] > MIN_DISTANCE_TO_SIGN:
@@ -233,10 +233,10 @@ class threadDecisionMaker(ThreadWithStop):
                 if self.debugging:
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object detected: green-light" }}}}')
-     
+
         elif int(self.current_speed) < 200 and time.time() - self.signal_timer > 3:
             self._send_speed(200)
-            
+
     def _activate_parking_mode(self):
         parking_status = 0
 
@@ -255,7 +255,7 @@ class threadDecisionMaker(ThreadWithStop):
         time.sleep(TIME_BEING_PARKED)
         self._exit_parking_spot(lane_side)
         self.logging.info(f'{{"threadDecisionMaker: on track again :) " }}')
-        
+
         # if parking_status == 0:
         #     lane_side = self._enter_parking_zone()
         #     parking_status = 1
@@ -274,7 +274,6 @@ class threadDecisionMaker(ThreadWithStop):
         #     flag_parking_mode = False
         #     self.logging.info(f'{{"threadDecisionMaker: on track again :) " }}')
         #     "ACTIVAR LANE DETECTOR PORQUE SIGUE SU CAMINO"
-    
 
     def _move_x_distance(self, distance, speed, direction):
         self._send_speed(speed*direction)
@@ -290,8 +289,8 @@ class threadDecisionMaker(ThreadWithStop):
         self._move_x_distance(distance_to_locate, PARKING_MODE_SPEED, FORWARD)
 
         return RIGHT_LANE_SIDE
-        
-    def _start_parking_maneuver(self,lane_side):
+
+    def _start_parking_maneuver(self, lane_side):
         self.logging.info(f'{{"carActions: parking maneuver" }}')
 
         # 1. servos a DIRECTION_PARKING y ANGLE_PARKING y desplazarse en reversa - PARKING_STEP1_DISTANCE
@@ -317,8 +316,8 @@ class threadDecisionMaker(ThreadWithStop):
         self._move_x_distance(PARKING_STEP3_DISTANCE, MANEUVERING_SPEED, FORWARD)
 
         self._send_speed(0)
-        
-    def _exit_parking_spot(self,lane_side):
+
+    def _exit_parking_spot(self, lane_side):
         self.logging.info(f'{{"carActions: im trying to leave the spot" }}')
 
         # 3b. desplazarse para atras ---> - PARKING_STEP3_DISTANCE"
@@ -348,7 +347,6 @@ class threadDecisionMaker(ThreadWithStop):
         self.steer_sender.send("0")
         time.sleep(1)
 
-
     def _parking_maneuver(self, lane_side, is_starting=True):
         action = "parking maneuver" if is_starting else "exiting the parking spot"
         self.logging.info(f'{{"carActions: {action}" }}')
@@ -374,7 +372,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.steer_sender.send("0")
         self._send_speed(0)
-    
+
     def _send_speed(self, new_speed):
         self.speed_sender.send(str(int(new_speed)))
         self.current_speed = str(new_speed)
