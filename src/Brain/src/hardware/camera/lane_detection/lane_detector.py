@@ -115,7 +115,7 @@ class LaneDetector(LaneDetectionInterface):
         leftx_current = leftx_base
         rightx_current = rightx_base
 
-        margin = 200
+        margin = 50
         minpix = 1  # Minimum number of pixels found to recenter window
 
         left_line_inds = []
