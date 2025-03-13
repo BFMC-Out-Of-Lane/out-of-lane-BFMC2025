@@ -125,7 +125,7 @@ if SerialHandler:
 
 # ------ New component runs starts here ------#
 if DecisionMaker:
-    processDecisionMaker = processDecisionMaker(queueList, logging, debugging = False)
+    processDecisionMaker = processDecisionMaker(queueList, logging, debugging = True)
     allProcesses.append(processDecisionMaker)
 
 if TrafficSigns:

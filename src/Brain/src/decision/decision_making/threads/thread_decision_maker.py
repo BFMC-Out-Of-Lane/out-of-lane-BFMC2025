@@ -1,7 +1,6 @@
 import math
 import time
 
-from src.decision.decision_making.odometer.odometer import Odometer
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, LaneKeeping,
                                             SpeedMotor, SteerMotor,
@@ -13,7 +12,7 @@ from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
 MIN_DISTANCE_TO_STOP = 200
-MIN_DISTANCE_TO_SIGN = 25
+MIN_DISTANCE_TO_SIGN = 20
 MIN_DISTANCE_TO_CROSSWALK = 70
 TIME_AT_STOP_SIGN = 3
 
@@ -59,7 +58,6 @@ class threadDecisionMaker(ThreadWithStop):
         self.signal_sender = messageHandlerSender(self.queuesList, WarningSignal)
 
         self.subscribers = {}
-        self.odometer = Odometer()
         self.signal_timer = time.time()
 
         self.subscribe()
@@ -76,8 +74,6 @@ class threadDecisionMaker(ThreadWithStop):
                     self._handle_traffic_signs_message()
                 except Exception as e:
                     self.logging.error(f'{{"threadDecisionMaker": {str(e)}}}')
-
-            self.odometer.update(int(self.current_speed))
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""
@@ -121,7 +117,7 @@ class threadDecisionMaker(ThreadWithStop):
             self.cross_tracking_error = lane_keeping["cross_tracking_error"]
             self.deviation = lane_keeping["deviation"]
             if self.cross_tracking_error and self.deviation:
-                steering = int(self.deviation + math.atan(1 * self.cross_tracking_error /
+                steering = int(self.deviation + math.atan(0.8 * self.cross_tracking_error /
                                int(self.current_speed)) * 180 / math.pi) * 10
                 if steering < -230:
                     steering = -230
@@ -165,13 +161,11 @@ class threadDecisionMaker(ThreadWithStop):
             if "highway-end-sign" in detected_object_dict:
                 if detected_object_dict["highway-end-sign"] > MIN_DISTANCE_TO_SIGN:
                     self._send_speed(200)
-                    print("HIGHWAY EXIT")
                     # self.signal_sender.send({"WarningName": "highway_exit", "WarningID": 7})
 
             if "highway-entry-sign" in detected_object_dict:
                 if detected_object_dict["highway-entry-sign"] > MIN_DISTANCE_TO_SIGN:
-                    self._send_speed(400)
-                    print("HIGHWAY ENTRANCE")
+                    self._send_speed(300)
                     # self.signal_sender.send({"WarningName": "highway_entrance", "WarningID": 6})
 
             if "one-way-sign" in detected_object_dict:
