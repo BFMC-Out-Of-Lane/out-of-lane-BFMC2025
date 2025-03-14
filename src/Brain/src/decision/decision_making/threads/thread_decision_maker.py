@@ -266,7 +266,6 @@ class threadDecisionMaker(ThreadWithStop):
     def _move_x_distance(self, distance, speed, direction):
         self._send_speed(speed*direction)
         print(distance/speed)
-        time.sleep(distance/speed)
         self._send_speed(0)
         time.sleep(1)
 
