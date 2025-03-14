@@ -172,7 +172,7 @@ class threadDecisionMaker(ThreadWithStop):
                     # self.signal_sender.send({"WarningName": "highway_exit", "WarningID": 7})
                     # TODO: Map
                     time.sleep(1)
-                    self.steer_sender.send(str(230))
+                    self.steer_sender.send(str(200))
                     time.sleep(2)
                     # End of TODO
 
@@ -277,7 +277,7 @@ class threadDecisionMaker(ThreadWithStop):
 
     def _move_x_distance(self, distance, speed, direction):
         self._send_speed(speed*direction)
-        print(distance/speed)
+        time.sleep(distance/speed)
         self._send_speed(0)
         time.sleep(1)
 
