@@ -58,7 +58,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.signal_sender = messageHandlerSender(self.queuesList, WarningSignal)
 
         self.subscribers = {}
-        self.signal_timer = time.time()
+        self.signal_timer = time.time() - 60
 
         self.subscribe()
         super(threadDecisionMaker, self).__init__()
@@ -148,6 +148,7 @@ class threadDecisionMaker(ThreadWithStop):
             if "stop-sign" in detected_object_dict:
                 # self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
                 if detected_object_dict["stop-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.signal_timer > 8:
+                    self.signal_timer = time.time()
                     timer_stop_signal(TIME_AT_STOP_SIGN)
                 elif int(self.current_speed) < 200 and time.time() - self.signal_timer > 3:
                     self._send_speed(200)
@@ -156,13 +157,11 @@ class threadDecisionMaker(ThreadWithStop):
                 self._send_speed(100)
                 # self.signal_sender.send({"WarningName": "crosswalk", "WarningID": 4})
 
-            if "highway-end-sign" in detected_object_dict:
-                if detected_object_dict["highway-end-sign"] > MIN_DISTANCE_TO_SIGN:
+            if "highway-end-sign" in detected_object_dict and detected_object_dict["highway-end-sign"] > MIN_DISTANCE_TO_SIGN:
                     self._send_speed(200)
                     # self.signal_sender.send({"WarningName": "highway_exit", "WarningID": 7})
 
-            if "highway-entry-sign" in detected_object_dict:
-                if detected_object_dict["highway-entry-sign"] > MIN_DISTANCE_TO_SIGN:
+            if "highway-entry-sign" in detected_object_dict and detected_object_dict["highway-entry-sign"] > MIN_DISTANCE_TO_SIGN:
                     self._send_speed(300)
                     # self.signal_sender.send({"WarningName": "highway_entrance", "WarningID": 6})
 
@@ -172,15 +171,15 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object detected: one-way-sign" }}}}')
 
-            if "parking-sign" in detected_object_dict:
-                if detected_object_dict["parking-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.signal_timer > 3:
+            self.logging.info(time.time() - self.signal_timer)
+            if "parking-sign" in detected_object_dict and detected_object_dict["parking-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.signal_timer > 60:
+                    self.signal_timer = time.time()
                     self._send_speed(0)
                     self._activate_parking_mode()
                     # self.signal_sender.send({"WarningName": "parking", "WarningID": 10})
                     self.parking_sign_first_detection = False
 
-            if "no-entry-sign" in detected_object_dict:
-                if detected_object_dict["no-entry-sign"] > MIN_DISTANCE_TO_SIGN:
+            if "no-entry-sign" in detected_object_dict and detected_object_dict["no-entry-sign"] > MIN_DISTANCE_TO_SIGN:
                     self._send_speed(0)
                     # TODO: Add path plannign logic
                     # self.signal_sender.send({"WarningName": "forbidden", "WarningID": 5})
@@ -197,8 +196,7 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": "Object detected: priority-signal }}')
 
-            if "pedestrian" in detected_object_dict:
-                if detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_SIGN:
+            if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_SIGN:
                     self._send_speed(0)
                     # self.signal_sender.send({"WarningName": "ped_on_crosswalk", "WarningID": 12})
                     if self.debugging:
@@ -206,6 +204,7 @@ class threadDecisionMaker(ThreadWithStop):
                             f'{{"threadDecisionMaker": "Object detected: pedestrian }}')
 
             if "red-light" in detected_object_dict and time.time() - self.signal_timer > 3:
+                self.signal_timer = time.time()
                 self._send_speed(0)
                 # self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
                 if self.debugging:
@@ -223,8 +222,6 @@ class threadDecisionMaker(ThreadWithStop):
                 if self.debugging:
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object detected: green-light" }}}}')
-
-            self.signal_timer = time.time()
 
         elif int(self.current_speed) < 200 and time.time() - self.signal_timer > 3:
             self._send_speed(200)
@@ -272,6 +269,7 @@ class threadDecisionMaker(ThreadWithStop):
         print(distance/speed)
         time.sleep(distance/speed)
         self._send_speed(0)
+        time.sleep(1)
 
     def _enter_parking_zone(self):
         self.logging.info(f'{{"carActions: enter to parking zone"  }}')
