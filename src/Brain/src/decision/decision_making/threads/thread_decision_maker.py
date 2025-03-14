@@ -154,6 +154,7 @@ class threadDecisionMaker(ThreadWithStop):
                     self._send_speed(200)
 
             if ("crosswalk-sign" in detected_object_dict and detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_SIGN) or ("crosswalk-road" in detected_object_dict and detected_object_dict["crosswalk-road"] > MIN_DISTANCE_TO_CROSSWALK):
+                self.signal_timer = time.time()
                 self._send_speed(100)
                 # self.signal_sender.send({"WarningName": "crosswalk", "WarningID": 4})
 
