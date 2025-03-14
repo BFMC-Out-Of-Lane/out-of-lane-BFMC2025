@@ -17,7 +17,7 @@ MIN_DISTANCE_TO_CROSSWALK = 70
 TIME_AT_STOP_SIGN = 3
 
 # Parking constants
-PARKING_STEP1_DISTANCE = 380
+PARKING_STEP1_DISTANCE = 390
 PARKING_STEP2_DISTANCE = 200
 PARKING_STEP3_DISTANCE = 100
 PARKING_MODE_SPEED = 100
@@ -171,7 +171,6 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object detected: one-way-sign" }}}}')
 
-            self.logging.info(time.time() - self.signal_timer)
             if "parking-sign" in detected_object_dict and detected_object_dict["parking-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.signal_timer > 60:
                     self.signal_timer = time.time()
                     self._send_speed(0)
