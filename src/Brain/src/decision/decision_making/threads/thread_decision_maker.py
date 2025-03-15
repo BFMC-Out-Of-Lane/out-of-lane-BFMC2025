@@ -154,6 +154,7 @@ class threadDecisionMaker(ThreadWithStop):
                 else:
                     self._send_speed(200)
                     # TODO: Map
+                    self.steer_sender.send(str(0))
                     time.sleep(1)
                     self.steer_sender.send(str(200))
                     time.sleep(2)
