@@ -146,36 +146,35 @@ class threadDecisionMaker(ThreadWithStop):
                 self.logging.info(
                     f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            if "stop-sign" in detected_object_dict:
+            if "stop-sign" in detected_object_dict or "no-entry" in detected_object_dict:
                 # self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
                 if detected_object_dict["stop-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.stop_timer > 12:
                     self.stop_timer = time.time()
                     timer_stop_signal(TIME_AT_STOP_SIGN)
                 else:
+                    self.steer_sender.send(str(-120))
                     self._send_speed(200)
                     # TODO: Map
-                    self.steer_sender.send(str(0))
                     time.sleep(1)
-                    self.steer_sender.send(str(200))
-                    time.sleep(2)
+                    self.steer_sender.send(str(230))
+                    time.sleep(1)
                     # End of TODO
 
             if ("crosswalk-sign" in detected_object_dict and detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_SIGN) or ("crosswalk-road" in detected_object_dict and detected_object_dict["crosswalk-road"] > MIN_DISTANCE_TO_CROSSWALK):
                 self.stop_timer = time.time()
                 self._send_speed(100)
-                # self.signal_sender.send({"WarningName": "crosswalk", "WarningID": 4})
+                # self.signal_sender.send(str({"WarningName": "crosswalk", "WarningID": 4}))
 
             if "highway-entry-sign" in detected_object_dict and detected_object_dict["highway-entry-sign"] > MIN_DISTANCE_TO_SIGN:
                 self._send_speed(400)
-                # self.signal_sender.send({"WarningName": "highway_entrance", "WarningID": 6})
+                # self.signal_sender.send(str({"WarningName": "highway_entrance", "WarningID": 6}))
 
             if "highway-end-sign" in detected_object_dict and detected_object_dict["highway-end-sign"] > MIN_DISTANCE_TO_SIGN:
                 self._send_speed(200)
-                # self.signal_sender.send({"WarningName": "highway_exit", "WarningID": 7})
+                # self.signal_sender.send(str({"WarningName": "highway_exit", "WarningID": 7}))
                 # TODO: Map
+                self.steer_sender.send(str(150))
                 time.sleep(1)
-                self.steer_sender.send(str(200))
-                time.sleep(2)
                 # End of TODO
 
             # if "one-way-sign" in detected_object_dict:
@@ -185,7 +184,7 @@ class threadDecisionMaker(ThreadWithStop):
                 self.parking_timer = time.time()
                 self._send_speed(0)
                 self._activate_parking_mode()
-                # self.signal_sender.send({"WarningName": "parking", "WarningID": 10})
+                # self.signal_sender.send(str({"WarningName": "parking", "WarningID": 10}))
 
             # if "no-entry-sign" in detected_object_dict and detected_object_dict["no-entry-sign"] > MIN_DISTANCE_TO_SIGN:
                 # self._send_speed(0)
@@ -204,7 +203,7 @@ class threadDecisionMaker(ThreadWithStop):
             if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_SIGN:
                 self.stop_timer = time.time()
                 self._send_speed(0)
-                # self.signal_sender.send({"WarningName": "ped_on_crosswalk", "WarningID": 12})
+                # self.signal_sender.send(str({"WarningName": "ped_on_crosswalk", "WarningID": 12}))
 
             # if "red-light" in detected_object_dict and time.time() - self.stop_timer > 3:
             #     self.stop_timer = time.time()
@@ -326,7 +325,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.steer_sender.send(str(ANGLE_PARKING*lane_side))
         time.sleep(1)
 
-        self._move_x_distance(PARKING_STEP1_DISTANCE, MANEUVERING_SPEED, FORWARD)
+        self._move_x_distance(PARKING_STEP1_DISTANCE - 40, MANEUVERING_SPEED, FORWARD)
         self._send_speed(0)
 
         time.sleep(1)
