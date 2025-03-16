@@ -35,7 +35,6 @@ class LaneDetector(LaneDetectionInterface):
     def _threshold_image(self, image):
         # Apply Gaussian blur
         blurred_frame = cv2.GaussianBlur(image, (5, 5), 0)
-        # cv2.imshow('Blurred Frame', blurred_frame)
 
         # Convert to HLS color space
         hls = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2HLS)
@@ -89,7 +88,7 @@ class LaneDetector(LaneDetectionInterface):
 
         # Convert to BGR format for OpenCV
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-        # cv2.imshow('Histogram', img)
+
         return img
 
     def _sliding_window(self, binary_warped, histogram):
@@ -334,12 +333,8 @@ class LaneDetector(LaneDetectionInterface):
         warped = self._warp_image(frame, self.M)
         self.binary_warped = self._threshold_image(warped)
         # binary_unwarped = self.warp_image(self.binary_warped, self.Minv)
-        # cv2.imshow('Binary Unwarped', binary_unwarped)
-        # cv2.imshow('Binary Warped', binary_warped)
 
         left_fit, right_fit, leftx, lefty, rightx, righty, histImg = self._fit_polynomial()
-
-        # cv2.imshow('Sliding Window', self.sliding_windows_image)
 
         self.left_line.add_fit(left_fit)
         self.right_line.add_fit(right_fit)
@@ -351,7 +346,7 @@ class LaneDetector(LaneDetectionInterface):
         result = self._draw_lane(frame, self.binary_warped)
 
         #hist_image = self._render_histogram(self.histogram_data)
-        #cv2.imshow('Histogram', hist_image)
+
         return result, self.cross_tracking_error, self.deviation
 
 # hist /= hist.sum()

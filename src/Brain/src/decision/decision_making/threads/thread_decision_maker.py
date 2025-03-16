@@ -14,7 +14,7 @@ from src.utils.messages.messageHandlerSubscriber import \
 MIN_DISTANCE_TO_STOP = 200
 MIN_DISTANCE_TO_SIGN = 20
 MIN_DISTANCE_TO_CROSSWALK = 70
-TIME_AT_STOP_SIGN = 3
+TIME_AT_STOP_SIGN = 2
 
 # Parking constants
 PARKING_STEP1_DISTANCE = 390
@@ -148,22 +148,30 @@ class threadDecisionMaker(ThreadWithStop):
 
             if "stop-sign" in detected_object_dict:
                 # self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
-                if detected_object_dict["stop-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.stop_timer > 12:
+                if detected_object_dict["stop-sign"] > MIN_DISTANCE_TO_SIGN + 5 and time.time() - self.stop_timer > 12:
+                    self.logging.info(detected_object_dict["stop-sign"])
                     self.stop_timer = time.time()
+                    
+                    self.steer_sender.send(str(0))
                     timer_stop_signal(TIME_AT_STOP_SIGN)
-                else:
-                    self.steer_sender.send(str(-120))
+                    self.steer_sender.send(str(0))
                     self._send_speed(200)
+                    
                     # TODO: Map
                     time.sleep(1.5)
                     self.steer_sender.send(str(230))
-                    time.sleep(1)
+                    time.sleep(0.5)
                     # End of TODO
 
             if ("crosswalk-sign" in detected_object_dict and detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_SIGN) or ("crosswalk-road" in detected_object_dict and detected_object_dict["crosswalk-road"] > MIN_DISTANCE_TO_CROSSWALK):
                 self.stop_timer = time.time()
                 self._send_speed(100)
                 # self.signal_sender.send(str({"WarningName": "crosswalk", "WarningID": 4}))
+            
+            if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_SIGN:
+                self.stop_timer = time.time()
+                self._send_speed(0)
+                # self.signal_sender.send(str({"WarningName": "ped_on_crosswalk", "WarningID": 12}))
 
             if "highway-entry-sign" in detected_object_dict and detected_object_dict["highway-entry-sign"] > MIN_DISTANCE_TO_SIGN:
                 self._send_speed(400)
@@ -172,10 +180,6 @@ class threadDecisionMaker(ThreadWithStop):
             if "highway-end-sign" in detected_object_dict and detected_object_dict["highway-end-sign"] > MIN_DISTANCE_TO_SIGN:
                 self._send_speed(200)
                 # self.signal_sender.send(str({"WarningName": "highway_exit", "WarningID": 7}))
-                # TODO: Map
-                self.steer_sender.send(str(150))
-                time.sleep(1)
-                # End of TODO
 
             # if "one-way-sign" in detected_object_dict:
                 # self.signal_sender.send({"WarningName": "oneway", "WarningID": 9})
@@ -196,14 +200,11 @@ class threadDecisionMaker(ThreadWithStop):
 
             if "priority-sign" in detected_object_dict:
                 # self.signal_sender.send({"WarningName": "priority", "WarningID": 13})
-                if self.debugging:
-                    self.logging.info(
-                        f'{{"threadDecisionMaker": "Object detected: priority-signal }}')
-
-            if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_SIGN:
-                self.stop_timer = time.time()
-                self._send_speed(0)
-                # self.signal_sender.send(str({"WarningName": "ped_on_crosswalk", "WarningID": 12}))
+                # TODO: Map
+                self._send_speed(200)
+                self.steer_sender.send(str(150))
+                time.sleep(1)
+                # End of TODO
 
             # if "red-light" in detected_object_dict and time.time() - self.stop_timer > 3:
             #     self.stop_timer = time.time()
