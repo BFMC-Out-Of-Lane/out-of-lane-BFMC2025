@@ -158,6 +158,12 @@ class threadDecisionMaker(ThreadWithStop):
                     self.steer_sender.send(str(0))  # ?
                     self._send_speed(200)
 
+                    time.sleep(1)
+                    self.steer_sender.send("230")
+                    self.steer_sender.send("230")
+                    self.steer_sender.send("230")
+                    time.sleep(1)
+
                     if self.debugging:
                         self.logging.info(
                             f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
