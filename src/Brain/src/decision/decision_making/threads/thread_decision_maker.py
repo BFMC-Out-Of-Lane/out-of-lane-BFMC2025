@@ -119,7 +119,7 @@ class threadDecisionMaker(ThreadWithStop):
             self.cross_tracking_error = self.lane_keeping["cross_tracking_error"]
             self.deviation = self.lane_keeping["deviation"]
             if self.cross_tracking_error and self.deviation:
-                steering = int(self.deviation + math.atan(0.8 * self.cross_tracking_error /
+                steering = int(self.deviation + math.atan(0.6 * self.cross_tracking_error /
                                int(self.current_speed)) * 180 / math.pi) * 10
                 if steering < -230:
                     steering = -230
@@ -135,7 +135,13 @@ class threadDecisionMaker(ThreadWithStop):
             if self.debugging:
                 self.logging.info(
                     f'{{"threadDecisionMaker": {{ "Object detected -------------------- CAR STOPPING": }} }}')
+            
             self._send_speed(0)
+            time.sleep(0.2)
+            self._send_speed(0)
+            time.sleep(0.2)
+            self._send_speed(0)
+
             time.sleep(t)
 
         traffic_signs_message = self.subscribers["trafficSigns"].receive()
@@ -195,8 +201,9 @@ class threadDecisionMaker(ThreadWithStop):
             # if "roundabout-sign" in detected_object_dict:
                 # self.signal_sender.send({"WarningName": "roundabaout", "WarningID": 15})
 
-            # if "priority-sign" in detected_object_dict:
-                # self.signal_sender.send({"WarningName": "priority", "WarningID": 13})
+            if "priority-sign" in detected_object_dict:
+                self._send_speed(200)
+                self.signal_sender.send({"WarningName": "priority", "WarningID": 13})
 
             # if "red-light" in detected_object_dict and time.time() - self.stop_timer > 3:
             #     # self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
