@@ -69,10 +69,10 @@ class threadDecisionMaker(ThreadWithStop):
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
             if self.driving_mode == "auto":
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
+                self._handle_traffic_signs_message()
                 try:
-                    # self._handle_ultrasonic_message()
                     self._handle_lane_keeping_message()
-                    self._handle_traffic_signs_message()
+                    # self._handle_ultrasonic_message()
                 except Exception as e:
                     self.logging.error(f'{{"threadDecisionMaker": {str(e)}}}')
 
@@ -146,7 +146,7 @@ class threadDecisionMaker(ThreadWithStop):
                 self.logging.info(
                     f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            if "stop-sign" in detected_object_dict or "no-entry" in detected_object_dict:
+            if "stop-sign" in detected_object_dict:
                 # self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
                 if detected_object_dict["stop-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.stop_timer > 12:
                     self.stop_timer = time.time()
@@ -155,7 +155,7 @@ class threadDecisionMaker(ThreadWithStop):
                     self.steer_sender.send(str(-120))
                     self._send_speed(200)
                     # TODO: Map
-                    time.sleep(1)
+                    time.sleep(1.5)
                     self.steer_sender.send(str(230))
                     time.sleep(1)
                     # End of TODO
