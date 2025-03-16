@@ -159,7 +159,7 @@ class threadDecisionMaker(ThreadWithStop):
                     self._send_speed(200)
 
                     # TODO: Map
-                    self._turn_until_lane(RIGHT_LANE_SIDE, 200)
+                    # self._turn_until_lane(RIGHT_LANE_SIDE, 200)
                     # End of TODO
 
             if ("crosswalk-sign" in detected_object_dict and detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_SIGN) or ("crosswalk-road" in detected_object_dict and detected_object_dict["crosswalk-road"] > MIN_DISTANCE_TO_CROSSWALK):
@@ -195,13 +195,8 @@ class threadDecisionMaker(ThreadWithStop):
             # if "roundabout-sign" in detected_object_dict:
                 # self.signal_sender.send({"WarningName": "roundabaout", "WarningID": 15})
 
-            if "priority-sign" in detected_object_dict:
+            # if "priority-sign" in detected_object_dict:
                 # self.signal_sender.send({"WarningName": "priority", "WarningID": 13})
-                # TODO: Map
-                self._send_speed(200)
-                self.steer_sender.send(str(150))
-                time.sleep(1)
-                # End of TODO
 
             # if "red-light" in detected_object_dict and time.time() - self.stop_timer > 3:
             #     # self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
@@ -239,15 +234,6 @@ class threadDecisionMaker(ThreadWithStop):
         time.sleep(distance/speed)
         self._send_speed(0)
         time.sleep(1)
-
-    # def _enter_parking_zone(self):
-    #     self.logging.info(f'{{"carActions: enter to parking zone"  }}')
-
-    #     # ubicarse: step1. avanzar desde senda peatonal X + LongParking*EspacioElegido ---> CONSTANTE_STEP_LOCATION"
-    #     distance_to_locate = LENGTH_SPOT*PARKING_SPOT_NUMBER + DISTANCE_ENTER_PARKING_ZONE + 340
-    #     self._move_x_distance(distance_to_locate, PARKING_MODE_SPEED, FORWARD)
-
-    #     return RIGHT_LANE_SIDE
 
     def _start_parking_maneuver(self, lane_side):
         self.logging.info(f'{{"carActions: parking maneuver" }}')
@@ -321,13 +307,12 @@ class threadDecisionMaker(ThreadWithStop):
 
     def _turn_until_lane(self, lane, speed):
         self._send_speed(speed)
-        if lane == RIGHT_LANE_SIDE:
-            self.steer_sender.send(str(230))
-        else:
-            self.steer_sender.send(str(-230))
 
         while abs(self.lane_keeping["deviation"]) > 50:
-            pass
+            if lane == RIGHT_LANE_SIDE:
+                self.steer_sender.send(str(230))
+            else:
+                self.steer_sender.send(str(-230))
 
     def _send_speed(self, new_speed):
         self.speed_sender.send(str(int(new_speed)))
