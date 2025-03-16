@@ -2,11 +2,11 @@ import math
 import time
 
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import (CurrentSpeed, LaneKeeping,
-                                            SpeedMotor, SteerMotor,
-                                            UltrasonicSensors, WarningSignal,
-                                            mainCamera, serialCamera, DrivingMode,
-                                            trafficSigns)
+from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode,
+                                            LaneKeeping, SpeedMotor,
+                                            SteerMotor, UltrasonicSensors,
+                                            WarningSignal, mainCamera,
+                                            serialCamera, trafficSigns)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
@@ -69,6 +69,8 @@ class threadDecisionMaker(ThreadWithStop):
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
             if self.driving_mode == "auto":
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
+                self.lane_keeping = self.subscribers["LaneKeeping"].receive()
+
                 self._handle_traffic_signs_message()
                 try:
                     self._handle_lane_keeping_message()
@@ -113,10 +115,9 @@ class threadDecisionMaker(ThreadWithStop):
     def _handle_lane_keeping_message(self):
         """Handles the lane keeping message, i.e.: decides the steering angle"""
 
-        lane_keeping = self.subscribers["LaneKeeping"].receive()
-        if lane_keeping and int(self.current_speed) > 0:
-            self.cross_tracking_error = lane_keeping["cross_tracking_error"]
-            self.deviation = lane_keeping["deviation"]
+        if self.lane_keeping and int(self.current_speed) > 0:
+            self.cross_tracking_error = self.lane_keeping["cross_tracking_error"]
+            self.deviation = self.lane_keeping["deviation"]
             if self.cross_tracking_error and self.deviation:
                 steering = int(self.deviation + math.atan(0.8 * self.cross_tracking_error /
                                int(self.current_speed)) * 180 / math.pi) * 10
@@ -151,23 +152,21 @@ class threadDecisionMaker(ThreadWithStop):
                 if detected_object_dict["stop-sign"] > MIN_DISTANCE_TO_SIGN + 5 and time.time() - self.stop_timer > 12:
                     self.logging.info(detected_object_dict["stop-sign"])
                     self.stop_timer = time.time()
-                    
-                    self.steer_sender.send(str(0))
+
+                    self.steer_sender.send(str(0))  # ?
                     timer_stop_signal(TIME_AT_STOP_SIGN)
-                    self.steer_sender.send(str(0))
+                    self.steer_sender.send(str(0))  # ?
                     self._send_speed(200)
-                    
+
                     # TODO: Map
-                    time.sleep(1.5)
-                    self.steer_sender.send(str(230))
-                    time.sleep(0.5)
+                    self._turn_until_lane(RIGHT_LANE_SIDE, 200)
                     # End of TODO
 
             if ("crosswalk-sign" in detected_object_dict and detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_SIGN) or ("crosswalk-road" in detected_object_dict and detected_object_dict["crosswalk-road"] > MIN_DISTANCE_TO_CROSSWALK):
                 self.stop_timer = time.time()
                 self._send_speed(100)
                 # self.signal_sender.send(str({"WarningName": "crosswalk", "WarningID": 4}))
-            
+
             if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_SIGN:
                 self.stop_timer = time.time()
                 self._send_speed(0)
@@ -191,8 +190,6 @@ class threadDecisionMaker(ThreadWithStop):
                 # self.signal_sender.send(str({"WarningName": "parking", "WarningID": 10}))
 
             # if "no-entry-sign" in detected_object_dict and detected_object_dict["no-entry-sign"] > MIN_DISTANCE_TO_SIGN:
-                # self._send_speed(0)
-                # TODO: Add path plannign logic
                 # self.signal_sender.send({"WarningName": "forbidden", "WarningID": 5})
 
             # if "roundabout-sign" in detected_object_dict:
@@ -207,24 +204,13 @@ class threadDecisionMaker(ThreadWithStop):
                 # End of TODO
 
             # if "red-light" in detected_object_dict and time.time() - self.stop_timer > 3:
-            #     self.stop_timer = time.time()
-            #     self._send_speed(0)
             #     # self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
-            #     if self.debugging:
-            #         self.logging.info(
-            #             f'{{"threadDecisionMaker": {{ "Object detected: red-light" }}}}')
 
             # if "yellow-light" in detected_object_dict:
             #     # self.signal_sender.send({"WarningName": "yellow-light", "WarningID": 23})
-            #     if self.debugging:
-            #         self.logging.info(
-            #             f'{{"threadDecisionMaker": {{ "Object detected:yellow-light" }}}}')
 
             # if "green-light" in detected_object_dict:
             #     # self.signal_sender.send({"WarningName": "green-light", "WarningID": 24})
-            #     if self.debugging:
-            #         self.logging.info(
-            #             f'{{"threadDecisionMaker": {{ "Object detected: green-light" }}}}')
 
         if int(self.current_speed) < 200 and time.time() - self.stop_timer > 3:
             self._send_speed(200)
@@ -333,28 +319,15 @@ class threadDecisionMaker(ThreadWithStop):
         self.steer_sender.send("0")
         time.sleep(1)
 
-    # def _parking_maneuver(self, lane_side, is_starting=True):
-    #     action = "parking maneuver" if is_starting else "exiting the parking spot"
-    #     self.logging.info(f'{{"carActions: {action}" }}')
-    #     if is_starting:
-    #         steps = [
-    #             (ANGLE_PARKING * lane_side, PARKING_STEP1_DISTANCE, REVERSE),
-    #             (ANGLE_PARKING * lane_side * (-1), PARKING_STEP2_DISTANCE, REVERSE),
-    #             (ANGLE_PARKING * lane_side, PARKING_STEP3_DISTANCE, FORWARD)
-    #         ]
-    #     else:
-    #         steps = [
-    #             (ANGLE_PARKING * lane_side, PARKING_STEP3_DISTANCE, REVERSE),
-    #             (ANGLE_PARKING * lane_side * (-1), PARKING_STEP2_DISTANCE, FORWARD),
-    #             (ANGLE_PARKING * lane_side, PARKING_STEP1_DISTANCE, FORWARD)
-    #         ]
-    #     for angle, distance, direction in steps:
-    #         self.steer_sender.send(str(angle))
-    #         time.sleep(1)
-    #         self._move_x_distance(distance, MANEUVERING_SPEED, direction)
-    #         self._send_speed(0)
-    #     self.steer_sender.send("0")
-    #     self._send_speed(0)
+    def _turn_until_lane(self, lane, speed):
+        self._send_speed(speed)
+        if lane == RIGHT_LANE_SIDE:
+            self.steer_sender.send(str(230))
+        else:
+            self.steer_sender.send(str(-230))
+
+        while abs(self.lane_keeping["deviation"]) > 50:
+            pass
 
     def _send_speed(self, new_speed):
         self.speed_sender.send(str(int(new_speed)))
