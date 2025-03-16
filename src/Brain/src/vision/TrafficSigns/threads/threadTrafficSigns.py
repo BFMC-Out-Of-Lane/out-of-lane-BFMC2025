@@ -1,7 +1,7 @@
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (
-    mainCamera, 
-    serialCamera, 
+    mainCamera,
+    serialCamera,
     trafficSigns)
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
@@ -9,6 +9,7 @@ from src.utils.visionManager.distanceCalculator import DistanceCalculation
 import cv2
 import numpy as np
 import base64
+
 
 class threadTrafficSigns(ThreadWithStop):
     """This thread handles TrafficSigns.
@@ -18,6 +19,7 @@ class threadTrafficSigns(ThreadWithStop):
         debugging (bool, optional): A flag for debugging. Defaults to False.
     """
     # ================================ INIT ===============================================
+
     def __init__(self, queueList, logging, debugging=False):
         super(threadTrafficSigns, self).__init__()
         self.queuesList = queueList
@@ -32,14 +34,15 @@ class threadTrafficSigns(ThreadWithStop):
         # yolo11n_traffic_objects_V11.pt
         # yolov8n.pt
         self.distanceCalculator = DistanceCalculation(model="src/vision/TrafficSigns/yolo11n_traffic_objects_V11_ncnn_model/",
-                                                    conf = 0.5,
-                                                    # classes = [0,8],
-                                                    vid_stride=10,
-                                                    # stream_buffer= True,
-                                                    # max_det=1,
-                                                    )
+                                                      conf=0.5,
+                                                      # classes = [0,8],
+                                                      vid_stride=10,
+                                                      # stream_buffer= True,
+                                                      # max_det=1,
+                                                      )
         self.distanceToObjectMessage = {}
-        self.signsSender = messageHandlerSender(self.queuesList, trafficSigns) # Send the detected signs to the decision maker
+        # Send the detected signs to the decision maker
+        self.signsSender = messageHandlerSender(self.queuesList, trafficSigns)
 
     def run(self):
         while self._running:
@@ -68,6 +71,7 @@ class threadTrafficSigns(ThreadWithStop):
             image_data = base64.b64decode(camera_message)
             np_arr = np.frombuffer(image_data, np.uint8)
             image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            image = cv2.add(image, np.array([30, 30, 30], dtype=np.uint8))
             self._detect_traffic_signs(image)
 
     def _detect_traffic_signs(self, image):
@@ -75,18 +79,19 @@ class threadTrafficSigns(ThreadWithStop):
 
         try:
             if self.isDetectorActive:
-                    detectedObjectDistanceDict = self.distanceCalculator.calculate(image)
-                    if detectedObjectDistanceDict:
-                        # Las variables toman los siguientes valores:
-                        # detectedClassName = ["stop-signal", "crosswalk-signal" ]
-                        # distanceToObject = [200.0, 100.0]
+                detectedObjectDistanceDict = self.distanceCalculator.calculate(image)
+                if detectedObjectDistanceDict:
+                    # Las variables toman los siguientes valores:
+                    # detectedClassName = ["stop-signal", "crosswalk-signal" ]
+                    # distanceToObject = [200.0, 100.0]
 
-                        self.distanceToObjectMessage = {
-                            "objectDict": detectedObjectDistanceDict,
-                            }
-                        if self.debugging:
-                            self.logging.info(f'{{"threadTrafficSigns": {{ "Object-Distance": {self.distanceToObjectMessage["objectDict"]}}} }}')
-                        
-                        self.signsSender.send(self.distanceToObjectMessage)
+                    self.distanceToObjectMessage = {
+                        "objectDict": detectedObjectDistanceDict,
+                    }
+                    if self.debugging:
+                        self.logging.info(
+                            f'{{"threadTrafficSigns": {{ "Object-Distance": {self.distanceToObjectMessage["objectDict"]}}} }}')
+
+                    self.signsSender.send(self.distanceToObjectMessage)
         except Exception as e:
             print(e)
