@@ -119,7 +119,7 @@ class threadDecisionMaker(ThreadWithStop):
             self.cross_tracking_error = self.lane_keeping["cross_tracking_error"]
             self.deviation = self.lane_keeping["deviation"]
             if self.cross_tracking_error and self.deviation:
-                steering = int(self.deviation + math.atan(0.4 * self.cross_tracking_error /
+                steering = int(self.deviation + math.atan(0.5 * self.cross_tracking_error /
                                int(self.current_speed)) * 180 / math.pi) * 10
                 if steering < -230:
                     steering = -230
