@@ -2,8 +2,12 @@ if __name__ == "__main__":
     import sys
     sys.path.insert(0, "../../..")
 
+import os
+import subprocess
+
+from src.decision.decision_making.threads.thread_decision_maker import \
+    threadDecisionMaker
 from src.templates.workerprocess import WorkerProcess
-from src.decision.decision_making.threads.thread_decision_maker import threadDecisionMaker
 
 
 class processDecisionMaker(WorkerProcess):
@@ -22,6 +26,7 @@ class processDecisionMaker(WorkerProcess):
 
     def run(self):
         """Apply the initializing methods and start the threads."""
+        set_highest_priority()
         super(processDecisionMaker, self).run()
 
     def _init_threads(self):
@@ -30,3 +35,8 @@ class processDecisionMaker(WorkerProcess):
             self.queuesList, self.logging, self.debugging
         )
         self.threads.append(decision_makingTh)
+
+
+def set_highest_priority():
+    pid = os.getpid()
+    subprocess.run(["sudo", "renice", "-20", "-p", str(pid)], check=True)

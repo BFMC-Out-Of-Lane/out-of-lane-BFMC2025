@@ -61,35 +61,42 @@ class DistanceCalculation(BaseSolution):
         self.extract_tracks(im0)  # Extract tracks
 
         # Define el punto fijo en el centro de la imagen
-        self.fixed_point = (im0.shape[1] // 2, im0.shape[0] // 2)
+        # self.fixed_point = (im0.shape[1] // 2, im0.shape[0] // 2)
         # Define el punto fijo en el medio de la imagen pero en la parte inferior
         # self.fixed_point = (im0.shape[1] // 2, im0.shape[0] - 1)
+
+        # detected_classes = []  # Lista para almacenar las clases detectadas
+        # distances_in_pixels = []  # Lista para almacenar las distancias en píxeles
+        detected_classes_distances = {}  # Diccionario para almacenar las clases detectadas y sus distancias
 
         # Itera sobre las cajas delimitadoras, IDs de pista y clases
         for box, track_id, cls in zip(self.boxes, self.track_ids, self.clss):
             # self.annotator.box_label(box, color=colors(int(cls), True), label=self.names[int(cls)])
 
-            # Calcula el centro de la caja delimitadora
-            box_center = (int((box[0] + box[2]) // 2), int((box[1] + box[3]) // 2))
+            # # Calcula el centro de la caja delimitadora
+            # box_center = (int((box[0] + box[2]) // 2), int((box[1] + box[3]) // 2))
+            # # Calcula la coordenada del borde inferior de la caja delimitadora
+            # box_bottom = (int((box[0] + box[2]) // 2), int(box[3]))
 
-            # Calcula la distancia en píxeles entre el centro de la caja y el punto fijo
-            self.pixels_distance = math.sqrt(
-                (box_center[0] - self.fixed_point[0]) ** 2 + (box_center[1] - self.fixed_point[1]) ** 2
-            )
+            # # Calcula la distancia en píxeles entre el borde inferior de la caja y el punto fijo
+            # self.pixels_distance = math.sqrt(
+            #     (box_bottom[0] - self.fixed_point[0]) ** 2 + (box_bottom[1] - self.fixed_point[1]) ** 2
+            # )
+
+            # Calcula el área de la caja delimitadora
+            # box_width = box[2] - box[0]
+            box_height = int(box[3] - box[1])
+            # box_area = box_width * box_height
 
             # Anota la distancia en la imagen
             # self.annotator.plot_distance_and_line(self.pixels_distance, [box_center, self.fixed_point])
 
-            self.detected_class = self.names[int(cls)]
-            # print(f"Objeto detectado: {self.names[int(cls)]}, Distancia en píxeles: {self.pixels_distance}")
-            # Salir del bucle después de procesar el primer objeto
-            break
+            # detected_classes.append(self.names[int(cls)])  # Agrega la clase detectada a la lista
+            # distances_in_pixels.append(self.pixels_distance)  # Agrega la distancia en píxeles a la lista
+            detected_class = self.names[int(cls)]  # Obtiene la clase detectada
 
-        # self.display_output(im0)  # Muestra la salida con la función de la clase bas
-        # print("CLASE DETECTADA EN DIST CALC:")
-        # print(self.detected_class)
-        if (self.clss == []):
-            self.pixels_distance = 0
-        # return im0, self.detected_class, self.pixels_distance  # Devuelve la imagen procesada para más uso
-        return self.clss, self.pixels_distance
+            # Agrega la clase detectada y la distancia al diccionario
+            detected_classes_distances[detected_class] = box_height
+
+        return detected_classes_distances
 
