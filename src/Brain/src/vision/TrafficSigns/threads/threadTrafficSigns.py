@@ -33,6 +33,7 @@ class threadTrafficSigns(ThreadWithStop):
         # yolo11n_best_traffic_signs_V2.pt
         # yolo11n_traffic_objects_V11.pt
         # yolov8n.pt
+
         self.distanceCalculator = DistanceCalculation(model="src/vision/TrafficSigns/yolo11n_traffic_objects_V11_ncnn_model/",
                                                       conf=0.5,
                                                       # classes = [0,8],

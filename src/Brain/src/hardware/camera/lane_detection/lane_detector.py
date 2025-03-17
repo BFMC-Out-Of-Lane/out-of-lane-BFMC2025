@@ -3,6 +3,7 @@ import math
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+
 from scipy.signal import find_peaks
 from src.hardware.camera.lane_detection.line import Line
 
