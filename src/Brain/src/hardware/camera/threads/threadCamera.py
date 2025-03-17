@@ -164,11 +164,11 @@ class threadCamera(ThreadWithStop):
                 self.mainCameraSender.send(mainEncodedImageData)
                 # self.serialCameraSender.send(serialEncodedImageData)
 
-                # TODO: This should be tested
                 traffic_sign = self.trafficSubscriber.receive()
                 processed_image, cross_tracking_error, deviation = self.lane_detector.process_image(serialRequest, traffic_sign)
                 self.lane_keeping_sender.send({"cross_tracking_error": cross_tracking_error, "deviation": deviation})
-                # TODO: This should send the processed image to the dashboard, but it does not seem to work
+                
+                # Sending processed image to the dashboard (and rest of the system)
                 _, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)
                 serial_encoded_processed_image_data = base64.b64encode(serial_encoded_processed_image).decode("utf-8")
                 self.serialCameraSender.send(serial_encoded_processed_image_data)

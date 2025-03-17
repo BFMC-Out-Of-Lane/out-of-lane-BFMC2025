@@ -5,8 +5,7 @@ from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode,
                                             LaneKeeping, SpeedMotor,
                                             SteerMotor, UltrasonicSensors,
-                                            WarningSignal, mainCamera,
-                                            serialCamera, trafficSigns)
+                                            WarningSignal, trafficSigns)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
@@ -71,10 +70,10 @@ class threadDecisionMaker(ThreadWithStop):
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive()
 
-                self._handle_traffic_signs_message()
                 try:
                     self._handle_lane_keeping_message()
-                    # self._handle_ultrasonic_message()
+                    self._handle_ultrasonic_message()
+                    self._handle_traffic_signs_message()
                 except Exception as e:
                     self.logging.error(f'{{"threadDecisionMaker": {str(e)}}}')
 
@@ -158,119 +157,77 @@ class threadDecisionMaker(ThreadWithStop):
                     self.steer_sender.send(str(0))  # ?
                     self._send_speed(200)
 
-                    time.sleep(1)
-                    self.steer_sender.send("230")
-                    self.steer_sender.send("230")
-                    self.steer_sender.send("230")
-                    time.sleep(1)
-
                     if self.debugging:
                         self.logging.info(
                             f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
             if "no-entry-sign" in detected_object_dict:
                 if detected_object_dict["no-entry-sign"] > MIN_DISTANCE_TO_SIGN + 5 and time.time() - self.stop_timer > 12:
-                    self.stop_timer = time.time()
-                    self.steer_sender.send(str(0))  # ?
-                    timer_stop_signal(TIME_AT_STOP_SIGN)
-                    self.steer_sender.send(str(0))  # ?
-                    self._send_speed(200)
+                    # self.signal_sender.send({"WarningName": "forbidden", "WarningID": 5})
+                    self._send_speed(0)
 
                     if self.debugging:
                         self.logging.info(
                             f'{{"threadDecisionMaker": {{ "Object-Distance": "stop-sign"}} }}')
 
             if ("crosswalk-sign" in detected_object_dict and detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_SIGN) or ("crosswalk-road" in detected_object_dict and detected_object_dict["crosswalk-road"] > MIN_DISTANCE_TO_CROSSWALK):
+                # self.signal_sender.send(str({"WarningName": "crosswalk", "WarningID": 4}))
                 self.stop_timer = time.time()
                 self._send_speed(100)
-                # self.signal_sender.send(str({"WarningName": "crosswalk", "WarningID": 4}))
 
                 if self.debugging:
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
             if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_SIGN:
+                # self.signal_sender.send(str({"WarningName": "ped_on_crosswalk", "WarningID": 12}))
                 self.stop_timer = time.time()
                 self._send_speed(0)
-                # self.signal_sender.send(str({"WarningName": "ped_on_crosswalk", "WarningID": 12}))
 
                 if self.debugging:
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
             if "highway-entry-sign" in detected_object_dict and detected_object_dict["highway-entry-sign"] > MIN_DISTANCE_TO_SIGN:
-                self._send_speed(400)
                 # self.signal_sender.send(str({"WarningName": "highway_entrance", "WarningID": 6}))
+                self._send_speed(400)
 
                 if self.debugging:
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
             if "highway-end-sign" in detected_object_dict and detected_object_dict["highway-end-sign"] > MIN_DISTANCE_TO_SIGN:
-                self._send_speed(200)
                 # self.signal_sender.send(str({"WarningName": "highway_exit", "WarningID": 7}))
+                self._send_speed(200)
 
                 if self.debugging:
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            # if "one-way-sign" in detected_object_dict:
-                # self.signal_sender.send({"WarningName": "oneway", "WarningID": 9})
-
             if "parking-sign" in detected_object_dict and detected_object_dict["parking-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.parking_timer > 60:
+                # self.signal_sender.send(str({"WarningName": "parking", "WarningID": 10}))
                 self.parking_timer = time.time()
                 self._send_speed(0)
                 self._activate_parking_mode()
-                # self.signal_sender.send(str({"WarningName": "parking", "WarningID": 10}))
 
                 if self.debugging:
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
-
-            # if "no-entry-sign" in detected_object_dict and detected_object_dict["no-entry-sign"] > MIN_DISTANCE_TO_SIGN:
-                # self.signal_sender.send({"WarningName": "forbidden", "WarningID": 5})
-
-            # if "roundabout-sign" in detected_object_dict:
-                # self.signal_sender.send({"WarningName": "roundabaout", "WarningID": 15})
 
             if "priority-sign" in detected_object_dict and detected_object_dict["priority-sign"] > MIN_DISTANCE_TO_SIGN:
-                self._send_speed(200)
-                time.sleep(1)
-                self.steer_sender.send("230")
-                self.steer_sender.send("230")
-                self.steer_sender.send("230")
-                time.sleep(1)
                 # self.signal_sender.send({"WarningName": "priority", "WarningID": 13})
+                self._send_speed(200)
 
                 if self.debugging:
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
-
-            # if "red-light" in detected_object_dict and time.time() - self.stop_timer > 3:
-            #     # self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
-
-            # if "yellow-light" in detected_object_dict:
-            #     # self.signal_sender.send({"WarningName": "yellow-light", "WarningID": 23})
-
-            # if "green-light" in detected_object_dict:
-            #     # self.signal_sender.send({"WarningName": "green-light", "WarningID": 24})
 
         if int(self.current_speed) < 200 and time.time() - self.stop_timer > 3:
             self._send_speed(200)
 
     def _activate_parking_mode(self):
-        parking_status = 0
-
-        """Handles the parking-mode """
-        "Status of parking mode:"
-        "0-> enter parking zone (when the car see the P signal)=> witch means locate the car next to de place choosen to parking"
-        "1-> start parking maneuver (once its located)"
-        "2-> finish parking maneuver (stay quiet)"
-        "3-> exit parking"
-
         self._send_speed(0)
         lane_side = RIGHT_LANE_SIDE
-        # lane_side = self.enter_parking_zone()
         self._start_parking_maneuver(lane_side)
         self.logging.info(f'{{"threadDecisionMaker: im parked, let me rest :| "}}')
         time.sleep(TIME_BEING_PARKED)
