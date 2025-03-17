@@ -1,11 +1,10 @@
+import math
+
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import math
-from src.hardware.camera.lane_detection.lane_detection_interface import \
-   LaneDetectionInterface
-from src.hardware.camera.lane_detection.line import Line
 from scipy.signal import find_peaks
+from src.hardware.camera.lane_detection.line import Line
 
 # from lane_detection_interface import LaneDetectionInterface
 # from line import Line
@@ -15,7 +14,7 @@ def calculate_derivative(a, b, x):
     return 2 * a * x + b
 
 
-class LaneDetector(LaneDetectionInterface):
+class LaneDetector:
     def __init__(self, min_offset, distance_to_aim, is_simu=False):
         self.min_offset = min_offset
         self.distance_to_aim = distance_to_aim
@@ -28,9 +27,6 @@ class LaneDetector(LaneDetectionInterface):
 
         self.left_line = Line()
         self.right_line = Line()
-
-    def process_image(self, cv_image,traffic_sign):
-        return self.process_frame(cv_image, traffic_sign)
 
     def _threshold_image(self, image):
         # Apply Gaussian blur
@@ -64,7 +60,7 @@ class LaneDetector(LaneDetectionInterface):
         histogram = np.sum(binary_warped[:bottom_limit], axis=0)
         histogram = histogram / histogram.sum()
         lower_threshold = 0.001
-        upper_threshold = 0.003 
+        upper_threshold = 0.003
         flat_area = np.where((histogram > lower_threshold) & (histogram < upper_threshold))[0]
         for intensity in flat_area:
             histogram[intensity] = 0
@@ -99,7 +95,7 @@ class LaneDetector(LaneDetectionInterface):
         right_peaks = find_peaks(histogram[midpoint:], height=0)[0]
         if self.traffic_sign is not None and "crosswalk-road" in self.traffic_sign and self.traffic_sign["crosswalk-road"] > 50:
             leftx_base = left_peaks[0] if len(left_peaks) > 0 else midpoint - self.min_offset
-            rightx_base = right_peaks[-1] + midpoint if len(right_peaks) > 0 else midpoint + self.min_offset  
+            rightx_base = right_peaks[-1] + midpoint if len(right_peaks) > 0 else midpoint + self.min_offset
         else:
             leftx_base = left_peaks[-1] if len(left_peaks) > 0 else midpoint - self.min_offset
             rightx_base = right_peaks[0] + midpoint if len(right_peaks) > 0 else midpoint + self.min_offset
@@ -129,18 +125,18 @@ class LaneDetector(LaneDetectionInterface):
         win_xright_high = min(rightx_current + margin, binary_warped.shape[1])
 
         good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
-                            (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
+                          (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
         good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
-                            (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
+                           (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
         if len(good_left_inds) > minpix:
             leftx_current = int(np.mean(nonzerox[good_left_inds]))
             cv2.rectangle(self.sliding_windows_image, (win_xleft_low, win_y_low),
-                            (win_xleft_high, win_y_high), (60, 255, 250), 2)
+                          (win_xleft_high, win_y_high), (60, 255, 250), 2)
 
         if len(good_right_inds) > minpix:
             rightx_current = int(np.mean(nonzerox[good_right_inds]))
             cv2.rectangle(self.sliding_windows_image, (win_xright_low, win_y_low),
-                            (win_xright_high, win_y_high), (60, 255, 250), 2)
+                          (win_xright_high, win_y_high), (60, 255, 250), 2)
         # ---------- DANGER
         for window in range(nwindows):
             win_y_low = binary_warped.shape[0] - (window + 1) * window_height
@@ -345,7 +341,7 @@ class LaneDetector(LaneDetectionInterface):
 
         result = self._draw_lane(frame, self.binary_warped)
 
-        #hist_image = self._render_histogram(self.histogram_data)
+        # hist_image = self._render_histogram(self.histogram_data)
 
         return result, self.cross_tracking_error, self.deviation
 
