@@ -1,9 +1,7 @@
-# Embedded platform
-ninja
-mbed-tools
-prettytable 
-intelhex
-
 # Image processing and machine learning
 opencv-python
 ultralytics
+shapely==2.0.0
+lap>=0.5.12
+git+https://github.com/Tencent/ncnn.git
+networkx[default]

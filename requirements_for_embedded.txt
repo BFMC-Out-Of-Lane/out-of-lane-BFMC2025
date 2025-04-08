@@ -1,0 +1,5 @@
+# Embedded platform
+ninja
+mbed-tools
+prettytable 
+intelhex
