@@ -127,50 +127,43 @@ class threadRead(ThreadWithStop):
                     self.imuDataSender.send(str(data))
                 else:
                     self.imuAckSender.send(splittedValue[0])
-
-            elif action == "speed":
+            if action == "speed":
                 speed = value.split(",")[0]
                 if (lambda v: (lambda: float(v), True)[1] if isinstance(v, str) else False)(speed):
                     self.currentSpeedSender.send(float(speed))
-
             elif action == "steer":
                 steer = value.split(",")[0]
                 if (lambda v: (lambda: float(v), True)[1] if isinstance(v, str) else False)(steer):
                     self.currentSteerSender.send(float(steer))
-
             elif action == "instant":
                 if self.checkValidValue(action, value):
                     self.instantConsumptionSender.send(float(value)/1000.0)
-
             elif action == "battery":
                 if self.checkValidValue(action, value):
                     percentage = (int(value)-7200)/12
                     percentage = max(0, min(100, round(percentage)))
 
                     self.batteryLvlSender.send(percentage)
-
             elif action == "resourceMonitor":
                 if self.checkValidValue(action, value):
                     data = re.match(self.resourceMonitorPattern, value)
                     if data:
                         message = {"heap": data.group(1), "stack": data.group(2)}
                         self.resourceMonitorSender.send(message)
-
             elif action == "warning":
                 data = re.match(self.warningPattern, value)
                 if data:
                     print(f"WARNING! Shutting down in {data.group(1)} hours {data.group(2)} minutes {data.group(3)} seconds")
                     self.warningSender.send(action,data)
-                    
             elif action == "shutdown":
                 print("SHUTTING DOWN!")
                 time.sleep(3)
                 os.system("sudo shutdown -h now")
 
-            elif action == "ultrasonic":
-                splittedValue = value.split(";")
-                data = {"front": splittedValue[0], "rear": splittedValue[1]}
-                self.ultrasonicSensorsSender.send(data)
+            # elif action == "ultrasonic":
+                # splittedValue = value.split(";")
+                # data = {"front": splittedValue[0], "rear": splittedValue[1]}
+                # self.ultrasonicSensorsSender.send(data)
 
             elif action == "position":
                 splittedValue = value.split(";")
