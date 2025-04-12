@@ -47,8 +47,6 @@ class threadDecisionMaker(ThreadWithStop):
         self.logging = logging
         self.debugging = debugging
 
-        self.onHighwayLane = False
-
         self.current_speed = "0"
         self.driving_mode = "stop"
 
