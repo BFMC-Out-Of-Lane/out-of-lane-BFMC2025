@@ -230,6 +230,12 @@ class UltrasonicSensors(Enum):
     msgID = 9
     msgType = "dict"
 
+class Position(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 10
+    msgType = "dict"
+
 ################################# processTrafficSigns ##################################
 class trafficSigns(Enum):
     Queue = "General"

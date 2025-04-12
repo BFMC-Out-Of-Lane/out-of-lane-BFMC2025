@@ -5,7 +5,7 @@ from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode,
                                             LaneKeeping, SpeedMotor,
                                             SteerMotor, UltrasonicSensors,
-                                            WarningSignal, trafficSigns)
+                                            WarningSignal, trafficSigns, Position)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
@@ -68,6 +68,10 @@ class threadDecisionMaker(ThreadWithStop):
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive()
 
+                self.position = self.subscribers["Position"].receive()
+                if self.position is not None:
+                    self.logging.info(f'{{"threadDecisionMaker": {{ "Position": {self.position}}} }}')
+
                 try:
                     self._handle_lane_keeping_message()
                     self._handle_ultrasonic_message()
@@ -84,6 +88,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.subscribers["LaneKeeping"] = messageHandlerSubscriber(self.queuesList, LaneKeeping, "lastonly", True)
         self.subscribers["trafficSigns"] = messageHandlerSubscriber(self.queuesList, trafficSigns, "lastonly", True)
         self.subscribers["DrivingMode"] = messageHandlerSubscriber(self.queuesList, DrivingMode, "lastonly", True)
+        self.subscribers["Position"] = messageHandlerSubscriber(self.queuesList, Position, "lastonly", True)
 
     def _handle_ultrasonic_message(self):
         """Handles the ultrasonic message, i.e.: decides if the vehicle should slow down, stop or continue"""

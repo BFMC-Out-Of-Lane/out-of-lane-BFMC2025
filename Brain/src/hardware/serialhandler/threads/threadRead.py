@@ -36,7 +36,7 @@ from src.utils.messages.allMessages import (BatteryLvl, CurrentSpeed,
                                             CurrentSteer, EnableButton, ImuAck,
                                             ImuData, InstantConsumption,
                                             ResourceMonitor, UltrasonicSensors,
-                                            WarningSignal)
+                                            WarningSignal, Position)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 
 
@@ -72,6 +72,7 @@ class threadRead(ThreadWithStop):
         self.currentSteerSender = messageHandlerSender(self.queuesList, CurrentSteer)
         self.warningSender = messageHandlerSender(self.queuesList, WarningSignal)
         self.ultrasonicSensorsSender = messageHandlerSender(self.queuesList, UltrasonicSensors)
+        self.positionSender = messageHandlerSender(self.queuesList, Position)
 
         self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
                                "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer": "between -25 and 25",
@@ -170,6 +171,11 @@ class threadRead(ThreadWithStop):
                 splittedValue = value.split(";")
                 data = {"front": splittedValue[0], "rear": splittedValue[1]}
                 self.ultrasonicSensorsSender.send(data)
+
+            elif action == "position":
+                splittedValue = value.split(";")
+                data = {"x": splittedValue[0], "y": splittedValue[1]}
+                self.positionSender.send(data)
 
     def checkValidValue(self, action, message):
         if message == "syntax error":
