@@ -1,11 +1,17 @@
 import cv2
 import networkx as nx
 import json
+import argparse
 
-test = "h"
-# test = "h" - track with highway
-# test = "r" - track with roundabout
-# test = "bosch" - competition track
+# Argument parser
+parser = argparse.ArgumentParser(description='Visualizar grafo sobre imagen.')
+parser.add_argument('--test', type=str, required=True,
+                    help='Nombre del test: "r", "h" o "bosch"')
+args = parser.parse_args()
+test = args.test
+# --test h -> track with highway
+# --test r -> track with roundabout
+# --test bosch -> competition track
 
 with open(r'.\configTest.json', 'r') as f:
     configs = json.load(f)
