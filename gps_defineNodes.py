@@ -31,6 +31,7 @@ def click_event(event, x, y, flags, param):
 
         # Show coordinates pixels and meters
         print(f"Pixel -> X: {x_real}, Y: {y_real} / En metros- X: {x_m:.2f} m, Y: {y_m:.2f} m ")
+        print(f"Pixel -> X: {x_real}, Y: {y_real} / En metros- X: {x_m:.2f} m, Y: {6 - y_m:.2f} m ")
 
         # Draw point on copy of viewed image
         img_copy = img_view.copy()
