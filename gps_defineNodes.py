@@ -4,7 +4,7 @@ import cv2
 IMG_PATH = 'racetrack/test_track.png'  
 PIXELS_PER_METER = 1600 / 6  # ~266.67
 SCALE = 0.5  # Visual scaling, without affecting calculations
-radius = 2
+radius = 4
 
 # Load original image
 img = cv2.imread(IMG_PATH)
