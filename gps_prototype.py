@@ -6,13 +6,14 @@ if __name__ == '__main__':
     image = Image.open('racetrack/test_track.png')
     factor = 1600 / 6
     draw = ImageDraw.Draw(image)
-    radius = 2
+    radius = 4
 
     for node in G.nodes(data=True):
         x = node[1]['x'] * factor
-        y = node[1]['y'] * factor
+        y = (6 - node[1]['y']) * factor
         left_up_point = (x - radius, y - radius)
         right_down_point = (x + radius, y + radius)
-        draw.ellipse([left_up_point, right_down_point], fill='red', outline='red')
+        draw.text((x, y), str(node[0]), fill='white')
+        draw.ellipse([left_up_point, right_down_point], fill='yellow', outline='yellow')
 
     image.show()
