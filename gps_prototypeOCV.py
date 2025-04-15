@@ -4,16 +4,16 @@ import networkx as nx
 # PARAMETERS
 GRAPH_PATH = 'racetrack/test_track.graphml'
 IMG_PATH = 'racetrack/test_track.png'
-PIXELS_PER_METER = 1600 / 6  # ~266.67
+IMAGE_SIZE_METERS = 6
+IMAGE_SIZE_PIXELS = 1600
+PIXELS_PER_METER = IMAGE_SIZE_PIXELS / IMAGE_SIZE_METERS
 VISUAL_SCALE = 0.5  # Visual downscale factor (for display only)
-RADIUS = 2  # Radius in pixels for node circles
+RADIUS = 4  # Radius in pixels for node circles
 
 if __name__ == '__main__':
-    # Load the graph from the .graphml file
-    G = nx.read_graphml(GRAPH_PATH)
-
-    # Read the original image using OpenCV
-    image = cv2.imread(IMG_PATH)
+    
+    G = nx.read_graphml(GRAPH_PATH) # Load the graph from the .graphml file
+    image = cv2.imread(IMG_PATH) # Read the original image using OpenCV
 
     if image is None:
         print("Error: Could not load image.")
@@ -22,8 +22,11 @@ if __name__ == '__main__':
     # Draw red circles at each node position (in pixel coordinates)
     for node in G.nodes(data=True):
         x = int(float(node[1]['x']) * PIXELS_PER_METER)
-        y = int(float(node[1]['y']) * PIXELS_PER_METER)
+        #y = int(float(node[1]['y']) * PIXELS_PER_METER)
+        y = int((IMAGE_SIZE_METERS - float(node[1]['y'])) * PIXELS_PER_METER)  # Flip Y axis
         cv2.circle(image, (x, y), RADIUS, (0, 0, 255), -1)  # BGR format: Red
+        cv2.putText(image, str(node[0]), (x + RADIUS + 2, y), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.4, (255, 255, 255), 1, cv2.LINE_AA)
 
     # Resize the image for display only (without affecting calculations)
     new_size = (
