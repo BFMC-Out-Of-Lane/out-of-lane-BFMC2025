@@ -38,7 +38,7 @@
 #       npm install -g @angular/cli@17
 #       npm install
 #       if needed: npm audit fix
-#
+#       npm start
 # ===================================== GENERAL IMPORTS ==================================
 import sys
 import subprocess
@@ -80,10 +80,10 @@ Dashboard = True
 Camera = True
 Semaphores = False
 TrafficCommunication = False
-SerialHandler = True
+SerialHandler = False
 
 # ------ New component flags starts here ------#
-DecisionMaker = True
+DecisionMaker = False
 TrafficSigns = True
 # ------ New component flags ends here ------#
 
