@@ -1,7 +1,7 @@
 import cv2
 
 # PARAMETERS
-IMG_PATH = 'racetrack/test_track.png'  
+IMG_PATH = 'racetrack/test_track_w_roundabout.png'  
 PIXELS_PER_METER = 1600 / 6  # ~266.67
 SCALE = 0.5  # Visual scaling, without affecting calculations
 radius = 4
@@ -30,7 +30,6 @@ def click_event(event, x, y, flags, param):
         y_m = y_real / PIXELS_PER_METER
 
         # Show coordinates pixels and meters
-        print(f"Pixel -> X: {x_real}, Y: {y_real} / En metros- X: {x_m:.2f} m, Y: {y_m:.2f} m ")
         print(f"Pixel -> X: {x_real}, Y: {y_real} / En metros- X: {x_m:.2f} m, Y: {6 - y_m:.2f} m ")
 
         # Draw point on copy of viewed image
