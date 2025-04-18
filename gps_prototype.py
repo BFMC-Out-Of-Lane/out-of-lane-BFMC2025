@@ -2,8 +2,8 @@ from networkx import graphml
 from PIL import Image, ImageDraw
 
 if __name__ == '__main__':
-    G = graphml.read_graphml('racetrack/test_track.graphml')
-    image = Image.open('racetrack/test_track.png')
+    G = graphml.read_graphml('racetrack/test_track_w_roundabout.graphml')
+    image = Image.open('racetrack/test_track_w_roundabout.png')
     factor = 1600 / 6
     draw = ImageDraw.Draw(image)
     radius = 4

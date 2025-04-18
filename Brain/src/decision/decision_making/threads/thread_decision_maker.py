@@ -9,6 +9,7 @@ from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode,
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
+from src.decision.decision_making.gps import GPS
 
 MIN_DISTANCE_TO_STOP = 200
 MIN_DISTANCE_TO_SIGN = 20
@@ -58,6 +59,8 @@ class threadDecisionMaker(ThreadWithStop):
         self.stop_timer = time.time() - 60
         self.parking_timer = time.time() - 60
 
+        self.gps = GPS(path2graphml="racetrack/test_track_w_roundabout.graphml", start=1, end=2)
+
         self.subscribe()
         super(threadDecisionMaker, self).__init__()
 
@@ -71,6 +74,8 @@ class threadDecisionMaker(ThreadWithStop):
                 self.position = self.subscribers["Position"].receive()
                 if self.position is not None:
                     self.logging.info(f'{{"threadDecisionMaker": {{ "Position": {self.position}}} }}')
+                    self.current_node = self.gps.get_node(self.position["x"], self.position["y"])
+                    self.logging.info(f'{{"threadDecisionMaker": {{ "CurrentNode": {self.current_node}}} }}')
 
                 try:
                     self._handle_lane_keeping_message()
