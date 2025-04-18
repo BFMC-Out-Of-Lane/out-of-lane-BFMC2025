@@ -18,8 +18,8 @@ class GPS:
         min_distance = float('inf')
 
         for node in self.G.nodes(data=True):
-            node_x = node[1]['x']
-            node_y = node[1]['y']
+            node_x = node[1]['x'] * 1000
+            node_y = node[1]['y'] * 1000
             distance = ((node_x - x) ** 2 + (node_y - y) ** 2) ** 0.5
 
             if distance < min_distance:

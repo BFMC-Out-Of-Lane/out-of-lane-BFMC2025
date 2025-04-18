@@ -157,11 +157,11 @@ class threadWrite(ThreadWithStop):
                         command = {"action": "kl", "mode": 0}
                         self.sendToSerial(command)
 
-                        command_msg = "#setAngle:0;;\r\n"
+                        command_msg = "#setPosition:750;2770;;\r\n"
                         self.serialCom.write(command_msg.encode("ascii"))
                         self.logFile.write(command_msg)
 
-                        command_msg = "#setPosition:0;0;;\r\n"
+                        command_msg = "#setAngle:90;;\r\n"
                         self.serialCom.write(command_msg.encode("ascii"))
                         self.logFile.write(command_msg)
 

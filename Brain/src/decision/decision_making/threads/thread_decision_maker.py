@@ -59,23 +59,22 @@ class threadDecisionMaker(ThreadWithStop):
         self.stop_timer = time.time() - 60
         self.parking_timer = time.time() - 60
 
-        self.gps = GPS(path2graphml="racetrack/test_track_w_roundabout.graphml", start=1, end=2)
+        self.gps = GPS(path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout.graphml", start=1, end=2)
 
         self.subscribe()
         super(threadDecisionMaker, self).__init__()
 
     def run(self):
         while self._running:
+            self.position = self.subscribers["Position"].receive()
+            if self.position is not None:
+                self.logging.info(f'{{"threadDecisionMaker": {{ "Position": {self.position}}} }}')
+                self.current_node = self.gps.get_node(float(self.position["x"]), float(self.position["y"]))
+                self.logging.info(f'{{"threadDecisionMaker": {{ "CurrentNode": {self.current_node}}} }}')
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
             if self.driving_mode == "auto":
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive()
-
-                self.position = self.subscribers["Position"].receive()
-                if self.position is not None:
-                    self.logging.info(f'{{"threadDecisionMaker": {{ "Position": {self.position}}} }}')
-                    self.current_node = self.gps.get_node(self.position["x"], self.position["y"])
-                    self.logging.info(f'{{"threadDecisionMaker": {{ "CurrentNode": {self.current_node}}} }}')
 
                 try:
                     self._handle_lane_keeping_message()
