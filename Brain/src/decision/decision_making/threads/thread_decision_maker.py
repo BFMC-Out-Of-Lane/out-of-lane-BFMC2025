@@ -9,7 +9,7 @@ from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode,
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
-from src.decision.decision_making.gps import GPS
+from src.decision.decision_making.gps.gps import GPS
 
 MIN_DISTANCE_TO_STOP = 200
 MIN_DISTANCE_TO_SIGN = 20
