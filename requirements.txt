@@ -5,3 +5,4 @@ shapely==2.0.0
 lap>=0.5.12
 git+https://github.com/Tencent/ncnn.git
 networkx[default]
+flask
