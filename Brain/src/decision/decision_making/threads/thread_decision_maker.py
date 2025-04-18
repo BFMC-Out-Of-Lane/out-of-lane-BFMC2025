@@ -68,9 +68,8 @@ class threadDecisionMaker(ThreadWithStop):
         while self._running:
             self.position = self.subscribers["Position"].receive()
             if self.position is not None:
-                self.logging.info(f'{{"threadDecisionMaker": {{ "Position": {self.position}}} }}')
-                self.current_node = self.gps.get_node(float(self.position["x"]), float(self.position["y"]))
-                self.logging.info(f'{{"threadDecisionMaker": {{ "CurrentNode": {self.current_node}}} }}')
+                self.current_node = self.gps.get_node("14", float(self.position["x"]), float(self.position["y"]))
+                self.logging.info(f'"CurrentNode": {self.current_node}')
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
             if self.driving_mode == "auto":
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed

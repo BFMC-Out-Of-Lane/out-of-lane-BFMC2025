@@ -161,6 +161,8 @@ class threadWrite(ThreadWithStop):
                         self.serialCom.write(command_msg.encode("ascii"))
                         self.logFile.write(command_msg)
 
+                        time.sleep(0.5)
+
                         command_msg = "#setAngle:90;;\r\n"
                         self.serialCom.write(command_msg.encode("ascii"))
                         self.logFile.write(command_msg)
