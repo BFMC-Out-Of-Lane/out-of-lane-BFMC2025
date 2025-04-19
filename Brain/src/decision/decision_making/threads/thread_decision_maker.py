@@ -66,19 +66,17 @@ class threadDecisionMaker(ThreadWithStop):
 
     def run(self):
         while self._running:
-            self.position = self.subscribers["Position"].receive()
-            if self.position is not None:
-                self.current_node = self.gps.get_node("14", float(self.position["x"]), float(self.position["y"]))
-                self.logging.info(f'"CurrentNode": {self.current_node}')
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
             if self.driving_mode == "auto":
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive()
+                self.position = self.subscribers["Position"].receive()
 
                 try:
                     self._handle_lane_keeping_message()
-                    self._handle_ultrasonic_message()
+                    # self._handle_ultrasonic_message()
                     self._handle_traffic_signs_message()
+                    self._handle_position_message()
                 except Exception as e:
                     self.logging.error(f'{{"threadDecisionMaker": {str(e)}}}')
 
@@ -93,29 +91,29 @@ class threadDecisionMaker(ThreadWithStop):
         self.subscribers["DrivingMode"] = messageHandlerSubscriber(self.queuesList, DrivingMode, "lastonly", True)
         self.subscribers["Position"] = messageHandlerSubscriber(self.queuesList, Position, "lastonly", True)
 
-    def _handle_ultrasonic_message(self):
-        """Handles the ultrasonic message, i.e.: decides if the vehicle should slow down, stop or continue"""
+    # def _handle_ultrasonic_message(self):
+    #     """Handles the ultrasonic message, i.e.: decides if the vehicle should slow down, stop or continue"""
 
-        ultrasonic_message = self.subscribers["UltrasonicSensors"].receive()
-        if ultrasonic_message:
-            current_speed = int(self.current_speed)
-            front = int(ultrasonic_message["front"])
-            rear = int(ultrasonic_message["rear"])
-            if self.debugging:
-                self.logging.info(
-                    f'{{"threadDecisionMaker": {{ "CurrentSpeed": {current_speed}, "UltrasonicSensors": {ultrasonic_message}}} }}'
-                )
+    #     ultrasonic_message = self.subscribers["UltrasonicSensors"].receive()
+    #     if ultrasonic_message:
+    #         current_speed = int(self.current_speed)
+    #         front = int(ultrasonic_message["front"])
+    #         rear = int(ultrasonic_message["rear"])
+    #         if self.debugging:
+    #             self.logging.info(
+    #                 f'{{"threadDecisionMaker": {{ "CurrentSpeed": {current_speed}, "UltrasonicSensors": {ultrasonic_message}}} }}'
+    #             )
 
-            if current_speed > 0:
-                if front > MIN_DISTANCE_TO_STOP:
-                    self._send_speed(0)  # stop the vehicle if front distance is less than 10 cm
-                elif current_speed > front - MIN_DISTANCE_TO_STOP:
-                    self._send_speed(front - MIN_DISTANCE_TO_STOP)
-            elif current_speed < 0:
-                if rear > MIN_DISTANCE_TO_STOP:
-                    self._send_speed(0)  # stop the vehicle if front distance is less than 10 cm
-                elif abs(current_speed) > rear - MIN_DISTANCE_TO_STOP:
-                    self._send_speed(-(rear - MIN_DISTANCE_TO_STOP))
+    #         if current_speed > 0:
+    #             if front > MIN_DISTANCE_TO_STOP:
+    #                 self._send_speed(0)  # stop the vehicle if front distance is less than 10 cm
+    #             elif current_speed > front - MIN_DISTANCE_TO_STOP:
+    #                 self._send_speed(front - MIN_DISTANCE_TO_STOP)
+    #         elif current_speed < 0:
+    #             if rear > MIN_DISTANCE_TO_STOP:
+    #                 self._send_speed(0)  # stop the vehicle if front distance is less than 10 cm
+    #             elif abs(current_speed) > rear - MIN_DISTANCE_TO_STOP:
+    #                 self._send_speed(-(rear - MIN_DISTANCE_TO_STOP))
 
     def _handle_lane_keeping_message(self):
         """Handles the lane keeping message, i.e.: decides the steering angle"""
@@ -124,14 +122,8 @@ class threadDecisionMaker(ThreadWithStop):
             self.cross_tracking_error = self.lane_keeping["cross_tracking_error"]
             self.deviation = self.lane_keeping["deviation"]
             if self.cross_tracking_error and self.deviation:
-                steering = int(self.deviation + math.atan(0.5 * self.cross_tracking_error /
-                               int(self.current_speed)) * 180 / math.pi) * 10
-                if steering < -230:
-                    steering = -230
-                elif steering > 230:
-                    steering = 230
-
-                self.steer_sender.send(str(steering))
+                self.steer_sender.send(str(self._calculate_steering_angle(
+                    self.deviation, self.cross_tracking_error, self.current_speed)))
 
     def _handle_traffic_signs_message(self):
         """Handles the traffic signs, i.e.: decides if the vehicle should slow down, stop or continue"""
@@ -230,6 +222,33 @@ class threadDecisionMaker(ThreadWithStop):
 
         if int(self.current_speed) < 200 and time.time() - self.stop_timer > 3:
             self._send_speed(200)
+
+    def _handle_position_message(self):
+        if self.position is not None:
+            next_node = self.gps.get_next_node(self.position["x"], self.position["y"])
+            if next_node is not None:
+                # Calcular deviation y cross error (ALEK)
+                slope = (next_node["y"] - self.position["y"]) / (next_node["x"] - self.position["x"])
+                deviation = math.atan(slope) * 180 / math.pi
+                cross_tracking_error = (self.position["y"] - next_node["y"]) * math.cos(deviation) - \
+                    (self.position["x"] - next_node["x"]) * math.sin(deviation)
+                self.steer_sender.send(str(self._calculate_steering_angle(
+                    deviation, cross_tracking_error, self.current_speed)))
+            else:
+                self._send_speed(0)
+
+    def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
+        """
+        Uses stanley's method to calculate the steering angle.
+        """
+        steering = int(deviation + math.atan(0.5 * cross_tracking_error /
+                                             int(current_speed)) * 180 / math.pi) * 10
+        if steering < -230:
+            steering = -230
+        elif steering > 230:
+            steering = 230
+
+        return steering
 
     def _activate_parking_mode(self):
         self._send_speed(0)

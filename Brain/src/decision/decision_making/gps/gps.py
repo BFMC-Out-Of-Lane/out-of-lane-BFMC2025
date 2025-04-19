@@ -5,6 +5,8 @@ class GPS:
     Graph Positioning System (GPS) class for pathfinding on a graph.
     """
 
+    PATH = [14, 37, 38, 39, 79, 80, 70, 71, 72, 40, 41, 42]
+
     def __init__(self, path2graphml, start, end):
         self.G = graphml.read_graphml(path2graphml)
         self.start = start
@@ -28,22 +30,44 @@ class GPS:
                 closest_node = node[0]
 
         return closest_node
-
-    def get_node(self, current_node_id, x, y):
+    
+    def get_next_node(self, x, y):
         """
-        Get the node closest to the given coordinates (x, y).
+        Get the next node in the path from the current node.
         """
 
-        closest_node = None
-        min_distance = float('inf')
+        current_node_id = self.get_node_by_pos(x, y)
+        idx_of_cn = self.PATH.index(current_node_id)
+        if idx_of_cn == len(self.PATH) - 1:
+            return None
+        else:
+            return self.get_node_data_by_id(self.PATH[idx_of_cn + 1])
+        
+    def get_node_data_by_id(self, node_id):
+        """
+        Get the data of a node by its ID.
+        """
 
-        for node in self.G.neighbors(self.G.nodes[current_node_id]):
-            node_x = node[1]['x'] * 1000
-            node_y = node[1]['y'] * 1000
-            distance = ((node_x - x) ** 2 + (node_y - y) ** 2) ** 0.5
+        if node_id in self.G.nodes:
+            return self.G.nodes[node_id][1]
+        else:
+            return None
 
-            if distance < min_distance:
-                min_distance = distance
-                closest_node = node[0]
+    # def get_node(self, current_node_id, x, y):
+    #     """
+    #     Get the node closest to the given coordinates (x, y).
+    #     """
 
-        return closest_node
+    #     closest_node = None
+    #     min_distance = float('inf')
+
+    #     for node in self.G.neighbors(self.G.nodes[current_node_id]):
+    #         node_x = node[1]['x'] * 1000
+    #         node_y = node[1]['y'] * 1000
+    #         distance = ((node_x - x) ** 2 + (node_y - y) ** 2) ** 0.5
+
+    #         if distance < min_distance:
+    #             min_distance = distance
+    #             closest_node = node[0]
+
+    #     return closest_node
