@@ -50,6 +50,9 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.current_speed = "0"
         self.driving_mode = "stop"
+        self.lane_keeping = None
+        self.position = None
+        self.imu_data = None
 
         self.speed_sender = messageHandlerSender(self.queuesList, SpeedMotor)
         self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
@@ -69,17 +72,15 @@ class threadDecisionMaker(ThreadWithStop):
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
             if self.driving_mode == "auto":
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
-                self.lane_keeping = self.subscribers["LaneKeeping"].receive()
-                self.position = self.subscribers["Position"].receive()
-                self.imu_data = self.subscribers["ImuData"].receive()
+                self.lane_keeping = self.subscribers["LaneKeeping"].receive() or self.lane_keeping
+                self.position = self.subscribers["Position"].receive() or self.position
+                self.imu_data = self.subscribers["ImuData"].receive() or self.imu_data
 
                 try:
                     # self._handle_lane_keeping_message()
                     # self._handle_ultrasonic_message()
                     self._handle_traffic_signs_message()
                     self._handle_position_message()
-
-                    self._send_speed(200)
                 except Exception as e:
                     self.logging.error(f'{{"threadDecisionMaker": {str(e)}}}')
 
@@ -126,8 +127,7 @@ class threadDecisionMaker(ThreadWithStop):
             self.cross_tracking_error = self.lane_keeping["cross_tracking_error"]
             self.deviation = self.lane_keeping["deviation"]
             if self.cross_tracking_error and self.deviation:
-                self.steer_sender.send(str(self._calculate_steering_angle(
-                    self.deviation, self.cross_tracking_error, self.current_speed)))
+                self.steer_sender.send(str(self._calculate_steering_angle(self.deviation, self.cross_tracking_error, self.current_speed)))
 
     def _handle_traffic_signs_message(self):
         """Handles the traffic signs, i.e.: decides if the vehicle should slow down, stop or continue"""
@@ -233,9 +233,9 @@ class threadDecisionMaker(ThreadWithStop):
             y = float(self.position["y"])
             next_node = self.gps.get_next_node(x, y)
             if next_node is not None:
-                deviation = float(self.imu_data['yaw']) - math.atan2(next_node["y"] - y, next_node["x"] - x) * 180 / math.pi
+                deviation = (float(self.imu_data['yaw']) - math.atan2(next_node["y"] - y, next_node["x"] - x) * 180 / math.pi)
                 cross_tracking_error = 0
-                self.steer_sender.send(str(self._calculate_steering_angle(deviation, cross_tracking_error, self.current_speed)))
+                self.steer_sender.send(str(self._calculate_steering_angle(deviation, cross_tracking_error, 200)))
             else:
                 self._send_speed(0)
 
@@ -244,19 +244,16 @@ class threadDecisionMaker(ThreadWithStop):
         Uses stanley's method to calculate the steering angle.
         """
 
-        current_speed = int(current_speed)
+        steering = int(deviation + math.atan(0.5 * cross_tracking_error /
+                                            int(current_speed)) * 180 / math.pi) * 10
+        if steering < -230:
+            steering = -230
+        elif steering > 230:
+            steering = 230
 
-        if current_speed != 0:
-            steering = int(deviation + math.atan(0.5 * cross_tracking_error /
-                                             int(current_speed)) * 180 / math.pi) * 10
-            if steering < -230:
-                steering = -230
-            elif steering > 230:
-                steering = 230
+        self.logging.info(deviation)
 
-            return steering
-        else:
-            return 0
+        return steering
 
     def _activate_parking_mode(self):
         self._send_speed(0)
