@@ -124,7 +124,7 @@ class threadRead(ThreadWithStop):
                         "accely": splittedValue[4],
                         "accelz": splittedValue[5],
                     }
-                    self.imuDataSender.send(str(data))
+                    self.imuDataSender.send(data)
                 else:
                     self.imuAckSender.send(splittedValue[0])
             if action == "speed":
