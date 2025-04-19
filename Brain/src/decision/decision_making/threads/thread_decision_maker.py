@@ -235,8 +235,7 @@ class threadDecisionMaker(ThreadWithStop):
             if next_node is not None:
                 deviation = float(self.imu_data['yaw']) - math.atan2(next_node["y"] - y, next_node["x"] - x) * 180 / math.pi
                 cross_tracking_error = 0
-                # self.steer_sender.send(str(self._calculate_steering_angle(
-                    # deviation, cross_tracking_error, self.current_speed)))
+                self.steer_sender.send(str(self._calculate_steering_angle(deviation, cross_tracking_error, self.current_speed)))
             else:
                 self._send_speed(0)
 
@@ -255,7 +254,6 @@ class threadDecisionMaker(ThreadWithStop):
             elif steering > 230:
                 steering = 230
 
-            print(steering)
             return steering
         else:
             return 0

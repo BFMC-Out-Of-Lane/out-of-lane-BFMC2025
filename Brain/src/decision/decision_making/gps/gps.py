@@ -50,7 +50,6 @@ class GPS:
 
         if node_id in self.G.nodes:
             node = self.G.nodes[node_id]
-            print(node_id)
             return {'x': float(node['x']) * 1000, 'y': float(node['y'] * 1000)}
         else:
             return None
