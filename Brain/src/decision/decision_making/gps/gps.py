@@ -5,7 +5,7 @@ class GPS:
     Graph Positioning System (GPS) class for pathfinding on a graph.
     """
 
-    PATH = ["14", "38", "79", "70", "72", "41", "42"]
+    PATH = ["14", "42"]
 
     def __init__(self, path2graphml, start, end):
         self.G = graphml.read_graphml(path2graphml)
@@ -29,8 +29,6 @@ class GPS:
                 min_distance = distance
                 closest_node = node[0]
 
-        # print("Closest", closest_node)
-
         return closest_node
     
     def get_next_node(self, x, y):
@@ -49,8 +47,6 @@ class GPS:
         """
         Get the data of a node by its ID.
         """
-
-        # print("Looking for", node_id)
 
         if node_id in self.G.nodes:
             node = self.G.nodes[node_id]
