@@ -233,7 +233,7 @@ class threadDecisionMaker(ThreadWithStop):
             y = float(self.position["y"])
             next_node = self.gps.get_next_node(x, y)
             if next_node is not None:
-                deviation = (float(self.imu_data['yaw']) - math.atan2(next_node["y"] - y, next_node["x"] - x) * 180 / math.pi)
+                deviation = float(self.imu_data['yaw']) - math.atan2(next_node["y"] - y, next_node["x"] - x) * 180 / math.pi
                 cross_tracking_error = 0
                 self.steer_sender.send(str(self._calculate_steering_angle(deviation, cross_tracking_error, 200)))
             else:
