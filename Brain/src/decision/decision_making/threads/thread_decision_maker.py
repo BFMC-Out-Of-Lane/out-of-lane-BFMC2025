@@ -232,9 +232,12 @@ class threadDecisionMaker(ThreadWithStop):
             x = float(self.position["x"])
             y = float(self.position["y"])
             next_node = self.gps.get_next_node(x, y)
-            if next_node is not None:
+            distance_to_it = self.gps.distance_to(next_node[0], x, y)
+            if distance_to_it > 500:
+                self.logging.info(next_node[0])
+                self.logging.info(distance_to_it)
                 corrected_yaw = float(self.imu_data['yaw']) if float(self.imu_data['yaw']) <= 180 else float(self.imu_data['yaw']) - 360
-                deviation = corrected_yaw - math.atan2(next_node["y"] - y, next_node["x"] - x) * 180 / math.pi
+                deviation = corrected_yaw - math.atan2(next_node[1]["y"] - y, next_node[1]["x"] - x) * 180 / math.pi
                 cross_tracking_error = 0
                 self.steer_sender.send(str(self._calculate_steering_angle(deviation, cross_tracking_error, 200)))
                 time.sleep(0.2)
@@ -249,9 +252,6 @@ class threadDecisionMaker(ThreadWithStop):
         """
 
         deviation = deviation if deviation <= 180 else deviation - 180
-
-        self.logging.info(deviation)
-
         steering = int(deviation + math.atan(0.5 * cross_tracking_error /
                                             int(current_speed)) * 180 / math.pi) * 10
         if steering < -230:

@@ -39,17 +39,28 @@ class GPS:
         current_node_id = self._get_node_id_by_pos(x, y)
         idx_of_cn = self.PATH.index(current_node_id)
         if idx_of_cn == len(self.PATH) - 1:
-            return None
+            return self._get_node_w_data_by_id(self.PATH[idx_of_cn])
         else:
-            return self._get_node_data_by_id(self.PATH[idx_of_cn + 1])
+            return self._get_node_w_data_by_id(self.PATH[idx_of_cn + 1])
         
-    def _get_node_data_by_id(self, node_id):
+    def _get_node_w_data_by_id(self, node_id):
         """
         Get the data of a node by its ID.
         """
 
         if node_id in self.G.nodes:
             node = self.G.nodes[node_id]
-            return {'x': float(node['x']) * 1000, 'y': float(node['y'] * 1000)}
+            node_x = node['x'] * 1000
+            node_y = node['y'] * 1000
+
+            return (node_id, {'x': node_x, 'y': node_y})
         else:
             return None
+
+    def distance_to(self, node_id, x, y):
+        node = self.G.nodes[node_id]
+        node_x = node['x'] * 1000
+        node_y = node['y'] * 1000
+        
+        return ((node_x - x) ** 2 + (node_y - y) ** 2) ** 0.5
+        
