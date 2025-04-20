@@ -231,19 +231,18 @@ class threadDecisionMaker(ThreadWithStop):
         if self.position is not None and self.imu_data is not None:
             x = float(self.position["x"])
             y = float(self.position["y"])
+            current_node = self.gps.current_node(x, y, 1000)
             next_node = self.gps.get_next_node(x, y)
-            distance_to_it = self.gps.distance_to(next_node[0], x, y)
-            if distance_to_it > 500:
-                self.logging.info(next_node[0])
-                self.logging.info(distance_to_it)
+            if current_node is not None and current_node[0] == self.gps.last():
+                self.logging.info("LLEGAMOS")
+                self._send_speed(0)
+                time.sleep(0.2)
+            else:
+                # self.logging.info(f"Next node: {next_node[0]}")
                 corrected_yaw = float(self.imu_data['yaw']) if float(self.imu_data['yaw']) <= 180 else float(self.imu_data['yaw']) - 360
                 deviation = corrected_yaw - math.atan2(next_node[1]["y"] - y, next_node[1]["x"] - x) * 180 / math.pi
                 cross_tracking_error = 0
                 self.steer_sender.send(str(self._calculate_steering_angle(deviation, cross_tracking_error, 200)))
-                time.sleep(0.2)
-            else:
-                self.logging.info("LLEGAMOS")
-                self._send_speed(0)
                 time.sleep(0.2)
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):

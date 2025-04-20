@@ -145,6 +145,17 @@ class threadWrite(ThreadWithStop):
                         command = {"action": "kl", "mode": 30}
                         self.sendToSerial(command)
                         self.loadConfig("sensors")
+
+                        command_msg = "#setPosition:750;2750;;\r\n"
+                        self.serialCom.write(command_msg.encode("ascii"))
+                        self.logFile.write(command_msg)
+
+                        time.sleep(0.5)
+
+                        command_msg = "#setAngle:90;;\r\n"
+                        self.serialCom.write(command_msg.encode("ascii"))
+                        self.logFile.write(command_msg)
+                        
                     elif klRecv == "15":
                         self.running = True
                         self.engineEnabled = False
@@ -156,16 +167,6 @@ class threadWrite(ThreadWithStop):
                         self.engineEnabled = False
                         command = {"action": "kl", "mode": 0}
                         self.sendToSerial(command)
-
-                        command_msg = "#setPosition:750;2770;;\r\n"
-                        self.serialCom.write(command_msg.encode("ascii"))
-                        self.logFile.write(command_msg)
-
-                        time.sleep(0.5)
-
-                        command_msg = "#setAngle:90;;\r\n"
-                        self.serialCom.write(command_msg.encode("ascii"))
-                        self.logFile.write(command_msg)
 
                 if self.running:
                     if self.engineEnabled:
