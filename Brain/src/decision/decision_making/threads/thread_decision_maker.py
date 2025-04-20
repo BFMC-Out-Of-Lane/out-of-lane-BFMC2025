@@ -231,14 +231,14 @@ class threadDecisionMaker(ThreadWithStop):
         if self.position is not None and self.imu_data is not None:
             x = float(self.position["x"])
             y = float(self.position["y"])
-            current_node = self.gps.current_node(x, y, 1000)
-            next_node = self.gps.get_next_node(x, y)
-            if current_node is not None and current_node[0] == self.gps.last():
+            current_node = self.gps.current_node(x, y, 100)
+            next_node = self.gps.get_next_node(x, y, 100)
+            if current_node is not None and self.gps.last():
                 self.logging.info("LLEGAMOS")
                 self._send_speed(0)
                 time.sleep(0.2)
             else:
-                # self.logging.info(f"Next node: {next_node[0]}")
+                self.logging.info(f"Next node: {next_node[0]}")
                 corrected_yaw = float(self.imu_data['yaw']) if float(self.imu_data['yaw']) <= 180 else float(self.imu_data['yaw']) - 360
                 deviation = corrected_yaw - math.atan2(next_node[1]["y"] - y, next_node[1]["x"] - x) * 180 / math.pi
                 cross_tracking_error = 0
