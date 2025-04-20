@@ -10,7 +10,7 @@ class GPS:
         self.start = start
         self.end = end
 
-        self.path = ["14", "37", "38", "39", "79", "70", "40", "41", "42"]
+        self.path = ["14", "37", "39", "79", "80", "70", "71", "40", "41", "42"]
 
     def current_node(self, x, y, max_distance=float('inf')):
         """
@@ -27,7 +27,7 @@ class GPS:
     def last(self):
         return len(self.path) == 1
     
-    def get_next_node(self, x, y, max_distance=float('inf')):
+    def get_next_node(self):
         """
         Get the next node in the path from the current node.
         """

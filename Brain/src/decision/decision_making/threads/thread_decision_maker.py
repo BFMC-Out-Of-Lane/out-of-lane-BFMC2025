@@ -231,18 +231,19 @@ class threadDecisionMaker(ThreadWithStop):
         if self.position is not None and self.imu_data is not None:
             x = float(self.position["x"])
             y = float(self.position["y"])
-            current_node = self.gps.current_node(x, y, 100)
-            next_node = self.gps.get_next_node(x, y, 100)
+            current_node = self.gps.current_node(x, y, 200)
+            next_node = self.gps.get_next_node()
             if current_node is not None and self.gps.last():
                 self.logging.info("LLEGAMOS")
                 self._send_speed(0)
                 time.sleep(0.2)
             else:
-                self.logging.info(f"Next node: {next_node[0]}")
+                if current_node is not None:
+                    self.logging.info(f"Current node: {current_node[0]}, x: {x}, y: {y}, Node coords: X: {current_node[1]['x']}, Y: {current_node[1]['y']}, diff in mm, x:{current_node[1]['x']- x}, y:{current_node[1]['y']-y}")
+                    
                 corrected_yaw = float(self.imu_data['yaw']) if float(self.imu_data['yaw']) <= 180 else float(self.imu_data['yaw']) - 360
                 deviation = corrected_yaw - math.atan2(next_node[1]["y"] - y, next_node[1]["x"] - x) * 180 / math.pi
-                cross_tracking_error = 0
-                self.steer_sender.send(str(self._calculate_steering_angle(deviation, cross_tracking_error, 200)))
+                self.steer_sender.send(str(self._calculate_steering_angle(deviation, 0, 200)))
                 time.sleep(0.2)
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
@@ -250,7 +251,11 @@ class threadDecisionMaker(ThreadWithStop):
         Uses stanley's method to calculate the steering angle.
         """
 
-        deviation = deviation if deviation <= 180 else deviation - 180
+        if deviation > 180:
+            deviation = deviation - 360
+        elif deviation < -180:
+            deviation = deviation + 360
+
         steering = int(deviation + math.atan(0.5 * cross_tracking_error /
                                             int(current_speed)) * 180 / math.pi) * 10
         if steering < -230:
@@ -355,6 +360,10 @@ class threadDecisionMaker(ThreadWithStop):
                 self.steer_sender.send(str(-230))
 
     def _send_speed(self, new_speed):
-        self.speed_sender.send(str(int(new_speed)))
-        self.speed_sender.send(str(int(new_speed)))
-        self.speed_sender.send(str(int(new_speed)))
+
+        if new_speed == 200:
+            new_speed = 50
+
+        if self.current_speed != str(new_speed):
+            self.speed_sender.send(new_speed)
+            self.current_speed = str(new_speed)
