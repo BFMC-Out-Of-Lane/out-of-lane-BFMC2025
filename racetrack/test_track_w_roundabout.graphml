@@ -150,27 +150,27 @@
     </node>
     <node id="37">
       <data key="d0">1.15</data>
-      <data key="d1">3.05</data>
+      <data key="d1">3.25</data>
     </node>
     <node id="38">
       <data key="d0">1.60</data>
-      <data key="d1">3.05</data>
+      <data key="d1">3.16</data>
     </node>
     <node id="39">
       <data key="d0">1.88</data>
-      <data key="d1">3.05</data>
+      <data key="d1">3.16</data>
     </node>
     <node id="40">
-      <data key="d0">3.80</data>
-      <data key="d1">3.05</data>
+      <data key="d0">3.70</data>
+      <data key="d1">3.10</data>
     </node>
     <node id="41">
-      <data key="d0">4.12</data>
-      <data key="d1">3.05</data>
+      <data key="d0">4.01</data>
+      <data key="d1">3.13</data>
     </node>
     <node id="42">
-      <data key="d0">4.46</data>
-      <data key="d1">3.05</data>
+      <data key="d0">4.47</data>
+      <data key="d1">3.13</data>
     </node>
     <node id="44">
       <data key="d0">5.38</data>
@@ -269,12 +269,12 @@
       <data key="d1">1.82</data>
     </node>
     <node id="70">
-      <data key="d0">3.02</data>
-      <data key="d1">2.60</data>
+      <data key="d0">3.24</data>
+      <data key="d1">2.67</data>
     </node>
     <node id="71">
-      <data key="d0">3.27</data>
-      <data key="d1">2.81</data>
+      <data key="d0">3.52</data>
+      <data key="d1">2.89</data>
     </node>
     <node id="72">
       <data key="d0">3.50</data>
@@ -305,12 +305,12 @@
       <data key="d1">3.23</data>
     </node>
     <node id="79">
-      <data key="d0">2.31</data>
-      <data key="d1">2.88</data>
+      <data key="d0">2.51</data>
+      <data key="d1">2.98</data>
     </node>
     <node id="80">
-      <data key="d0">2.62</data>
-      <data key="d1">2.60</data>
+      <data key="d0">2.83</data>
+      <data key="d1">2.67</data>
     </node>
     <node id="81">
       <data key="d0">3.04</data>
