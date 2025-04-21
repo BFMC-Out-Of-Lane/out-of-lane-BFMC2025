@@ -59,7 +59,7 @@ class LaneDetector:
         # however, a few rows should be removed at least in the simulator to avoid the hood of the car
         bottom_limit = int(binary_warped.shape[0]*0.97)
         histogram = np.sum(binary_warped[:bottom_limit], axis=0)
-        histogram = histogram / histogram.sum()
+        #histogram = histogram / histogram.sum()
         lower_threshold = 0.001
         upper_threshold = 0.003
         flat_area = np.where((histogram > lower_threshold) & (histogram < upper_threshold))[0]
