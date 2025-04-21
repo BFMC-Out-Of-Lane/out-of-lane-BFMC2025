@@ -231,15 +231,16 @@ class threadDecisionMaker(ThreadWithStop):
         if self.position is not None and self.imu_data is not None:
             x = float(self.position["x"])
             y = float(self.position["y"])
-            current_node = self.gps.current_node(x, y, 200)
+            current_node = self.gps.current_node(x, y, 150)
             next_node = self.gps.get_next_node()
             if current_node is not None and self.gps.last():
                 self.logging.info("LLEGAMOS")
                 self._send_speed(0)
-                time.sleep(0.2)
+                time.sleep(10)
             else:
                 if current_node is not None:
-                    self.logging.info(f"Current node: {current_node[0]}, x: {x}, y: {y}, Node coords: X: {current_node[1]['x']}, Y: {current_node[1]['y']}, diff in mm, x:{current_node[1]['x']- x}, y:{current_node[1]['y']-y}")
+                    self.logging.info(f"Current node: {current_node[0]}, x: {x}, y: {y}, Node coords: X: {current_node[1]['x']}, Y: {current_node[1]['y']}, diff in mm, x:{int(current_node[1]['x']- x)}, y:{int(current_node[1]['y']-y)}")
+                    self.logging.info(f"Next node: {next_node}, last: {self.gps.last()}")
                     
                 corrected_yaw = float(self.imu_data['yaw']) if float(self.imu_data['yaw']) <= 180 else float(self.imu_data['yaw']) - 360
                 deviation = corrected_yaw - math.atan2(next_node[1]["y"] - y, next_node[1]["x"] - x) * 180 / math.pi
@@ -360,10 +361,9 @@ class threadDecisionMaker(ThreadWithStop):
                 self.steer_sender.send(str(-230))
 
     def _send_speed(self, new_speed):
-
         if new_speed == 200:
-            new_speed = 50
+            new_speed = 100
 
         if self.current_speed != str(new_speed):
-            self.speed_sender.send(new_speed)
+            self.speed_sender.send(str(new_speed))
             self.current_speed = str(new_speed)
