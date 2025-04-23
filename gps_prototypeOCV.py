@@ -47,7 +47,7 @@ if __name__ == '__main__':
     for node in G.nodes(data=True):
         x = int(float(node[1]['x']) * pixels_per_meter_x)
         y = int((IMAGE_HEIGHT_METERS - float(node[1]['y'])) * pixels_per_meter_y)  # Flip Y axis
-        cv2.circle(image, (x, y), RADIUS, (0, 0, 255), -1)  
+        cv2.circle(image, (x, y), RADIUS, (0, 255, 255), -1)  
         cv2.putText(image, str(node[0]), (x + RADIUS + 2, y), cv2.FONT_HERSHEY_SIMPLEX,
                     0.4, (255, 255, 255), 1, cv2.LINE_AA)
 
