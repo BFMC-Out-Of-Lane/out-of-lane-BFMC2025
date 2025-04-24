@@ -1,7 +1,7 @@
 import cv2
 
 # PARAMETERS
-IMG_PATH = 'racetrack/test_track_w_roundabout.png'  
+IMG_PATH = 'racetrack/test_track_w_r.png'  
 PIXELS_PER_METER = 1600 / 6  # ~266.67
 SCALE = 0.5  # Visual scaling, without affecting calculations
 radius = 4
