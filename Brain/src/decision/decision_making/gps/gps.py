@@ -1,23 +1,25 @@
-from networkx import graphml, bfs_successors
+import networkx as nx
+from Brain.src.decision.decision_making.gps.node import Node
+
 
 class GPS:
     """
     Graph Positioning System (GPS) class for pathfinding on a graph.
     """
 
-    def __init__(self, path2graphml, start, end):
-        self.G = graphml.read_graphml(path2graphml)
+    def __init__(self, path2graphml: str, start: str, end: str):
+        self.G = nx.graphml.read_graphml(path2graphml)
         self.start = start
         self.end = end
 
-        self.path = ["37", "39", "79", "80", "70", "42"]
+        self.path = nx.shortest_path(self.G, start, end)
 
-    def current_node(self, x, y, max_distance=float('inf')):
+    def current_node(self, x: float, y: float, max_distance=float('inf')) -> (Node | None):
         """
         Get the current node based on the given coordinates (x, y).
         """
 
-        current_node_id = self._get_node_id_by_pos(x, y, max_distance)
+        current_node_id = self._closest_node(x, y, max_distance)
         if current_node_id is None:
             return None
         else:
@@ -26,8 +28,8 @@ class GPS:
 
     def last(self):
         return len(self.path) == 0
-    
-    def get_next_node(self):
+
+    def get_next_node(self) -> (Node | None):
         """
         Get the next node in the path from the current node.
         """
@@ -41,10 +43,10 @@ class GPS:
         node = self.G.nodes[node_id]
         node_x = node['x'] * 1000
         node_y = node['y'] * 1000
-        
+
         return ((node_x - x) ** 2 + (node_y - y) ** 2) ** 0.5
-        
-    def _get_node_w_data_by_id(self, node_id):
+
+    def _get_node_w_data_by_id(self, node_id) -> Node:
         """
         Get the data of a node by its ID.
         """
@@ -54,11 +56,11 @@ class GPS:
             node_x = node['x'] * 1000
             node_y = node['y'] * 1000
 
-            return (node_id, {'x': node_x, 'y': node_y})
+            return Node(node_id, node_x, node_y)
         else:
             return None
 
-    def _get_node_id_by_pos(self, x, y, max_distance=float('inf')):
+    def _closest_node(self, x: float, y: float, max_distance=float('inf')):
         """
         Get the node closest to the given coordinates (x, y).
         """
@@ -74,4 +76,3 @@ class GPS:
                 closest_node = node[0]
 
         return closest_node
-        

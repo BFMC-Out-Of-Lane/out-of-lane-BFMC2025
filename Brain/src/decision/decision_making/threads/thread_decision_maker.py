@@ -1,15 +1,15 @@
 import math
 import time
 
+from src.decision.decision_making.gps.gps import GPS
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode,
-                                            LaneKeeping, SpeedMotor,
+from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
+                                            LaneKeeping, Position, SpeedMotor,
                                             SteerMotor, UltrasonicSensors,
-                                            WarningSignal, trafficSigns, Position, ImuData)
+                                            WarningSignal, trafficSigns)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
-from src.decision.decision_making.gps.gps import GPS
 
 MIN_DISTANCE_TO_STOP = 200
 MIN_DISTANCE_TO_SIGN = 20
@@ -62,7 +62,8 @@ class threadDecisionMaker(ThreadWithStop):
         self.stop_timer = time.time() - 60
         self.parking_timer = time.time() - 60
 
-        self.gps = GPS(path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout.graphml", start=1, end=2)
+        self.gps = GPS(
+            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout.graphml", start="1", end="2")
 
         self.subscribe()
         super(threadDecisionMaker, self).__init__()
@@ -127,7 +128,8 @@ class threadDecisionMaker(ThreadWithStop):
             self.cross_tracking_error = self.lane_keeping["cross_tracking_error"]
             self.deviation = self.lane_keeping["deviation"]
             if self.cross_tracking_error and self.deviation:
-                self.steer_sender.send(str(self._calculate_steering_angle(self.deviation, self.cross_tracking_error, self.current_speed)))
+                self.steer_sender.send(str(self._calculate_steering_angle(
+                    self.deviation, self.cross_tracking_error, self.current_speed)))
 
     def _handle_traffic_signs_message(self):
         """Handles the traffic signs, i.e.: decides if the vehicle should slow down, stop or continue"""
@@ -239,11 +241,13 @@ class threadDecisionMaker(ThreadWithStop):
                 time.sleep(10)
             else:
                 if current_node is not None:
-                    self.logging.info(f"Current node: {current_node[0]}, x: {x}, y: {y}, Node coords: X: {current_node[1]['x']}, Y: {current_node[1]['y']}, diff in mm, x:{int(current_node[1]['x']- x)}, y:{int(current_node[1]['y']-y)}")
+                    self.logging.info(
+                        f"Current node: {current_node.id}, x: {x}, y: {y}, Node coords: X: {current_node.x}, Y: {current_node.y}, diff in mm, x:{int(current_node.x - x)}, y:{int(current_node.y - y)}")
                     self.logging.info(f"Next node: {next_node}, last: {self.gps.last()}")
-                    
-                corrected_yaw = float(self.imu_data['yaw']) if float(self.imu_data['yaw']) <= 180 else float(self.imu_data['yaw']) - 360
-                deviation = corrected_yaw - math.atan2(next_node[1]["y"] - y, next_node[1]["x"] - x) * 180 / math.pi
+
+                corrected_yaw = float(self.imu_data['yaw']) if float(
+                    self.imu_data['yaw']) <= 180 else float(self.imu_data['yaw']) - 360
+                deviation = corrected_yaw - math.atan2(next_node.y - y, next_node.x - x) * 180 / math.pi
                 self.steer_sender.send(str(self._calculate_steering_angle(deviation, 0, 200)))
                 time.sleep(0.2)
 
@@ -258,7 +262,7 @@ class threadDecisionMaker(ThreadWithStop):
             deviation = deviation + 360
 
         steering = int(deviation + math.atan(0.5 * cross_tracking_error /
-                                            int(current_speed)) * 180 / math.pi) * 10
+                                             int(current_speed)) * 180 / math.pi) * 10
         if steering < -230:
             steering = -230
         elif steering > 230:
