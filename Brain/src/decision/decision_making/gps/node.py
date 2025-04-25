@@ -1,6 +1,3 @@
-from networkx import graphml
-
-
 class Node:
     """
     Represents a node in the graph

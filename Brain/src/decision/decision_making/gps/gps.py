@@ -24,7 +24,7 @@ class GPS:
             return None
         else:
             self.path.remove(str(current_node_id))
-            return self._get_node_w_data_by_id(current_node_id)
+            return self._get_node_by_id(current_node_id)
 
     def last(self):
         return len(self.path) == 0
@@ -35,7 +35,7 @@ class GPS:
         """
 
         if len(self.path) != 0:
-            return self._get_node_w_data_by_id(self.path[0])
+            return self._get_node_by_id(self.path[0])
         else:
             return None
 
@@ -46,7 +46,7 @@ class GPS:
 
         return ((node_x - x) ** 2 + (node_y - y) ** 2) ** 0.5
 
-    def _get_node_w_data_by_id(self, node_id) -> Node:
+    def _get_node_by_id(self, node_id) -> (Node | None):
         """
         Get the data of a node by its ID.
         """
