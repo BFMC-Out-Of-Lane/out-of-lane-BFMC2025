@@ -63,7 +63,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.parking_timer = time.time() - 60
 
         self.gps = GPS(
-            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout.graphml", start="1", end="2")
+            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout_new.graphml", start="1", end="2")
 
         self.subscribe()
         super(threadDecisionMaker, self).__init__()
@@ -71,10 +71,12 @@ class threadDecisionMaker(ThreadWithStop):
     def run(self):
         while self._running:
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
+            self.position = self.subscribers["Position"].receive() or self.position
+            if self.position is not None:
+                current = self.gps._actual_closest_node(float(self.position["x"]), float(self.position["y"]))
             if self.driving_mode == "auto":
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive() or self.lane_keeping
-                self.position = self.subscribers["Position"].receive() or self.position
                 self.imu_data = self.subscribers["ImuData"].receive() or self.imu_data
 
                 try:
@@ -90,7 +92,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.subscribers["CurrentSpeed"] = messageHandlerSubscriber(self.queuesList, CurrentSpeed, "lastonly", True)
         self.subscribers["UltrasonicSensors"] = messageHandlerSubscriber(
-            self.queuesList, UltrasonicSensors, "lastonly", True)
+        self.queuesList, UltrasonicSensors, "lastonly", True)
         self.subscribers["LaneKeeping"] = messageHandlerSubscriber(self.queuesList, LaneKeeping, "lastonly", True)
         self.subscribers["trafficSigns"] = messageHandlerSubscriber(self.queuesList, trafficSigns, "lastonly", True)
         self.subscribers["DrivingMode"] = messageHandlerSubscriber(self.queuesList, DrivingMode, "lastonly", True)

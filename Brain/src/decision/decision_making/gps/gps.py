@@ -1,5 +1,6 @@
 import networkx as nx
-from node import Node
+import time
+from src.decision.decision_making.gps.node import Node
 
 
 class GPS:
@@ -12,7 +13,7 @@ class GPS:
         for node_index, node in self.G.nodes(data=True):
             self.G.nodes[node_index]['x'] = node['x'] * 1000
             self.G.nodes[node_index]['y'] = node['y'] * 1000
-
+        self.current_time = time.time()
         self.start = start
         self.end = end
 
@@ -79,4 +80,23 @@ class GPS:
                 min_distance = distance
                 closest_node = node[0]
 
+        return closest_node
+
+    def _actual_closest_node(self, x: float, y: float, max_distance=float('inf')):
+        """
+        Get the node closest to the given coordinates (x, y) without considering the path.
+        """
+
+        closest_node = None
+    
+
+        for node in self.G.nodes(data=True):
+            distance = self.distance_to(node[0], x, y)
+
+            if distance < max_distance:
+                max_distance = distance
+                closest_node = node[0]
+        if time.time() - self.current_time > 1:
+            self.current_time = time.time()
+            #print("received X:", x, "received Y:", y, "Closest node:", closest_node)
         return closest_node

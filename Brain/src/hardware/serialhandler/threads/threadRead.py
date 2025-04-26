@@ -93,7 +93,7 @@ class threadRead(ThreadWithStop):
                     self.buff = self.serialCon.readline().decode("ascii")
                     self.sendqueue(self.buff)
                 except Exception as e:
-                    print("ThreadRead -> run method:", e)
+                    print("ThreadRead -> run method:", e, "->", self.buff)
 
     # ==================================== SENDING =======================================
     def Queue_Sending(self):
