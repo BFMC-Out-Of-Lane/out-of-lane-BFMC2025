@@ -1,5 +1,5 @@
 import networkx as nx
-from Brain.src.decision.decision_making.gps.node import Node
+from node import Node
 
 
 class GPS:
@@ -9,6 +9,10 @@ class GPS:
 
     def __init__(self, path2graphml: str, start: str, end: str):
         self.G = nx.graphml.read_graphml(path2graphml)
+        for node_index, node in self.G.nodes(data=True):
+            self.G.nodes[node_index]['x'] = node['x'] * 1000
+            self.G.nodes[node_index]['y'] = node['y'] * 1000
+
         self.start = start
         self.end = end
 
@@ -41,8 +45,8 @@ class GPS:
 
     def distance_to(self, node_id, x, y):
         node = self.G.nodes[node_id]
-        node_x = node['x'] * 1000
-        node_y = node['y'] * 1000
+        node_x = node['x']
+        node_y = node['y']
 
         return ((node_x - x) ** 2 + (node_y - y) ** 2) ** 0.5
 
