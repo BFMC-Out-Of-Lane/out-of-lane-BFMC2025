@@ -1,0 +1,34 @@
+{
+    "h": { 
+      "GRAPH_PATH": "racetrack/test_track.graphml",
+      "IMG_PATH": "racetrack/test_track.png",
+      "IMAGE_WIDTH_METERS": 6,
+      "IMAGE_HEIGHT_METERS": 6,
+      "IMAGE_WIDTH_PIXELS": 1600,
+      "IMAGE_HEIGHT_PIXELS": 1600
+    },
+    "ro": {
+      "GRAPH_PATH": "racetrack/test_track_w_roundabout_old.graphml",
+      "IMG_PATH": "racetrack/test_track_w_roundabout_old.png",
+      "IMAGE_WIDTH_METERS": 6,
+      "IMAGE_HEIGHT_METERS": 6,
+      "IMAGE_WIDTH_PIXELS": 22907,
+      "IMAGE_HEIGHT_PIXELS": 23245
+    },
+    "rn": {
+      "GRAPH_PATH": "racetrack/test_track_w_roundabout_new.graphml",
+      "IMG_PATH": "racetrack/test_track_w_roundabout_new.png",
+      "IMAGE_WIDTH_METERS": 6,
+      "IMAGE_HEIGHT_METERS": 6,
+      "IMAGE_WIDTH_PIXELS": 1600,
+      "IMAGE_HEIGHT_PIXELS": 1600
+    },
+    "bosch": {
+      "GRAPH_PATH": "racetrack/Competition_track_graph.graphml",
+      "IMG_PATH": "racetrack/competition_track.png",
+      "IMAGE_WIDTH_METERS": 20,
+      "IMAGE_HEIGHT_METERS": 14,
+      "IMAGE_WIDTH_PIXELS": 9766,
+      "IMAGE_HEIGHT_PIXELS": 6502
+    }
+  }

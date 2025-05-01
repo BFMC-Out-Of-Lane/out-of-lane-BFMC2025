@@ -186,7 +186,7 @@ class ImuData(Enum):
     Queue = "General"
     Owner = "threadRead"
     msgID = 2
-    msgType = "str"
+    msgType = "dict"
 
 class InstantConsumption(Enum):
     Queue = "General"
@@ -228,6 +228,12 @@ class UltrasonicSensors(Enum):
     Queue = "Critical"
     Owner = "threadRead"
     msgID = 9
+    msgType = "dict"
+
+class Position(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 10
     msgType = "dict"
 
 ################################# processTrafficSigns ##################################
