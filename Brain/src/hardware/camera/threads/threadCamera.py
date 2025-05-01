@@ -163,8 +163,7 @@ class threadCamera(ThreadWithStop):
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
         if stream_name == "lores":
-            # escala a 320×240
-            frame = cv2.resize(frame, (320, 240), interpolation=cv2.INTER_LINEAR)
+            frame = cv2.resize(frame, (320, 180), interpolation=cv2.INTER_LINEAR)
 
         return frame
     
