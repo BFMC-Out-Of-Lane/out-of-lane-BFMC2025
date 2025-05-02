@@ -151,6 +151,10 @@ export class MapComponent {
     let imageContainerHeight: number = 0;
 
     if (map) {
+
+      map.style.width = "100%";
+      map.style.height = "auto";
+
       if (this.imageContainerRef) {
         const imgContainer = this.imageContainerRef.nativeElement;
         const rect = imgContainer.getBoundingClientRect();

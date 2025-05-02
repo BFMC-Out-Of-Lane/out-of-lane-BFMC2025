@@ -80,7 +80,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     gap: 1%;
 }
 
-.cpu-temp, .cpu-usage, .memory-usage { 
+/* .cpu-temp, .cpu-usage, .memory-usage { 
     width: 16.66%;
     height: 100%;
 }
@@ -88,4 +88,4 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 .heap-usage, .stack-usage { 
     width: 50%;
     height: 100%;
-}
+} */

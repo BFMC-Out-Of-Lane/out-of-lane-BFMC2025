@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
   <div class="cluster-digital-container">
     <div class="cluster-digital-text-container">
       <h1 class="cluster-digital-text">{{battery}}</h1>
-      <p class="cluster-digital-unit">%</p>
+      <p class="cluster-digital-unit">%battery</p>
     </div>
     <div class="cluster-digital-text-container">
       <h1 class="cluster-digital-text">{{speed}}</h1>
@@ -46,7 +46,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
       <app-speedometer class="cluster-speedometer" />
     </div>
     <div class="cluster-instruments-secondary">
-      <app-instant-consumption class="cluster-instant-consumption" />
+      <!-- <app-instant-consumption class="cluster-instant-consumption" /> -->
+      <div class="cluster-logs">
+        <h3>Loggings c:</h3>
+        <div class="logs-container">
+          <p *ngFor="let log of logs">{{ log }}</p>
+        </div>
+      </div>
       <div class="cluster-instruments-switches">
         <app-state-switch class="cluster-state-switch" />
         <app-kl-switch class="cluster-kl-switch" />

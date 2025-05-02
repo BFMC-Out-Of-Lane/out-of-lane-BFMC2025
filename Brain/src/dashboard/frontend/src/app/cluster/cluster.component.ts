@@ -65,6 +65,8 @@ export class ClusterComponent {
   @ViewChild(WarningLightComponent) warningLightComponent!: WarningLightComponent;
   @ViewChild(StateSwitchComponent) stateSwitchComponent!: StateSwitchComponent;
 
+  logs: string[] = [];
+
   warningLightType: string = '';
   public battery: number = 0;
   public speed: number = 0;
@@ -72,7 +74,18 @@ export class ClusterComponent {
   private speedSubscription: Subscription | undefined;
   private warningSubscription: Subscription | undefined;
   public warningSignal: Boolean = false;
-  constructor( private  webSocketService: WebSocketService) { }
+  constructor( private  webSocketService: WebSocketService) { 
+    this.addLog('Application started');
+    this.addLog('Speed updated to 30 cm/s');
+    this.addLog('Battery level at 80%');
+  }
+  
+  addLog(message: string): void {
+    this.logs.push(message);
+    if (this.logs.length > 50) {
+      this.logs.shift(); // Elimina el log más antiguo si hay más de 50
+    }
+  }
 
   ngOnInit()
   {

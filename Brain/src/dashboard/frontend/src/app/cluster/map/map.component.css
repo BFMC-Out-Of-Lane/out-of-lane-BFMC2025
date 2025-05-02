@@ -26,7 +26,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-.map-container { 
+/* .map-container { 
     display: flex;
     position: relative;
     justify-content: center;
@@ -65,4 +65,72 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 #map-cursor { 
     position: absolute;
     filter: drop-shadow(0 0 0.5vw rgba(0, 0, 0, 0.5));
+} */
+
+/* -----------VERSION 2---------------- */
+/* .map-container {
+    position: relative;
+    width: 50vw; 
+    height: 50vh; 
+    overflow: hidden;
+}
+
+.map-track-container {
+    position: absolute;
+    top: 25%; 
+    left: 50%; 
+    transform: translate(-50%, -50%); 
+    /* width: 30vw;  */
+    /* height: 30vh; */
+    /* width: 50%; 
+    height: 50%; 
+    z-index: 1; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; 
+}
+
+#map-track-image {
+    width: 100%; 
+    height: auto; 
+    object-fit: contain; 
+}
+
+.car-container {
+    position: absolute;
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%);
+    z-index: 2; 
+}
+
+#car-image-svg {
+    width: 10%; 
+    height: auto;
+} */ 
+
+.map-container {
+    position: absolute;
+    top: 5%; /* Ajusta la distancia desde la parte superior */
+    left: 50%; /* Centra horizontalmente */
+    transform: translateX(-50%); /* Ajusta el desplazamiento horizontal */
+    width: 60%; /* Ajusta el ancho relativo al resto de la pantalla */
+    height: auto; /* Mantiene la proporción de la imagen */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Evita que el contenido se desborde */
+    z-index: 1; /* Asegúrate de que esté detrás de otros elementos si es necesario */
+}
+
+#map-track-image-container {
+    width: 100%; /* Ocupa todo el ancho del contenedor */
+    height: auto; /* Mantiene la proporción */
+}
+
+#map-track-image {
+    width: 100%; /* Escala la imagen al 100% del ancho del contenedor */
+    height: auto; /* Mantiene la proporción */
+    object-fit: contain; /* Asegura que la imagen se ajuste sin distorsión */
 }

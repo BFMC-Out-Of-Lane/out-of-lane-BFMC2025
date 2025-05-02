@@ -80,10 +80,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
     height: 100%;
 }
 
-.cluster-instant-consumption { 
+/* .cluster-instant-consumption { 
     width: 20%;
     height: 100%;
     padding-bottom: 5%;
+} */
+
+.cluster-logs {
+    width: 40%; /* Ajusta el ancho según sea necesario */
+    height: 100%;
+    padding: 1%;
+    background-color: rgba(0, 0, 0, 0.8); /* Fondo semitransparente */
+    color: white;
+    overflow-y: auto; /* Permite desplazamiento vertical si hay muchos logs */
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.logs-container {
+    font-size: 0.9vw;
+    line-height: 1.5;
+    max-height: 100%;
+    overflow-y: auto;
 }
 
 .cluster-state-switch { 
@@ -169,10 +187,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 .cluster-warning-light { 
     position: absolute;
-    top: 60%;
+    /* top: 60%; */
+    top: 40%;
     left: 19%;
     width: 19%;
     height: auto;
+    z-index: 10; /* Asegúrate de que esté por encima de otros elementos */
 }
 
 .cluster-hardware-data { 

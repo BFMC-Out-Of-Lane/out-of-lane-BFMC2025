@@ -26,7 +26,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
 
-<div class="map-container">
+<!-- <div class="map-container">
   <div class="map-track-container">
     <div #imageContainer id="map-track-image-container">
       <img src="/assets/Track.svg" id="map-track-image" #imageElement (load)="onLoadTrack(imageElement)" alt="BFMC Track" />
@@ -37,4 +37,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. -->
     </div>
   </div>
   <app-map-cursor id="map-cursor" (cursorLoaded)="onLoadCursor()" [cursorRotation]="cursorRotation" />
+</div> -->
+
+<!-- <div class="map-container">
+  <div class="map-track-container">
+    <img src="/assets/Track.svg" id="map-track-image" alt="BFMC Track" />
+  </div>
+  <div class="car-container">
+    <img id="car-image-svg" src="/assets/Car.svg" alt="Car" />
+  </div>
+</div> -->
+<div class="map-container">
+  <div class="map-track-container">
+    <div id="map-track-image-container">
+      <img src="/assets/Track.svg" id="map-track-image" alt="BFMC Track" style="width: 100%; height: auto;" />
+    </div>
+  </div>
+  <app-map-cursor id="map-cursor" [cursorRotation]="cursorRotation"></app-map-cursor>
 </div>
