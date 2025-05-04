@@ -83,7 +83,7 @@ TrafficCommunication = False
 SerialHandler = True
 
 # ------ New component flags starts here ------#
-DecisionMaker = False
+DecisionMaker = True
 TrafficSigns = True
 # ------ New component flags ends here ------#
 

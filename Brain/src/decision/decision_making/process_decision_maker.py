@@ -26,7 +26,7 @@ class processDecisionMaker(WorkerProcess):
 
     def run(self):
         """Apply the initializing methods and start the threads."""
-        set_highest_priority()
+        # set_highest_priority()
         super(processDecisionMaker, self).run()
 
     def _init_threads(self):
