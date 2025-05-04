@@ -26,7 +26,8 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Input, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { WebSocketService } from '../../../webSocket/web-socket.service';
 
 @Component({
   selector: 'app-map-cursor',
@@ -35,24 +36,30 @@ import { Component, Input, OnChanges, SimpleChanges, Output, EventEmitter } from
   templateUrl: './map-cursor.component.html',
   styleUrl: './map-cursor.component.css'
 })
-export class MapCursorComponent implements OnChanges {
+export class MapCursorComponent {
   @Input() cursorRotation: number = 0;
   @Output() cursorLoaded = new EventEmitter<void>();
 
+  constructor(private webSocketService: WebSocketService) { }
+
   ngOnInit(): void {
     this.cursorLoaded.emit();
-  }
-  
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['cursorRotation']) {
-      this.updateRotation();
-    }
+    this.webSocketService.receiveImuData().subscribe(
+      (message) => {
+        this.cursorRotation = message.value["yaw"];
+        this.updateRotation();
+      },
+      (error) => {
+        this.cursorRotation = 0;
+        console.error('Error receiving position:', error);
+      }
+    );
   }
 
   updateRotation(): void {
     const cursor = document.getElementById("map-cursor-arrow") as HTMLElement;
     if (cursor) {
-      cursor.style.transform = `rotate(${this.cursorRotation}deg)`;
+      cursor.style.transform = `rotate(${- this.cursorRotation}deg)`;
     }
   }
 }
