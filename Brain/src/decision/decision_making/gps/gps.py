@@ -17,13 +17,13 @@ class GPS:
         self.start = start
         self.end = end
 
-        self.path = nx.shortest_path(self.G, start, end)
+        # self.path = nx.shortest_path(self.G, start, end)
+        self.path = ["13", "15"]
 
     def current_node(self, x: float, y: float, max_distance=float('inf')) -> (Node | None):
         """
         Get the current node based on the given coordinates (x, y).
         """
-
         current_node_id = self._closest_node(x, y, max_distance)
         if current_node_id is None:
             return None
@@ -43,6 +43,15 @@ class GPS:
             return self._get_node_by_id(self.path[0])
         else:
             return None
+
+    def vector_to_node(self, x, y, node_id):
+        """
+        Get the difference between two nodes.
+        """
+
+        node = self.G.nodes[node_id]
+
+        return (node['x'] - x, node['y'] - y)
 
     def distance_to(self, node_id, x, y):
         node = self.G.nodes[node_id]
@@ -98,5 +107,5 @@ class GPS:
                 closest_node = node[0]
         if time.time() - self.current_time > 1:
             self.current_time = time.time()
-            #print("received X:", x, "received Y:", y, "Closest node:", closest_node)
+
         return closest_node

@@ -63,7 +63,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.parking_timer = time.time() - 60
 
         self.gps = GPS(
-            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout_new.graphml", start="1", end="2")
+            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout_new.graphml", start="13", end="15")
 
         self.subscribe()
         super(threadDecisionMaker, self).__init__()
@@ -71,13 +71,11 @@ class threadDecisionMaker(ThreadWithStop):
     def run(self):
         while self._running:
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
-            self.position = self.subscribers["Position"].receive() or self.position
-            if self.position is not None:
-                current = self.gps._actual_closest_node(float(self.position["x"]), float(self.position["y"]))
             if self.driving_mode == "auto":
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
-                self.lane_keeping = self.subscribers["LaneKeeping"].receive() or self.lane_keeping
                 self.imu_data = self.subscribers["ImuData"].receive() or self.imu_data
+                self.lane_keeping = self.subscribers["LaneKeeping"].receive() or self.lane_keeping
+                self.position = self.subscribers["Position"].receive() or self.position
 
                 try:
                     # self._handle_lane_keeping_message()
@@ -235,7 +233,7 @@ class threadDecisionMaker(ThreadWithStop):
         if self.position is not None and self.imu_data is not None:
             x = float(self.position["x"])
             y = float(self.position["y"])
-            current_node = self.gps.current_node(x, y, 150)
+            current_node = self.gps.current_node(x, y, 50)
             next_node = self.gps.get_next_node()
             if current_node is not None and self.gps.last():
                 self.logging.info("LLEGAMOS")
@@ -245,11 +243,14 @@ class threadDecisionMaker(ThreadWithStop):
                 if current_node is not None:
                     self.logging.info(
                         f"Current node: {current_node.id}, x: {x}, y: {y}, Node coords: X: {current_node.x}, Y: {current_node.y}, diff in mm, x:{int(current_node.x - x)}, y:{int(current_node.y - y)}")
-                    self.logging.info(f"Next node: {next_node}, last: {self.gps.last()}")
+                    self.logging.info(f"Next node: {next_node.id}, last: {self.gps.last()}")
 
                 corrected_yaw = float(self.imu_data['yaw']) if float(
                     self.imu_data['yaw']) <= 180 else float(self.imu_data['yaw']) - 360
                 deviation = corrected_yaw - math.atan2(next_node.y - y, next_node.x - x) * 180 / math.pi
+                diff = self.gps.vector_to_node(x, y, next_node.id)
+                self.logging.info(f"diff: {diff} yaw: {corrected_yaw} deviation: {deviation}, x: {x}, y: {y}")
+                # TODO: Dont hardcode 200 as current speed
                 self.steer_sender.send(str(self._calculate_steering_angle(deviation, 0, 200)))
                 time.sleep(0.2)
 

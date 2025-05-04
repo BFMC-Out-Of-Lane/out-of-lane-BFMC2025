@@ -146,7 +146,7 @@ class threadWrite(ThreadWithStop):
                         self.sendToSerial(command)
                         self.loadConfig("sensors")
 
-                        command_msg = "#setPosition:0;0;;\r\n"
+                        command_msg = "#setPosition:0730;2730;;\r\n"
                         self.serialCom.write(command_msg.encode("ascii"))
                         self.logFile.write(command_msg)
 
