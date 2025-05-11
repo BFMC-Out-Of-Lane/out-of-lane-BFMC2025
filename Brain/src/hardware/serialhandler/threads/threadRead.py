@@ -35,8 +35,8 @@ from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (BatteryLvl, CurrentSpeed,
                                             CurrentSteer, EnableButton, ImuAck,
                                             ImuData, InstantConsumption,
-                                            ResourceMonitor,
-                                            WarningSignal, Position)
+                                            Position, ResourceMonitor,
+                                            WarningSignal)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 
 
@@ -105,7 +105,7 @@ class threadRead(ThreadWithStop):
         """This function select which type of message we receive from NUCLEO and send the data further."""
 
         if '@' in buff and ':' in buff:
-            action, value = buff.split(":") # @action:value;;
+            action, value = buff.split(":")  # @action:value;;
             action = action[1:]
             value = value[:-4]
 
@@ -114,7 +114,7 @@ class threadRead(ThreadWithStop):
 
             if action == "imu":
                 splittedValue = value.split(";")
-                if(len(buff)>20):
+                if (len(buff) > 20):
                     data = {
                         "roll": splittedValue[0],
                         "pitch": splittedValue[1],
@@ -152,8 +152,9 @@ class threadRead(ThreadWithStop):
             elif action == "warning":
                 data = re.match(self.warningPattern, value)
                 if data:
-                    print(f"WARNING! Shutting down in {data.group(1)} hours {data.group(2)} minutes {data.group(3)} seconds")
-                    self.warningSender.send(action,data)
+                    print(
+                        f"WARNING! Shutting down in {data.group(1)} hours {data.group(2)} minutes {data.group(3)} seconds")
+                    self.warningSender.send(action, data)
             elif action == "shutdown":
                 print("SHUTTING DOWN!")
                 time.sleep(3)

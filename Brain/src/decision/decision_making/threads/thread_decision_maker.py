@@ -5,8 +5,8 @@ from src.decision.decision_making.gps.gps import GPS
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
                                             LaneKeeping, Position, SpeedMotor,
-                                            SteerMotor,
-                                            WarningSignal, trafficSigns)
+                                            SteerMotor, WarningSignal,
+                                            trafficSigns)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
@@ -212,20 +212,10 @@ class threadDecisionMaker(ThreadWithStop):
                 self.logging.info("LLEGAMOS")
                 self._send_speed(0)
                 time.sleep(10)
-            else:
-                if current_node is not None:
-                    self.logging.info(
-                        f"Current node: {current_node.id}, x: {x}, y: {y}, Node coords: X: {current_node.x}, Y: {current_node.y}, diff in mm, x:{int(current_node.x - x)}, y:{int(current_node.y - y)}")
-                    self.logging.info(f"Next node: {next_node.id}, last: {self.gps.last()}")
-
-                corrected_yaw = float(self.imu_data['yaw']) if float(
-                    self.imu_data['yaw']) <= 180 else float(self.imu_data['yaw']) - 360
-                deviation = corrected_yaw - math.atan2(next_node.y - y, next_node.x - x) * 180 / math.pi
-                diff = self.gps.vector_to_node(x, y, next_node.id)
-                self.logging.info(f"diff: {diff} yaw: {corrected_yaw} deviation: {deviation}, x: {x}, y: {y}")
-                # TODO: Dont hardcode 200 as current speed
-                self.steer_sender.send(str(self._calculate_steering_angle(deviation, 0, 200)))
-                time.sleep(0.2)
+            elif current_node is not None:
+                self.logging.info(
+                    f"Current node: {current_node.id}, x: {x}, y: {y}, Node coords: X: {current_node.x}, Y: {current_node.y}, diff in mm, x:{int(current_node.x - x)}, y:{int(current_node.y - y)}")
+                self.logging.info(f"Next node: {next_node.id}, last: {self.gps.last()}")
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
         """
@@ -341,9 +331,6 @@ class threadDecisionMaker(ThreadWithStop):
                 self.steer_sender.send(str(-230))
 
     def _send_speed(self, new_speed):
-        if new_speed == 200:
-            new_speed = 100
-
         if self.current_speed != str(new_speed):
             self.speed_sender.send(str(new_speed))
             self.current_speed = str(new_speed)
