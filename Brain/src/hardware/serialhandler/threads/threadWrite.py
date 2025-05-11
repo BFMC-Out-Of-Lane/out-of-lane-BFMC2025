@@ -33,7 +33,8 @@ import time
 from src.hardware.serialhandler.threads.messageconverter import \
     MessageConverter
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import (Brake, Control, Klem, SpeedMotor,
+from src.utils.messages.allMessages import (Brake, Control, Klem,
+                                            PointToFollow, SpeedMotor,
                                             SteerMotor, ToggleBatteryLvl,
                                             ToggleImuData, ToggleInstant,
                                             ToggleResourceMonitor)
@@ -93,7 +94,7 @@ class threadWrite(ThreadWithStop):
         )
         self.imuSubscriber = messageHandlerSubscriber(self.queuesList, ToggleImuData, "lastOnly", True)
         self.pointToFollowSubscriber = messageHandlerSubscriber(
-            self.queuesList, "PointToFollow", "lastOnly", True
+            self.queuesList, PointToFollow, "lastOnly", True
         )
 
     # ==================================== SENDING =======================================
@@ -146,13 +147,13 @@ class threadWrite(ThreadWithStop):
                         self.sendToSerial(command)
                         self.loadConfig("sensors")
 
-                        command_msg = "#setPosition:0730;2730;;\r\n"
+                        command_msg = "#setPosition:3500;740;;\r\n"
                         self.serialCom.write(command_msg.encode("ascii"))
                         self.logFile.write(command_msg)
 
                         time.sleep(0.5)
 
-                        command_msg = "#setAngle:90;;\r\n"
+                        command_msg = "#setAngle:180;;\r\n"
                         self.serialCom.write(command_msg.encode("ascii"))
                         self.logFile.write(command_msg)
 
@@ -207,7 +208,11 @@ class threadWrite(ThreadWithStop):
                         if pointToFollowRecv is not None:
                             if self.debugger:
                                 self.logger.info(pointToFollowRecv)
-                            command_msg = f"#pointToFollow:{pointToFollowRecv.mode};{pointToFollowRecv.x};{pointToFollowRecv.y};;\r\n"
+                            mode = pointToFollowRecv["mode"]
+                            x = pointToFollowRecv["x"]
+                            y = pointToFollowRecv["y"]
+                            command_msg = f"#pointToFollow:{mode};{int(x)};{int(y)};;\r\n"
+                            self.logger.info(command_msg)
                             self.serialCom.write(command_msg.encode("ascii"))
                             self.logFile.write(command_msg)
 

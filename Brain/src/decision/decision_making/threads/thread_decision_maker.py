@@ -64,7 +64,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.parking_timer = time.time() - 60
 
         self.gps = GPS(
-            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout_new.graphml", start="13", end="15")
+            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout_new.graphml", start="1", end="15")
 
         self.subscribe()
         super(threadDecisionMaker, self).__init__()
@@ -205,23 +205,23 @@ class threadDecisionMaker(ThreadWithStop):
 
     def _handle_position_message(self):
         if self.position is not None and self.imu_data is not None:
+            self.logging.info(f"Position: {self.position}")
             x = float(self.position["x"])
             y = float(self.position["y"])
-            current_node = self.gps.current_node(x, y, 50)
+            current_node = self.gps.current_node(x, y, 250)
             next_node = self.gps.get_next_node()
             if current_node is not None and self.gps.last():
                 self.logging.info("LLEGAMOS")
                 self._send_speed(0)
                 time.sleep(10)
             elif current_node is not None:
-                self.logging.info(
-                    f"Current node: {current_node.id}, x: {x}, y: {y}, Node coords: X: {current_node.x}, Y: {current_node.y}, diff in mm, x:{int(current_node.x - x)}, y:{int(current_node.y - y)}")
-                self.logging.info(f"Next node: {next_node.id}, last: {self.gps.last()}")
+                self.logging.info(f"Current node: {current_node.id}")
                 self.point_to_follow_sender.send({
-                    "mode": 4,
+                    "mode": 3,
                     "x": next_node.x,
                     "y": next_node.y,
                 })
+                self._send_speed(200)
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
         """
@@ -337,6 +337,6 @@ class threadDecisionMaker(ThreadWithStop):
                 self.steer_sender.send(str(-230))
 
     def _send_speed(self, new_speed):
-        if self.current_speed != str(new_speed):
-            self.speed_sender.send(str(new_speed))
-            self.current_speed = str(new_speed)
+        # if self.current_speed != str(new_speed):
+        self.speed_sender.send(str(new_speed))
+        self.current_speed = str(new_speed)

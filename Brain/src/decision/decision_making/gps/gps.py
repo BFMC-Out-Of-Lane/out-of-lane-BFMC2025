@@ -68,8 +68,8 @@ class GPS:
 
         if node_id in self.G.nodes:
             node = self.G.nodes[node_id]
-            node_x = node['x'] * 1000
-            node_y = node['y'] * 1000
+            node_x = node['x']
+            node_y = node['y']
 
             return Node(node_id, node_x, node_y)
         else:

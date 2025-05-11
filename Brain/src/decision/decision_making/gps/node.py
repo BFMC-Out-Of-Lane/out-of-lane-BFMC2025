@@ -5,8 +5,8 @@ class Node:
 
     def __init__(self, id, x, y):
         self.id: str = id
-        self.x: float = x
-        self.y: float = y
+        self.x: int = x
+        self.y: int = y
         self.edges = []
 
     # def distance_to(self, other_node):
