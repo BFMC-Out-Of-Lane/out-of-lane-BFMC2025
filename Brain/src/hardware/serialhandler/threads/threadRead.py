@@ -35,7 +35,7 @@ from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (BatteryLvl, CurrentSpeed,
                                             CurrentSteer, EnableButton, ImuAck,
                                             ImuData, InstantConsumption,
-                                            ResourceMonitor, UltrasonicSensors,
+                                            ResourceMonitor,
                                             WarningSignal, Position)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 
@@ -71,7 +71,6 @@ class threadRead(ThreadWithStop):
         self.currentSpeedSender = messageHandlerSender(self.queuesList, CurrentSpeed)
         self.currentSteerSender = messageHandlerSender(self.queuesList, CurrentSteer)
         self.warningSender = messageHandlerSender(self.queuesList, WarningSignal)
-        self.ultrasonicSensorsSender = messageHandlerSender(self.queuesList, UltrasonicSensors)
         self.positionSender = messageHandlerSender(self.queuesList, Position)
 
         self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
@@ -159,11 +158,6 @@ class threadRead(ThreadWithStop):
                 print("SHUTTING DOWN!")
                 time.sleep(3)
                 os.system("sudo shutdown -h now")
-
-            # elif action == "ultrasonic":
-                # splittedValue = value.split(";")
-                # data = {"front": splittedValue[0], "rear": splittedValue[1]}
-                # self.ultrasonicSensorsSender.send(data)
 
             elif action == "position":
                 splittedValue = value.split(";")

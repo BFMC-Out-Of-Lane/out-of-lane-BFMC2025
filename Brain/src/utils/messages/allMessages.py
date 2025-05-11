@@ -224,16 +224,10 @@ class WarningSignal(Enum):
     msgID = 8
     msgType = "str"
 
-class UltrasonicSensors(Enum):
-    Queue = "Critical"
-    Owner = "threadRead"
-    msgID = 9
-    msgType = "dict"
-
 class Position(Enum):
     Queue = "General"
     Owner = "threadRead"
-    msgID = 10
+    msgID = 9
     msgType = "dict"
 
 ################################# processTrafficSigns ##################################

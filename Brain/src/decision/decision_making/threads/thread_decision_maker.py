@@ -5,7 +5,7 @@ from src.decision.decision_making.gps.gps import GPS
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
                                             LaneKeeping, Position, SpeedMotor,
-                                            SteerMotor, UltrasonicSensors,
+                                            SteerMotor,
                                             WarningSignal, trafficSigns)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
@@ -79,7 +79,6 @@ class threadDecisionMaker(ThreadWithStop):
 
                 try:
                     # self._handle_lane_keeping_message()
-                    # self._handle_ultrasonic_message()
                     self._handle_traffic_signs_message()
                     self._handle_position_message()
                 except Exception as e:
@@ -89,37 +88,11 @@ class threadDecisionMaker(ThreadWithStop):
         """Subscribes to the messages you are interested in"""
 
         self.subscribers["CurrentSpeed"] = messageHandlerSubscriber(self.queuesList, CurrentSpeed, "lastonly", True)
-        self.subscribers["UltrasonicSensors"] = messageHandlerSubscriber(
-        self.queuesList, UltrasonicSensors, "lastonly", True)
         self.subscribers["LaneKeeping"] = messageHandlerSubscriber(self.queuesList, LaneKeeping, "lastonly", True)
         self.subscribers["trafficSigns"] = messageHandlerSubscriber(self.queuesList, trafficSigns, "lastonly", True)
         self.subscribers["DrivingMode"] = messageHandlerSubscriber(self.queuesList, DrivingMode, "lastonly", True)
         self.subscribers["Position"] = messageHandlerSubscriber(self.queuesList, Position, "lastonly", True)
         self.subscribers["ImuData"] = messageHandlerSubscriber(self.queuesList, ImuData, "lastonly", True)
-
-    # def _handle_ultrasonic_message(self):
-    #     """Handles the ultrasonic message, i.e.: decides if the vehicle should slow down, stop or continue"""
-
-    #     ultrasonic_message = self.subscribers["UltrasonicSensors"].receive()
-    #     if ultrasonic_message:
-    #         current_speed = int(self.current_speed)
-    #         front = int(ultrasonic_message["front"])
-    #         rear = int(ultrasonic_message["rear"])
-    #         if self.debugging:
-    #             self.logging.info(
-    #                 f'{{"threadDecisionMaker": {{ "CurrentSpeed": {current_speed}, "UltrasonicSensors": {ultrasonic_message}}} }}'
-    #             )
-
-    #         if current_speed > 0:
-    #             if front > MIN_DISTANCE_TO_STOP:
-    #                 self._send_speed(0)  # stop the vehicle if front distance is less than 10 cm
-    #             elif current_speed > front - MIN_DISTANCE_TO_STOP:
-    #                 self._send_speed(front - MIN_DISTANCE_TO_STOP)
-    #         elif current_speed < 0:
-    #             if rear > MIN_DISTANCE_TO_STOP:
-    #                 self._send_speed(0)  # stop the vehicle if front distance is less than 10 cm
-    #             elif abs(current_speed) > rear - MIN_DISTANCE_TO_STOP:
-    #                 self._send_speed(-(rear - MIN_DISTANCE_TO_STOP))
 
     def _handle_lane_keeping_message(self):
         """Handles the lane keeping message, i.e.: decides the steering angle"""
