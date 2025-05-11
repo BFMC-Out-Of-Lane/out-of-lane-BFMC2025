@@ -27,24 +27,19 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 import json
-import time
 import threading
+import time
 
-from src.hardware.serialhandler.threads.messageconverter import MessageConverter
+from src.hardware.serialhandler.threads.messageconverter import \
+    MessageConverter
 from src.templates.threadwithstop import ThreadWithStop
-from src.utils.messages.allMessages import (
-    Klem,
-    Control,
-    SteerMotor,
-    SpeedMotor,
-    Brake,
-    ToggleBatteryLvl,
-    ToggleImuData,
-    ToggleInstant,
-    ToggleResourceMonitor
-)
-from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
+from src.utils.messages.allMessages import (Brake, Control, Klem, SpeedMotor,
+                                            SteerMotor, ToggleBatteryLvl,
+                                            ToggleImuData, ToggleInstant,
+                                            ToggleResourceMonitor)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
+from src.utils.messages.messageHandlerSubscriber import \
+    messageHandlerSubscriber
 
 
 class threadWrite(ThreadWithStop):
@@ -58,7 +53,7 @@ class threadWrite(ThreadWithStop):
     """
 
     # ===================================== INIT =========================================
-    def __init__(self, queues, serialCom, logFile, logger, debugger = False, example=False):
+    def __init__(self, queues, serialCom, logFile, logger, debugger=False, example=False):
         super(threadWrite, self).__init__()
         self.queuesList = queues
         self.serialCom = serialCom
@@ -93,8 +88,13 @@ class threadWrite(ThreadWithStop):
         self.brakeSubscriber = messageHandlerSubscriber(self.queuesList, Brake, "lastOnly", True)
         self.instantSubscriber = messageHandlerSubscriber(self.queuesList, ToggleInstant, "lastOnly", True)
         self.batterySubscriber = messageHandlerSubscriber(self.queuesList, ToggleBatteryLvl, "lastOnly", True)
-        self.resourceMonitorSubscriber = messageHandlerSubscriber(self.queuesList, ToggleResourceMonitor, "lastOnly", True)
+        self.resourceMonitorSubscriber = messageHandlerSubscriber(
+            self.queuesList, ToggleResourceMonitor, "lastOnly", True
+        )
         self.imuSubscriber = messageHandlerSubscriber(self.queuesList, ToggleImuData, "lastOnly", True)
+        self.pointToFollowSubscriber = messageHandlerSubscriber(
+            self.queuesList, "PointToFollow", "lastOnly", True
+        )
 
     # ==================================== SENDING =======================================
 
@@ -118,17 +118,17 @@ class threadWrite(ThreadWithStop):
                 if data[e]["value"] == "False":
                     value = 0
                 else:
-                    value = 1 
+                    value = 1
                 command = {"action": data[e]['command'], "activate": value}
                 self.sendToSerial(command)
                 time.sleep(0.05)
 
-    def convertFc(self,instantRecv):
-        if instantRecv =="True":
+    def convertFc(self, instantRecv):
+        if instantRecv == "True":
             return 1
-        else :
+        else:
             return 0
-        
+
     # ===================================== RUN ==========================================
     def run(self):
         """In this function we check if we got the enable engine signal. After we got it we will start getting messages from raspberry PI. It will transform them into NUCLEO commands and send them."""
@@ -155,7 +155,7 @@ class threadWrite(ThreadWithStop):
                         command_msg = "#setAngle:90;;\r\n"
                         self.serialCom.write(command_msg.encode("ascii"))
                         self.logFile.write(command_msg)
-                        
+
                     elif klRecv == "15":
                         self.running = True
                         self.engineEnabled = False
@@ -178,7 +178,7 @@ class threadWrite(ThreadWithStop):
                             self.sendToSerial(command)
 
                         speedRecv = self.speedMotorSubscriber.receive()
-                        if speedRecv is not None: 
+                        if speedRecv is not None:
                             if self.debugger:
                                 self.logger.info(speedRecv)
                             command = {"action": "speed", "speed": int(speedRecv)}
@@ -187,14 +187,14 @@ class threadWrite(ThreadWithStop):
                         steerRecv = self.steerMotorSubscriber.receive()
                         if steerRecv is not None:
                             if self.debugger:
-                                self.logger.info(steerRecv) 
+                                self.logger.info(steerRecv)
                             command = {"action": "steer", "steerAngle": int(steerRecv)}
                             self.sendToSerial(command)
 
                         controlRecv = self.controlSubscriber.receive()
                         if controlRecv is not None:
                             if self.debugger:
-                                self.logger.info(controlRecv) 
+                                self.logger.info(controlRecv)
                             command = {
                                 "action": "vcd",
                                 "time": int(controlRecv["Time"]),
@@ -203,29 +203,37 @@ class threadWrite(ThreadWithStop):
                             }
                             self.sendToSerial(command)
 
+                        pointToFollowRecv = self.pointToFollowSubscriber.receive()
+                        if pointToFollowRecv is not None:
+                            if self.debugger:
+                                self.logger.info(pointToFollowRecv)
+                            command_msg = f"#pointToFollow:{pointToFollowRecv.mode};{pointToFollowRecv.x};{pointToFollowRecv.y};;\r\n"
+                            self.serialCom.write(command_msg.encode("ascii"))
+                            self.logFile.write(command_msg)
+
                     instantRecv = self.instantSubscriber.receive()
-                    if instantRecv is not None: 
+                    if instantRecv is not None:
                         if self.debugger:
-                            self.logger.info(instantRecv) 
+                            self.logger.info(instantRecv)
                         command = {"action": "instant", "activate": int(instantRecv)}
                         self.sendToSerial(command)
 
                     batteryRecv = self.batterySubscriber.receive()
-                    if batteryRecv is not None: 
+                    if batteryRecv is not None:
                         if self.debugger:
                             self.logger.info(batteryRecv)
                         command = {"action": "battery", "activate": int(batteryRecv)}
                         self.sendToSerial(command)
 
                     resourceMonitorRecv = self.resourceMonitorSubscriber.receive()
-                    if resourceMonitorRecv is not None: 
+                    if resourceMonitorRecv is not None:
                         if self.debugger:
                             self.logger.info(resourceMonitorRecv)
                         command = {"action": "resourceMonitor", "activate": int(resourceMonitorRecv)}
                         self.sendToSerial(command)
 
                     imuRecv = self.imuSubscriber.receive()
-                    if imuRecv is not None: 
+                    if imuRecv is not None:
                         if self.debugger:
                             self.logger.info(imuRecv)
                         command = {"action": "imu", "activate": int(imuRecv)}

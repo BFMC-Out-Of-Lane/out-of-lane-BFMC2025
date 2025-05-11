@@ -4,9 +4,9 @@ import time
 from src.decision.decision_making.gps.gps import GPS
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
-                                            LaneKeeping, Position, SpeedMotor,
-                                            SteerMotor, WarningSignal,
-                                            trafficSigns)
+                                            LaneKeeping, PointToFollow,
+                                            Position, SpeedMotor, SteerMotor,
+                                            WarningSignal, trafficSigns)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
@@ -57,6 +57,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.speed_sender = messageHandlerSender(self.queuesList, SpeedMotor)
         self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
         self.signal_sender = messageHandlerSender(self.queuesList, WarningSignal)
+        self.point_to_follow_sender = messageHandlerSender(self.queuesList, PointToFollow)
 
         self.subscribers = {}
         self.stop_timer = time.time() - 60
@@ -216,6 +217,11 @@ class threadDecisionMaker(ThreadWithStop):
                 self.logging.info(
                     f"Current node: {current_node.id}, x: {x}, y: {y}, Node coords: X: {current_node.x}, Y: {current_node.y}, diff in mm, x:{int(current_node.x - x)}, y:{int(current_node.y - y)}")
                 self.logging.info(f"Next node: {next_node.id}, last: {self.gps.last()}")
+                self.point_to_follow_sender.send({
+                    "mode": 4,
+                    "x": next_node.x,
+                    "y": next_node.y,
+                })
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
         """

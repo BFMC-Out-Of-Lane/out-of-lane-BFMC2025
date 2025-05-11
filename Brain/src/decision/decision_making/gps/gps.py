@@ -1,5 +1,6 @@
-import networkx as nx
 import time
+
+import networkx as nx
 from src.decision.decision_making.gps.node import Node
 
 
@@ -13,12 +14,12 @@ class GPS:
         for node_index, node in self.G.nodes(data=True):
             self.G.nodes[node_index]['x'] = node['x'] * 1000
             self.G.nodes[node_index]['y'] = node['y'] * 1000
+
         self.current_time = time.time()
         self.start = start
         self.end = end
 
-        # self.path = nx.shortest_path(self.G, start, end)
-        self.path = ["13", "15"]
+        self.path = nx.shortest_path(self.G, start, end)
 
     def current_node(self, x: float, y: float, max_distance=float('inf')) -> (Node | None):
         """
@@ -81,10 +82,8 @@ class GPS:
 
         closest_node = None
         min_distance = float('inf')
-
         for node in self.G.nodes(data=True):
             distance = self.distance_to(node[0], x, y)
-
             if distance < min_distance and node[0] in self.path and distance < max_distance:
                 min_distance = distance
                 closest_node = node[0]
@@ -97,14 +96,12 @@ class GPS:
         """
 
         closest_node = None
-    
-
         for node in self.G.nodes(data=True):
             distance = self.distance_to(node[0], x, y)
-
             if distance < max_distance:
                 max_distance = distance
                 closest_node = node[0]
+
         if time.time() - self.current_time > 1:
             self.current_time = time.time()
 

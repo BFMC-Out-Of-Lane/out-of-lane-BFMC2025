@@ -302,3 +302,12 @@ class WarningSignal(Enum):
     msgType = "str"
 
 # It will have this format: {"WarningName":"name1", "WarningID": 1}
+
+######################    From processDecisionMaker  ###########################
+
+
+class PointToFollow(Enum):
+    Queue = "General"
+    Owner = "threadDecisionMaker"
+    msgID = 1
+    msgType = "dict"
