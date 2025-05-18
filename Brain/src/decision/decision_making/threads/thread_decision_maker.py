@@ -64,7 +64,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.parking_timer = time.time() - 60
 
         self.gps = GPS(
-            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout_new.graphml", start="1", end="15")
+            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout_new.graphml", start="1", end="34")
 
         self.subscribe()
         super(threadDecisionMaker, self).__init__()
@@ -217,7 +217,7 @@ class threadDecisionMaker(ThreadWithStop):
             elif current_node is not None:
                 self.logging.info(f"Current node: {current_node.id}")
                 self.point_to_follow_sender.send({
-                    "mode": 3,
+                    "mode": 4,
                     "x": next_node.x,
                     "y": next_node.y,
                 })
