@@ -147,15 +147,7 @@ class threadWrite(ThreadWithStop):
                         self.sendToSerial(command)
                         self.loadConfig("sensors")
 
-                        command_msg = "#setPosition:3500;740;;\r\n"
-                        self.serialCom.write(command_msg.encode("ascii"))
-                        self.logFile.write(command_msg)
-
-                        time.sleep(0.5)
-
-                        command_msg = "#setAngle:180;;\r\n"
-                        self.serialCom.write(command_msg.encode("ascii"))
-                        self.logFile.write(command_msg)
+                        self.setInitialPosition()
 
                     elif klRecv == "15":
                         self.running = True
@@ -216,6 +208,15 @@ class threadWrite(ThreadWithStop):
                             self.serialCom.write(command_msg.encode("ascii"))
                             self.logFile.write(command_msg)
 
+                        sendNodeList = self.pointToFollowSubscriber.receive()
+                        if sendNodeList is not None:
+                            if self.debugger:
+                                self.logger.info(sendNodeList)
+                            command_msg = f"#sendNodeList:{sendNodeList["index"]};{sendNodeList["x"]};{sendNodeList["y"]};;\r\n"
+                            self.logger.info(command_msg)
+                            self.serialCom.write(command_msg.encode("ascii"))
+                            self.logFile.write(command_msg)
+
                     instantRecv = self.instantSubscriber.receive()
                     if instantRecv is not None:
                         if self.debugger:
@@ -247,7 +248,21 @@ class threadWrite(ThreadWithStop):
             except Exception as e:
                 print(e)
 
+    def setInitialPosition(self):
+        # Initial position
+        command_msg = "#setPosition:3500;740;;\r\n"
+        self.serialCom.write(command_msg.encode("ascii"))
+        self.logFile.write(command_msg)
+
+        time.sleep(0.5)
+
+        # Initial angle
+        command_msg = "#setAngle:180;;\r\n"
+        self.serialCom.write(command_msg.encode("ascii"))
+        self.logFile.write(command_msg)
+
     # ==================================== START =========================================
+
     def start(self):
         super(threadWrite, self).start()
 

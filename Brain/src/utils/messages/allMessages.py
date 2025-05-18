@@ -311,3 +311,9 @@ class PointToFollow(Enum):
     Owner = "threadDecisionMaker"
     msgID = 1
     msgType = "dict"
+
+class SetNodeList(Enum):
+    Queue = "General"
+    Owner = "threadDecisionMaker"
+    msgID = 2
+    msgType = "dict"

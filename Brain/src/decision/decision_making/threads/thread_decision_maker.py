@@ -5,7 +5,7 @@ from src.decision.decision_making.gps.gps import GPS
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
                                             LaneKeeping, PointToFollow,
-                                            Position, SpeedMotor, SteerMotor,
+                                            Position, SetNodeList, SpeedMotor, SteerMotor,
                                             WarningSignal, trafficSigns)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
@@ -58,6 +58,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
         self.signal_sender = messageHandlerSender(self.queuesList, WarningSignal)
         self.point_to_follow_sender = messageHandlerSender(self.queuesList, PointToFollow)
+        self.node_list_sender = messageHandlerSender(self.queuesList, SetNodeList)
 
         self.subscribers = {}
         self.stop_timer = time.time() - 60
@@ -72,6 +73,8 @@ class threadDecisionMaker(ThreadWithStop):
         super(threadDecisionMaker, self).__init__()
 
     def run(self):
+        self._send_path()
+
         while self._running:
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
             if self.driving_mode == "auto":
@@ -234,23 +237,23 @@ class threadDecisionMaker(ThreadWithStop):
     def _handle_position_message(self):
         if self.position is not None and self.imu_data is not None:
             self.logging.info(f"Position: {self.position}")
-            x = float(self.position["x"])
-            y = float(self.position["y"])
-            current_node = self.gps.current_node(x, y, 250)
-            next_node = self.gps.get_next_node()
-            if current_node is not None and self.gps.last():
-                self.logging.info("LLEGAMOS")
-                self._send_speed(0)
-                self.gps.reset()
-                time.sleep(10)
-            elif current_node is not None:
-                self.logging.info(f"Current node: {current_node.id}")
-                self.point_to_follow_sender.send({
-                    "mode": 4,
-                    "x": next_node.x,
-                    "y": next_node.y,
-                })
-                self._send_speed(200)
+            # x = float(self.position["x"])
+            # y = float(self.position["y"])
+            # current_node = self.gps.current_node(x, y, 250)
+            # next_node = self.gps.get_next_node()
+            # if current_node is not None and self.gps.last():
+            #     self.logging.info("LLEGAMOS")
+            #     self._send_speed(0)
+            #     self.gps.reset()
+            #     time.sleep(10)
+            # elif current_node is not None:
+            #     self.logging.info(f"Current node: {current_node.id}")
+            #     self.point_to_follow_sender.send({
+            #         "mode": 4,
+            #         "x": next_node.x,
+            #         "y": next_node.y,
+            #     })
+            #     self._send_speed(200)
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
         """
@@ -369,3 +372,19 @@ class threadDecisionMaker(ThreadWithStop):
         # if self.current_speed != str(new_speed):
         self.speed_sender.send(str(new_speed))
         self.current_speed = str(new_speed)
+
+    def _send_path(self):
+        """
+        Send the path to the Nucleo.
+        """
+
+        for i in range(len(self.gps.path)):
+            node = self.gps.path[i]
+            node_data = self.gps.G.nodes[node]
+            x = node_data['x']
+            y = node_data['y']
+            self.node_list_sender.send({
+                "index": i,
+                "x": x,
+                "y": y,
+            })
