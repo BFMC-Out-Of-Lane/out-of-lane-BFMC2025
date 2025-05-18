@@ -65,7 +65,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.gps = GPS(
             path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout_new.graphml",
-            mandatory_nodes=["1", "15", "27", "34"]
+            mandatory_nodes=["1", "15", "27", "60", "78", "42", "1"]
         )
 
         self.subscribe()
@@ -241,6 +241,7 @@ class threadDecisionMaker(ThreadWithStop):
             if current_node is not None and self.gps.last():
                 self.logging.info("LLEGAMOS")
                 self._send_speed(0)
+                self.gps.reset()
                 time.sleep(10)
             elif current_node is not None:
                 self.logging.info(f"Current node: {current_node.id}")

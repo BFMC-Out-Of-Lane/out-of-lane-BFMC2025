@@ -22,6 +22,7 @@ class GPS:
             else:
                 raise ValueError(f"Node {mandatory_nodes[i]} not found in the graph.")
 
+        self.original_path = self.path.copy()
         self.current_time = time.time()
 
     def current_node(self, x: float, y: float, max_distance=float('inf')) -> (Node | None):
@@ -63,6 +64,14 @@ class GPS:
         node_y = node['y']
 
         return ((node_x - x) ** 2 + (node_y - y) ** 2) ** 0.5
+
+    def reset(self):
+        """
+        Reset the map to its original state.
+        """
+
+        self.path = self.original_path.copy()
+        self.current_time = time.time()
 
     def _get_node_by_id(self, node_id) -> (Node | None):
         """
