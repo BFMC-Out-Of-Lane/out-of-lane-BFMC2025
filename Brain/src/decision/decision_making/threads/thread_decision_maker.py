@@ -64,7 +64,9 @@ class threadDecisionMaker(ThreadWithStop):
         self.parking_timer = time.time() - 60
 
         self.gps = GPS(
-            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout_new.graphml", start="1", end="34")
+            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout_new.graphml",
+            mandatory_nodes=["1", "15", "27", "34"]
+        )
 
         self.subscribe()
         super(threadDecisionMaker, self).__init__()
@@ -199,6 +201,32 @@ class threadDecisionMaker(ThreadWithStop):
                 if self.debugging:
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
+
+            # if "red-light" in detected_object_dict and time.time() - self.stop_timer > 3:
+            #     self.stop_timer = time.time()
+            #     self._send_speed(0)
+            #     # self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
+            #     if self.debugging:
+            #         self.logging.info(
+            #             f'{{"threadDecisionMaker": {{ "Object detected: red-light" }}}}')
+
+            # if ("yellow-light" in detected_object_dict and detected_object_dict["yellow-light"] > MIN_DISTANCE_TO_SIGN):
+            #     self.signal_sender.send({"WarningName": "yellow-light", "WarningID": 23})
+            #     self.stop_timer = time.time()
+                self._send_speed(100)
+            #     if self.debugging:
+            #         self.logging.info(
+            #             f'{{"threadDecisionMaker": {{ "Object detected:yellow-light" }}}}')
+
+                if self.debugging:
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
+
+            # if "green-light" in detected_object_dict:
+            #     # self.signal_sender.send({"WarningName": "green-light", "WarningID": 24})
+            #     if self.debugging:
+            #         self.logging.info(
+            #             f'{{"threadDecisionMaker": {{ "Object detected: green-light" }}}}')
 
         if int(self.current_speed) < 200 and time.time() - self.stop_timer > 3:
             self._send_speed(200)

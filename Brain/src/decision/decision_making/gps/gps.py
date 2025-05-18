@@ -9,28 +9,31 @@ class GPS:
     Graph Positioning System (GPS) class for pathfinding on a graph.
     """
 
-    def __init__(self, path2graphml: str, start: str, end: str):
+    def __init__(self, path2graphml: str, mandatory_nodes: list):
         self.G = nx.graphml.read_graphml(path2graphml)
         for node_index, node in self.G.nodes(data=True):
             self.G.nodes[node_index]['x'] = node['x'] * 1000
             self.G.nodes[node_index]['y'] = node['y'] * 1000
 
-        self.current_time = time.time()
-        self.start = start
-        self.end = end
+        self.path = []
+        for i in range(len(mandatory_nodes) - 1):
+            if mandatory_nodes[i] in self.G.nodes and mandatory_nodes[i + 1] in self.G.nodes:
+                self.path += nx.shortest_path(self.G, mandatory_nodes[i], mandatory_nodes[i + 1])
+            else:
+                raise ValueError(f"Node {mandatory_nodes[i]} not found in the graph.")
 
-        self.path = nx.shortest_path(self.G, start, end)
+        self.current_time = time.time()
 
     def current_node(self, x: float, y: float, max_distance=float('inf')) -> (Node | None):
         """
         Get the current node based on the given coordinates (x, y).
         """
         current_node_id = self._closest_node(x, y, max_distance)
-        if current_node_id is None:
-            return None
-        else:
+        if current_node_id is not None:
             self.path.remove(str(current_node_id))
             return self._get_node_by_id(current_node_id)
+        else:
+            return None
 
     def last(self):
         return len(self.path) == 0
