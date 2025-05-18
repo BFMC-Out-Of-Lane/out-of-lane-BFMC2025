@@ -73,9 +73,18 @@ class threadDecisionMaker(ThreadWithStop):
         super(threadDecisionMaker, self).__init__()
 
     def run(self):
-        self._send_path()
-
+        flag = True
         while self._running:
+            if flag:
+                self._send_path()
+                self.point_to_follow_sender.send({
+                    "mode": 2,
+                    "x": 0,
+                    "y": 0,
+                })
+                self.logging.info(f"{{threadDecisionMaker: 'GPS initialized'}}")
+                flag = False
+
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
             if self.driving_mode == "auto":
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
@@ -135,9 +144,7 @@ class threadDecisionMaker(ThreadWithStop):
                 # self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
                 if detected_object_dict["stop-sign"] > MIN_DISTANCE_TO_SIGN + 5 and time.time() - self.stop_timer > 12:
                     self.stop_timer = time.time()
-                    self.steer_sender.send(str(0))  # ?
                     timer_stop_signal(TIME_AT_STOP_SIGN)
-                    self.steer_sender.send(str(0))  # ?
                     self._send_speed(200)
 
                     if self.debugging:
@@ -206,9 +213,10 @@ class threadDecisionMaker(ThreadWithStop):
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
             # if "red-light" in detected_object_dict and time.time() - self.stop_timer > 3:
+            #     # self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
             #     self.stop_timer = time.time()
             #     self._send_speed(0)
-            #     # self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
+            #
             #     if self.debugging:
             #         self.logging.info(
             #             f'{{"threadDecisionMaker": {{ "Object detected: red-light" }}}}')
@@ -216,14 +224,10 @@ class threadDecisionMaker(ThreadWithStop):
             # if ("yellow-light" in detected_object_dict and detected_object_dict["yellow-light"] > MIN_DISTANCE_TO_SIGN):
             #     self.signal_sender.send({"WarningName": "yellow-light", "WarningID": 23})
             #     self.stop_timer = time.time()
-                self._send_speed(100)
+            #     self._send_speed(100)
             #     if self.debugging:
             #         self.logging.info(
             #             f'{{"threadDecisionMaker": {{ "Object detected:yellow-light" }}}}')
-
-                if self.debugging:
-                    self.logging.info(
-                        f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
             # if "green-light" in detected_object_dict:
             #     # self.signal_sender.send({"WarningName": "green-light", "WarningID": 24})
@@ -236,7 +240,8 @@ class threadDecisionMaker(ThreadWithStop):
 
     def _handle_position_message(self):
         if self.position is not None and self.imu_data is not None:
-            self.logging.info(f"Position: {self.position}")
+            pass
+            # self.logging.info(f"Position: {self.position}")
             # x = float(self.position["x"])
             # y = float(self.position["y"])
             # current_node = self.gps.current_node(x, y, 250)
@@ -378,6 +383,7 @@ class threadDecisionMaker(ThreadWithStop):
         Send the path to the Nucleo.
         """
 
+        self.logging.info(f"{{threadDecisionMaker: 'Sending path: {self.gps.path}'}}")
         for i in range(len(self.gps.path)):
             node = self.gps.path[i]
             node_data = self.gps.G.nodes[node]
@@ -388,3 +394,4 @@ class threadDecisionMaker(ThreadWithStop):
                 "x": x,
                 "y": y,
             })
+            time.sleep(0.1)

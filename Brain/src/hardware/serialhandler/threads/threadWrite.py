@@ -34,7 +34,7 @@ from src.hardware.serialhandler.threads.messageconverter import \
     MessageConverter
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (Brake, Control, Klem,
-                                            PointToFollow, SpeedMotor,
+                                            PointToFollow, SetNodeList, SpeedMotor,
                                             SteerMotor, ToggleBatteryLvl,
                                             ToggleImuData, ToggleInstant,
                                             ToggleResourceMonitor)
@@ -95,6 +95,9 @@ class threadWrite(ThreadWithStop):
         self.imuSubscriber = messageHandlerSubscriber(self.queuesList, ToggleImuData, "lastOnly", True)
         self.pointToFollowSubscriber = messageHandlerSubscriber(
             self.queuesList, PointToFollow, "lastOnly", True
+        )
+        self.setNodeListSubscriber = messageHandlerSubscriber(
+            self.queuesList, SetNodeList, "lastOnly", True
         )
 
     # ==================================== SENDING =======================================
@@ -196,27 +199,6 @@ class threadWrite(ThreadWithStop):
                             }
                             self.sendToSerial(command)
 
-                        pointToFollowRecv = self.pointToFollowSubscriber.receive()
-                        if pointToFollowRecv is not None:
-                            if self.debugger:
-                                self.logger.info(pointToFollowRecv)
-                            mode = pointToFollowRecv["mode"]
-                            x = pointToFollowRecv["x"]
-                            y = pointToFollowRecv["y"]
-                            command_msg = f"#pointToFollow:{mode};{int(x)};{int(y)};;\r\n"
-                            self.logger.info(command_msg)
-                            self.serialCom.write(command_msg.encode("ascii"))
-                            self.logFile.write(command_msg)
-
-                        sendNodeList = self.pointToFollowSubscriber.receive()
-                        if sendNodeList is not None:
-                            if self.debugger:
-                                self.logger.info(sendNodeList)
-                            command_msg = f"#sendNodeList:{sendNodeList["index"]};{sendNodeList["x"]};{sendNodeList["y"]};;\r\n"
-                            self.logger.info(command_msg)
-                            self.serialCom.write(command_msg.encode("ascii"))
-                            self.logFile.write(command_msg)
-
                     instantRecv = self.instantSubscriber.receive()
                     if instantRecv is not None:
                         if self.debugger:
@@ -244,6 +226,30 @@ class threadWrite(ThreadWithStop):
                             self.logger.info(imuRecv)
                         command = {"action": "imu", "activate": int(imuRecv)}
                         self.sendToSerial(command)
+
+                    setNodeListRecv = self.setNodeListSubscriber.receive()
+                    if setNodeListRecv is not None:
+                        if self.debugger:
+                            self.logger.info(setNodeListRecv)
+                        index = setNodeListRecv["index"]
+                        x = setNodeListRecv["x"]
+                        y = setNodeListRecv["y"]
+                        command_msg = f"#setNodeList:{index};{x};{y};;\r\n"
+                        self.logger.info(command_msg)
+                        self.serialCom.write(command_msg.encode("ascii"))
+                        self.logFile.write(command_msg)
+
+                    pointToFollowRecv = self.pointToFollowSubscriber.receive()
+                    if pointToFollowRecv is not None:
+                        if self.debugger:
+                            self.logger.info(pointToFollowRecv)
+                        mode = pointToFollowRecv["mode"]
+                        x = pointToFollowRecv["x"]
+                        y = pointToFollowRecv["y"]
+                        command_msg = f"#pointToFollow:{mode};{int(x)};{int(y)};;\r\n"
+                        self.logger.info(command_msg)
+                        self.serialCom.write(command_msg.encode("ascii"))
+                        self.logFile.write(command_msg)
 
             except Exception as e:
                 print(e)
