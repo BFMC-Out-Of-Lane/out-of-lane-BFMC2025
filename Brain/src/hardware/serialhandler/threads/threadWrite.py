@@ -34,7 +34,7 @@ from src.hardware.serialhandler.threads.messageconverter import \
     MessageConverter
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (Brake, Control, Klem,
-                                            PointToFollow, SetNodeList, SpeedMotor,
+                                            PointToFollow, RawConfig, SetNodeList, SpeedMotor,
                                             SteerMotor, ToggleBatteryLvl,
                                             ToggleImuData, ToggleInstant,
                                             ToggleResourceMonitor)
@@ -93,12 +93,9 @@ class threadWrite(ThreadWithStop):
             self.queuesList, ToggleResourceMonitor, "lastOnly", True
         )
         self.imuSubscriber = messageHandlerSubscriber(self.queuesList, ToggleImuData, "lastOnly", True)
-        self.pointToFollowSubscriber = messageHandlerSubscriber(
-            self.queuesList, PointToFollow, "lastOnly", True
-        )
-        self.setNodeListSubscriber = messageHandlerSubscriber(
-            self.queuesList, SetNodeList, "lastOnly", True
-        )
+        self.pointToFollowSubscriber = messageHandlerSubscriber(self.queuesList, PointToFollow, "lastOnly", True)
+        self.setNodeListSubscriber = messageHandlerSubscriber(self.queuesList, SetNodeList, "fifo", True)
+        self.rawConfigSubscriber = messageHandlerSubscriber(self.queuesList, RawConfig, "fifo", True)
 
     # ==================================== SENDING =======================================
 
@@ -149,9 +146,6 @@ class threadWrite(ThreadWithStop):
                         command = {"action": "kl", "mode": 30}
                         self.sendToSerial(command)
                         self.loadConfig("sensors")
-
-                        self.setInitialPosition()
-
                     elif klRecv == "15":
                         self.running = True
                         self.engineEnabled = False
@@ -251,21 +245,15 @@ class threadWrite(ThreadWithStop):
                         self.serialCom.write(command_msg.encode("ascii"))
                         self.logFile.write(command_msg)
 
+                    rawConfigRecv = self.rawConfigSubscriber.receive()
+                    if rawConfigRecv is not None:
+                        if self.debugger or True:
+                            self.logger.info(rawConfigRecv)
+                        self.serialCom.write(rawConfigRecv.encode("ascii"))
+                        self.logFile.write(rawConfigRecv)
+
             except Exception as e:
                 print(e)
-
-    def setInitialPosition(self):
-        # Initial position
-        command_msg = "#setPosition:3500;740;;\r\n"
-        self.serialCom.write(command_msg.encode("ascii"))
-        self.logFile.write(command_msg)
-
-        time.sleep(0.5)
-
-        # Initial angle
-        command_msg = "#setAngle:180;;\r\n"
-        self.serialCom.write(command_msg.encode("ascii"))
-        self.logFile.write(command_msg)
 
     # ==================================== START =========================================
 

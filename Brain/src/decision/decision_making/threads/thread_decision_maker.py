@@ -4,8 +4,9 @@ import time
 from src.decision.decision_making.gps.gps import GPS
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
-                                            LaneKeeping, PointToFollow,
-                                            Position, SetNodeList, SpeedMotor, SteerMotor,
+                                            Klem, LaneKeeping, PointToFollow,
+                                            Position, RawConfig, SetNodeList,
+                                            SpeedMotor, SteerMotor,
                                             WarningSignal, trafficSigns)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
@@ -50,15 +51,17 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.current_speed = "0"
         self.driving_mode = "stop"
+        self.imu_data = None
+        self.klem = "0"
         self.lane_keeping = None
         self.position = None
-        self.imu_data = None
 
         self.speed_sender = messageHandlerSender(self.queuesList, SpeedMotor)
         self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
         self.signal_sender = messageHandlerSender(self.queuesList, WarningSignal)
         self.point_to_follow_sender = messageHandlerSender(self.queuesList, PointToFollow)
         self.node_list_sender = messageHandlerSender(self.queuesList, SetNodeList)
+        self.raw_config_sender = messageHandlerSender(self.queuesList, RawConfig)
 
         self.subscribers = {}
         self.stop_timer = time.time() - 60
@@ -73,20 +76,19 @@ class threadDecisionMaker(ThreadWithStop):
         super(threadDecisionMaker, self).__init__()
 
     def run(self):
-        flag = True
+        flag = False
         while self._running:
-            if flag:
+            self.klem = self.subscribers["Klem"].receive() or self.klem
+            if self.klem == "0":
+                flag = True
+            if flag and self.klem == "15":
+                self.raw_config_sender.send("#setPosition:3500;740;;\r\n")
+                self.raw_config_sender.send("#setAngle:180;;\r\n")
                 self._send_path()
-                self.point_to_follow_sender.send({
-                    "mode": 2,
-                    "x": 0,
-                    "y": 0,
-                })
-                self.logging.info(f"{{threadDecisionMaker: 'GPS initialized'}}")
                 flag = False
 
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
-            if self.driving_mode == "auto":
+            if self.klem == "30" and self.driving_mode == "auto":
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
                 self.imu_data = self.subscribers["ImuData"].receive() or self.imu_data
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive() or self.lane_keeping
@@ -108,6 +110,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.subscribers["DrivingMode"] = messageHandlerSubscriber(self.queuesList, DrivingMode, "lastonly", True)
         self.subscribers["Position"] = messageHandlerSubscriber(self.queuesList, Position, "lastonly", True)
         self.subscribers["ImuData"] = messageHandlerSubscriber(self.queuesList, ImuData, "lastonly", True)
+        self.subscribers["Klem"] = messageHandlerSubscriber(self.queuesList, Klem, "lastonly", True)
 
     def _handle_lane_keeping_message(self):
         """Handles the lane keeping message, i.e.: decides the steering angle"""
@@ -395,3 +398,10 @@ class threadDecisionMaker(ThreadWithStop):
                 "y": y,
             })
             time.sleep(0.1)
+
+        self.point_to_follow_sender.send({
+            "mode": 2,
+            "x": 0,
+            "y": 0,
+        })
+        self.logging.info(f"{{threadDecisionMaker: 'GPS initialized'}}")

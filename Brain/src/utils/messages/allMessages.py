@@ -306,14 +306,22 @@ class WarningSignal(Enum):
 ######################    From processDecisionMaker  ###########################
 
 
-class PointToFollow(Enum):
+class RawConfig(Enum):
     Queue = "General"
     Owner = "threadDecisionMaker"
     msgID = 1
+    msgType = "str"
+
+
+class PointToFollow(Enum):
+    Queue = "General"
+    Owner = "threadDecisionMaker"
+    msgID = 2
     msgType = "dict"
+
 
 class SetNodeList(Enum):
     Queue = "General"
     Owner = "threadDecisionMaker"
-    msgID = 2
+    msgID = 3
     msgType = "dict"
