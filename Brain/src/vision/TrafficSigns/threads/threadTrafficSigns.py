@@ -35,7 +35,7 @@ class threadTrafficSigns(ThreadWithStop):
         # yolov8n.pt
 
         self.distanceCalculator = DistanceCalculation(model="src/vision/TrafficSigns/yolo11n_traffic_objects_V11.engine",
-                                                      conf=0.8,
+                                                      conf=0.6,
                                                       # classes = [0,8],
                                                       vid_stride=10,
                                                       # stream_buffer= True,
