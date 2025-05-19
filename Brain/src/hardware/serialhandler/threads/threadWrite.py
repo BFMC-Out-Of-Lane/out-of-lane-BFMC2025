@@ -247,7 +247,7 @@ class threadWrite(ThreadWithStop):
 
                     rawConfigRecv = self.rawConfigSubscriber.receive()
                     if rawConfigRecv is not None:
-                        if self.debugger or True:
+                        if self.debugger:
                             self.logger.info(rawConfigRecv)
                         self.serialCom.write(rawConfigRecv.encode("ascii"))
                         self.logFile.write(rawConfigRecv)

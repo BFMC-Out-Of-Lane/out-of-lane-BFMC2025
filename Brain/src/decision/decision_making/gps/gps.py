@@ -31,15 +31,13 @@ class GPS:
         Send the path to the Nucleo board.
         """
 
-        for i in range(len(self.gps.path)):
-            node = self.gps.path[i]
-            node_data = self.gps.G.nodes[node]
+        for i in range(len(self.path)):
+            node = self.path[i]
+            node_data = self.G.nodes[node]
             x = node_data['x']
             y = node_data['y']
-            self.raw_config_sender.send(f"#setNodeList:{i};{x};{y};;\r\n")
+            self.raw_config_sender.send(f"#setNodeList:{i};{int(x)};{int(y)};;\r\n")
             time.sleep(0.01)
-
-        self.raw_config_sender.send("#pointToFollow:2;0;0;;\r\n")
 
     # def current_node(self, x: float, y: float, max_distance=float('inf')) -> (Node | None):
     #     """
