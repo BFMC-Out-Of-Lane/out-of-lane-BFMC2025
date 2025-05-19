@@ -69,7 +69,8 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.gps = GPS(
             path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout_new.graphml",
-            mandatory_nodes=["1", "15", "27", "60", "78", "42", "1"]
+            mandatory_nodes=["1", "15", "27", "60", "78", "42", "1"],
+            raw_config_sender=self.raw_config_sender,
         )
 
         self.subscribe()
@@ -82,9 +83,7 @@ class threadDecisionMaker(ThreadWithStop):
             if self.klem == "0":
                 flag = True
             if flag and self.klem == "15":
-                self.raw_config_sender.send("#setPosition:3500;740;;\r\n")
-                self.raw_config_sender.send("#setAngle:180;;\r\n")
-                self._send_path()
+                self.gps.send_to_nucleo()
                 flag = False
 
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
@@ -380,28 +379,3 @@ class threadDecisionMaker(ThreadWithStop):
         # if self.current_speed != str(new_speed):
         self.speed_sender.send(str(new_speed))
         self.current_speed = str(new_speed)
-
-    def _send_path(self):
-        """
-        Send the path to the Nucleo.
-        """
-
-        self.logging.info(f"{{threadDecisionMaker: 'Sending path: {self.gps.path}'}}")
-        for i in range(len(self.gps.path)):
-            node = self.gps.path[i]
-            node_data = self.gps.G.nodes[node]
-            x = node_data['x']
-            y = node_data['y']
-            self.node_list_sender.send({
-                "index": i,
-                "x": x,
-                "y": y,
-            })
-            time.sleep(0.1)
-
-        self.point_to_follow_sender.send({
-            "mode": 2,
-            "x": 0,
-            "y": 0,
-        })
-        self.logging.info(f"{{threadDecisionMaker: 'GPS initialized'}}")

@@ -28,6 +28,7 @@
 
 from src.templates.threadwithstop import ThreadWithStop
 
+
 class threadGateway(ThreadWithStop):
     """Thread which will handle processGateway functionalities.\n
     Args:
@@ -53,7 +54,7 @@ class threadGateway(ThreadWithStop):
         Args:
             message(dictionary): Dictionary received from the multiprocessing queues ( the config one).
         """
-        
+
         # Declaration of variables:
         Owner = message["Owner"]
         Id = message["msgID"]
@@ -124,7 +125,7 @@ class threadGateway(ThreadWithStop):
         """This function will take the messages in priority order form the queues.\n
         the prioirty is: Critical > Warning > General
         """
-        
+
         while self._running:
             message = None
             # We are using "elif" because we are processing one message at a time.
@@ -139,7 +140,6 @@ class threadGateway(ThreadWithStop):
                 self.send(message)
             if not self.queuesList["Config"].empty():
                 message2 = self.queuesList["Config"].get()
-                # message2 = self.queuesList["Config"].get(timeout=1)
                 if str.lower(message2["Subscribe/Unsubscribe"]) == "subscribe":
                     self.subscribe(message2)
                 else:
