@@ -32,3 +32,4 @@ src/Brain/src/dashboard/frontend/src/app/webSocket/web-socket.service.ts
 
 prototypes/
 cache/
+/cuda-keyring_1.1-1_all.deb

@@ -41,7 +41,7 @@ import { WebSocketService} from '../../webSocket/web-socket.service'
 export class LiveCameraComponent {
   public image: string | undefined;
   public loading: boolean = true;
-  private canvasSize: number[] = [512, 270];
+  private canvasSize: number[] = [304, 171];
   private cameraSubscription: Subscription | undefined;
 
   constructor( private  webSocketService: WebSocketService) { }

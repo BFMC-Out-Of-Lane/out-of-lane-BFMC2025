@@ -38,7 +38,7 @@
 #       npm install -g @angular/cli@17
 #       npm install
 #       if needed: npm audit fix
-#
+#       npm start
 # ===================================== GENERAL IMPORTS ==================================
 import sys
 import subprocess

@@ -30,7 +30,7 @@ import { Injectable } from '@angular/core';
 import { Socket } from 'ngx-socket-io';
 import { Observable, Subject } from 'rxjs';
 @Injectable({
- providedIn: 'root',
+  providedIn: 'root',
 })
 export class WebSocketService {
   private webSocket: Socket;
@@ -57,11 +57,11 @@ export class WebSocketService {
     'CurrentSteer',
     'EnableButton'
   ]);
-  
- constructor() {
+
+  constructor() {
     this.webSocket = new Socket({
-    url: "http://192.168.220.146:5005",
-    options: {},
+      url: "http://192.168.0.70:5005",
+      options: {},
     });
 
     // Listen for all messages from the WebSocket server
@@ -98,7 +98,7 @@ export class WebSocketService {
     return this.webSocket.fromEvent('ImuData');
   }
 
-  receiveResourceMonitor(): Observable<any>{
+  receiveResourceMonitor(): Observable<any> {
     return this.webSocket.fromEvent('ResourceMonitor');
   }
 

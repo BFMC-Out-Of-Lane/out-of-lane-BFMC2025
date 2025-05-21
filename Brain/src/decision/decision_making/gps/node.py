@@ -1,64 +1,60 @@
-
-from networkx import graphml
-
 class Node:
     """
     Represents a node in the graph
     """
 
     def __init__(self, id, x, y):
-        self.id = id
-        self.x = x
-        self.y = y
+        self.id: str = id
+        self.x: int = x
+        self.y: int = y
         self.edges = []
 
-    def distance_to(self, other_node):
-        """
-        Calculate the distance to another node
-        """
-        return ((self.x - other_node.x) ** 2 + (self.y - other_node.y) ** 2) ** 0.5
-    
+    # def distance_to(self, other_node):
+    #     """
+    #     Calculate the distance to another node
+    #     """
+    #     return ((self.x - other_node.x) ** 2 + (self.y - other_node.y) ** 2) ** 0.5
 
-class Map:
-    """
-    Represents the network of nodes
-    """
 
-    def __init__(self, path2graphml):
-        """
-        Initialize the map with a graphml file
-        """
-        graphML = graphml.read_graphml(path2graphml)
-        self.nodes = {} # Dictionary to hold nodes with id as key
-        
-        for node_id, data in graphML.nodes(data=True):
-            x = data['x'] * 1000
-            y = data['y'] * 1000
-            self.nodes[node_id] = Node(node_id, x, y)
+# class Map:
+#     """
+#     Represents the network of nodes
+#     """
 
-        self.current_node = Node()
-        self.path = []
-        self.path.append(Node(),Node()) ## Example of path structure
+#     def __init__(self, path2graphml):
+#         """
+#         Initialize the map with a graphml file
+#         """
+#         graphML = graphml.read_graphml(path2graphml)
+#         self.nodes = {} # Dictionary to hold nodes with id as key
 
-    def add_node(self, id, x, y):
-        """
-        Add a node to the map
-        """
-        if id not in self.nodes:
-            self.nodes[id] = Node(id, x, y)
+#         for node_id, data in graphML.nodes(data=True):
+#             x = data['x'] * 1000
+#             y = data['y'] * 1000
+#             self.nodes[node_id] = Node(node_id, x, y)
 
-    def get_closest_node(self, x, y):
-        """
-        Get the closest node to a given point (x, y)
-        """
-        closest_node = Node()
-        min_distance = float('inf')
+#         self.current_node = Node()
+#         self.path = []
+#         self.path.append(Node(),Node()) ## Example of path structure
 
-        for node in self.nodes.values():
-            distance = ((node.x - x) ** 2 + (node.y - y) ** 2) ** 0.5
-            if distance < min_distance:
-                min_distance = distance
-                closest_node = node
+#     def add_node(self, id, x, y):
+#         """
+#         Add a node to the map
+#         """
+#         if id not in self.nodes:
+#             self.nodes[id] = Node(id, x, y)
 
-        return closest_node
-    
+#     def get_closest_node(self, x, y):
+#         """
+#         Get the closest node to a given point (x, y)
+#         """
+#         closest_node = Node()
+#         min_distance = float('inf')
+
+#         for node in self.nodes.values():
+#             distance = ((node.x - x) ** 2 + (node.y - y) ** 2) ** 0.5
+#             if distance < min_distance:
+#                 min_distance = distance
+#                 closest_node = node
+
+#         return closest_node

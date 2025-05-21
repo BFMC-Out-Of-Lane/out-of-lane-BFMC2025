@@ -35,8 +35,8 @@ from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (BatteryLvl, CurrentSpeed,
                                             CurrentSteer, EnableButton, ImuAck,
                                             ImuData, InstantConsumption,
-                                            ResourceMonitor, UltrasonicSensors,
-                                            WarningSignal, Position)
+                                            Position, ResourceMonitor,
+                                            WarningSignal)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 
 
@@ -71,7 +71,6 @@ class threadRead(ThreadWithStop):
         self.currentSpeedSender = messageHandlerSender(self.queuesList, CurrentSpeed)
         self.currentSteerSender = messageHandlerSender(self.queuesList, CurrentSteer)
         self.warningSender = messageHandlerSender(self.queuesList, WarningSignal)
-        self.ultrasonicSensorsSender = messageHandlerSender(self.queuesList, UltrasonicSensors)
         self.positionSender = messageHandlerSender(self.queuesList, Position)
 
         self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
@@ -93,7 +92,7 @@ class threadRead(ThreadWithStop):
                     self.buff = self.serialCon.readline().decode("ascii")
                     self.sendqueue(self.buff)
                 except Exception as e:
-                    print("ThreadRead -> run method:", e)
+                    print("ThreadRead -> run method:", e, "->", self.buff)
 
     # ==================================== SENDING =======================================
     def Queue_Sending(self):
@@ -106,7 +105,7 @@ class threadRead(ThreadWithStop):
         """This function select which type of message we receive from NUCLEO and send the data further."""
 
         if '@' in buff and ':' in buff:
-            action, value = buff.split(":") # @action:value;;
+            action, value = buff.split(":")  # @action:value;;
             action = action[1:]
             value = value[:-4]
 
@@ -115,7 +114,7 @@ class threadRead(ThreadWithStop):
 
             if action == "imu":
                 splittedValue = value.split(";")
-                if(len(buff)>20):
+                if (len(buff) > 20):
                     data = {
                         "roll": splittedValue[0],
                         "pitch": splittedValue[1],
@@ -153,17 +152,13 @@ class threadRead(ThreadWithStop):
             elif action == "warning":
                 data = re.match(self.warningPattern, value)
                 if data:
-                    print(f"WARNING! Shutting down in {data.group(1)} hours {data.group(2)} minutes {data.group(3)} seconds")
-                    self.warningSender.send(action,data)
+                    print(
+                        f"WARNING! Shutting down in {data.group(1)} hours {data.group(2)} minutes {data.group(3)} seconds")
+                    self.warningSender.send(action, data)
             elif action == "shutdown":
                 print("SHUTTING DOWN!")
                 time.sleep(3)
                 os.system("sudo shutdown -h now")
-
-            # elif action == "ultrasonic":
-                # splittedValue = value.split(";")
-                # data = {"front": splittedValue[0], "rear": splittedValue[1]}
-                # self.ultrasonicSensorsSender.send(data)
 
             elif action == "position":
                 splittedValue = value.split(";")
