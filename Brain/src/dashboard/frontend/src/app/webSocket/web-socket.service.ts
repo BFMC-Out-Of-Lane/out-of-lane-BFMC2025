@@ -165,6 +165,11 @@ export class WebSocketService {
     return this.webSocket.fromEvent('LaneKeeping');
   }
 
+  // Method to receive position updates (from the Nucleo)
+  receivePosition(): Observable<any> {
+    return this.webSocket.fromEvent('Position');
+  }
+
   // Method to receive the initial connection confirmation
   onConnect(): Observable<any> {
     console.log("connected ")
