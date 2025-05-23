@@ -15,6 +15,14 @@
       "IMAGE_WIDTH_PIXELS": 1600,
       "IMAGE_HEIGHT_PIXELS": 1600
     },
+    "rmn": {
+      "GRAPH_PATH": "racetrack/More_test_track_w_roundabout.graphml",
+      "IMG_PATH": "racetrack/test_track_w_roundabout.png",
+      "IMAGE_WIDTH_METERS": 6,
+      "IMAGE_HEIGHT_METERS": 6,
+      "IMAGE_WIDTH_PIXELS": 1600,
+      "IMAGE_HEIGHT_PIXELS": 1600
+    },
     "bosch": {
       "GRAPH_PATH": "racetrack/Competition_track_graph.graphml",
       "IMG_PATH": "racetrack/competition_track.png",
