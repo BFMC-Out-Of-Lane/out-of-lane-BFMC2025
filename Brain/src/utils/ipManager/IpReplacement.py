@@ -27,20 +27,22 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import re
-import subprocess
+import socket
 
 class IPManager:
     def __init__(self, file_path):
         self.file_path = file_path
 
     def get_ip_address(self):
-        """Retrieve the current IP address of the machine."""
+        """Retrieve the current IP address of the machine in a platform-independent way."""
         try:
-            ip_output = subprocess.check_output("hostname -I", shell=True)
-            ip_address = ip_output.decode('utf-8').strip().split()[0]
-            return ip_address
-        except subprocess.CalledProcessError:
-            print("Could not retrieve IP address.")
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                # Connect to an external host; does not actually send data
+                s.connect(("8.8.8.8", 80))
+                ip_address = s.getsockname()[0]
+                return ip_address
+        except Exception as e:
+            print(f"Could not retrieve IP address: {e}")
             return None
 
     def replace_ip_in_file(self):
