@@ -26,7 +26,8 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input } from '@angular/core';
+import { WebSocketService } from '../../webSocket/web-socket.service';
 
 @Component({
   selector: 'app-car',
@@ -35,15 +36,24 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
   templateUrl: './car.component.html',
   styleUrl: './car.component.css'
 })
-export class CarComponent implements OnChanges {
+export class CarComponent {
   @Input() position: number = 0;
   @Input() leftLaneOn: boolean = false;
   @Input() rightLaneOn: boolean = false;
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['position'] || changes['leftLaneOn'] || changes['rightLaneOn']) {
-      this.updateCar();
-    }
+  constructor(private webSocketService: WebSocketService) { }
+
+  ngOnInit(): void {
+    this.webSocketService.receiveLaneKeeping().subscribe(
+      (message) => {
+        this.position = message.value["cross_tracking_error"];
+        this.updateCar();
+      },
+      (error) => {
+        this.position = 0;
+        console.error('Error receiving position:', error);
+      }
+    );
   }
 
   updateCar(): void {
@@ -52,7 +62,7 @@ export class CarComponent implements OnChanges {
       const xTranslation = this.position * 0.70;
       car.style.transform = `translateX(${xTranslation}%)`;
 
-      const leftLine = document.getElementById("car-road-line-left") as HTMLElement;      
+      const leftLine = document.getElementById("car-road-line-left") as HTMLElement;
       const rightLine = document.getElementById("car-road-line-right") as HTMLElement;
 
       if (this.rightLaneOn)
@@ -65,7 +75,7 @@ export class CarComponent implements OnChanges {
       else
         rightLine.style.stroke = "white";
 
-      if (this.leftLaneOn) 
+      if (this.leftLaneOn)
         if (xTranslation < -55)
           leftLine.style.stroke = "red";
         else if (xTranslation < -30)

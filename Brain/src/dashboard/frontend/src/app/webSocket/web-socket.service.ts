@@ -60,7 +60,7 @@ export class WebSocketService {
 
   constructor() {
     this.webSocket = new Socket({
-      url: "http://192.168.0.70:5005",
+      url: "http://192.168.0.9:5005",
       options: {},
     });
 
@@ -158,6 +158,11 @@ export class WebSocketService {
   // Method to receive current speed state updates
   receiveCurrentSteer(): Observable<any> {
     return this.webSocket.fromEvent('CurrentSteer');
+  }
+
+  // Method to receive lane detection updates
+  receiveLaneKeeping(): Observable<any> {
+    return this.webSocket.fromEvent('LaneKeeping');
   }
 
   // Method to receive the initial connection confirmation
