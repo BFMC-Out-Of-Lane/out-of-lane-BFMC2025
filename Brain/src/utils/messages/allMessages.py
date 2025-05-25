@@ -255,7 +255,7 @@ class ImuAck(Enum):
 
 
 class WarningSignal(Enum):
-    Queue = "General"
+    Queue = "Warning"
     Owner = "threadRead"
     msgID = 8
     msgType = "str"
@@ -296,7 +296,7 @@ class EnableButton(Enum):
 
 
 class WarningSignal(Enum):
-    Queue = "General"
+    Queue = "Warning"
     Owner = "brain"
     msgID = 2
     msgType = "str"
