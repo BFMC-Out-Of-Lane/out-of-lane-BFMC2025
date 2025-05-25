@@ -34,7 +34,7 @@ class threadTrafficSigns(ThreadWithStop):
         # yolo11n_traffic_objects_V11.pt
         # yolov8n.pt
 
-        self.distanceCalculator = DistanceCalculation(model="src/vision/TrafficSigns/yolo11n_traffic_objects_V11.engine",
+        self.distanceCalculator = DistanceCalculation(model="src/vision/TrafficSigns/models/yolo11n_traffic_objects_V15.pt",
                                                       conf=0.6,
                                                       # classes = [0,8],
                                                       vid_stride=10,
@@ -54,8 +54,8 @@ class threadTrafficSigns(ThreadWithStop):
 
     def subscribe(self):
         """Subscribes to the messages you are interested in"""
-        # self.cameraSubscriber = messageHandlerSubscriber(self.queuesList, mainCamera, "lastonly", True)
-        self.cameraSubscriber = messageHandlerSubscriber(self.queuesList, serialCamera, "lastonly", True)
+        self.cameraSubscriber = messageHandlerSubscriber(self.queuesList, mainCamera, "lastonly", True)
+        # self.cameraSubscriber = messageHandlerSubscriber(self.queuesList, serialCamera, "lastonly", True)
         pass
 
     # =============================== STOP ================================================
