@@ -36,8 +36,8 @@ class YOLO(Model):
                 "model": DetectionModel,
                 "trainer": yolo.detect.DetectionTrainer,
                 "validator": yolo.detect.DetectionValidator,
-                # "predictor": yolo.detect.DetectionPredictor,
-                "predictor": DetectionPredictor,
+                "predictor": yolo.detect.DetectionPredictor,
+                # "predictor": DetectionPredictor,
             },
             "segment": {
                 "model": SegmentationModel,
