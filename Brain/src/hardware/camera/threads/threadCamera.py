@@ -135,17 +135,17 @@ class threadCamera(ThreadWithStop):
                 mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8")
                 self.mainCameraSender.send(mainEncodedImageData)
 
-                # traffic_sign = {"objectDict": {}}
-                # traffic_sign = self.trafficSubscriber.receive()
-                # if traffic_sign is None:
-                #     traffic_sign = {"objectDict": {}}
-                # processed_image, cross_tracking_error, deviation = self.lane_detector.process_frame(serialRequest, traffic_sign)
-                # self.lane_keeping_sender.send({"cross_tracking_error": cross_tracking_error, "deviation": deviation})
+                traffic_sign = {"objectDict": {}}
+                traffic_sign = self.trafficSubscriber.receive()
+                if traffic_sign is None:
+                    traffic_sign = {"objectDict": {}}
+                processed_image, cross_tracking_error, deviation = self.lane_detector.process_frame(serialRequest, traffic_sign)
+                self.lane_keeping_sender.send({"cross_tracking_error": cross_tracking_error, "deviation": deviation})
                 
-                # # Codificar la imagen procesada para el envío
-                # _, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)
+                # Codificar la imagen procesada para el envío
+                _, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)
 
-                _, serial_encoded_processed_image = cv2.imencode(".jpg", serialRequest)
+                #_, serial_encoded_processed_image = cv2.imencode(".jpg", serialRequest)
 
                 serial_encoded_processed_image_data = base64.b64encode(serial_encoded_processed_image).decode("utf-8")
                 self.serialCameraSender.send(serial_encoded_processed_image_data)
