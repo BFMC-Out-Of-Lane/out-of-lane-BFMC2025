@@ -85,11 +85,19 @@ class threadRead(ThreadWithStop):
         super(threadRead, self).__init__()
 
     # ====================================== RUN ==========================================
+
     def run(self):
         while self._running:
             if self.serialCon.in_waiting > 0:
                 try:
                     self.buff = self.serialCon.readline().decode("ascii")
+                    # self.buff = self.serialCon.read(500).decode("ascii")
+                    # self.buff = self.buff.split(";;")[0]  # Split the buffer by the end of message delimiter
+                    action, value = self.buff.split(":")  # @action:value;;
+                    action = action[1:]
+                    if action == "position":
+                        self.logger.info("Position data received: " + self.buff)
+
                     self.sendqueue(self.buff)
                 except Exception as e:
                     print("ThreadRead -> run method:", e, "->", self.buff)
