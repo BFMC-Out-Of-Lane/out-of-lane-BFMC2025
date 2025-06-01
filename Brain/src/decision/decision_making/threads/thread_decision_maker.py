@@ -68,8 +68,8 @@ class threadDecisionMaker(ThreadWithStop):
         self.parking_timer = time.time() - 60
 
         self.gps = GPS(
-            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout_new.graphml",
-            mandatory_nodes=["1", "15", "34"],
+            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/More_test_track_w_roundabout.graphml",
+            mandatory_nodes=["1", "15", "34", "47"],
             raw_config_sender=self.raw_config_sender,
         )
 
