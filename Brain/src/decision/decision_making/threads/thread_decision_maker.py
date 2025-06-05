@@ -20,6 +20,7 @@ TIME_AT_STOP_SIGN = 2
 # Parking constants
 PTF_MODE_3 = 3
 PARKING_MODE_IN = 1
+PARKING_MODE_OUT = -1
 PARKING_SIDE = 1
 PARKING_SPEED = 100
 PARKING_INIT_X = 3500  # TODO: Change this to the correct value
