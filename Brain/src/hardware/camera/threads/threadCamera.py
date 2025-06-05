@@ -40,6 +40,8 @@ from src.utils.messages.allMessages import (Brightness, Contrast, LaneKeeping,
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
+from src.hardware.camera.lane_detection.segment_lane import process_frame_with_midpoint
+
 
 class threadCamera(ThreadWithStop):
     """Thread which will handle camera functionalities.\n
@@ -164,8 +166,10 @@ class threadCamera(ThreadWithStop):
                 self.mainCameraSender.send(mainEncodedImageData)
                 # self.serialCameraSender.send(serialEncodedImageData)
 
-                traffic_sign = self.trafficSubscriber.receive()
-                processed_image, cross_tracking_error, deviation = self.lane_detector.process_frame(serialRequest, traffic_sign)
+                # traffic_sign = self.trafficSubscriber.receive()
+                # processed_image, cross_tracking_error, deviation = self.lane_detector.process_frame(serialRequest, traffic_sign)
+                processed_image, cross_tracking_error, deviation = process_frame_with_midpoint(mainRequest)
+                # print(f"Cross Tracking Error: {cross_tracking_error}, Deviation: {deviation}")
                 self.lane_keeping_sender.send({"cross_tracking_error": cross_tracking_error, "deviation": deviation})
                 
                 # Sending processed image to the dashboard (and rest of the system)
