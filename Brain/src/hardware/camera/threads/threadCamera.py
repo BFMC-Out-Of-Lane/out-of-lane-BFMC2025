@@ -9,7 +9,7 @@ from src.hardware.camera.lane_detection.lane_detector import LaneDetector
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (Brightness, Contrast, LaneKeeping,
                                             Record, Recording, mainCamera,
-                                            serialCamera, trafficSigns)
+                                            serialCamera, trafficSigns, secondaryCamera)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 
@@ -35,6 +35,7 @@ class threadCamera(ThreadWithStop):
         self.recordingSender = messageHandlerSender(self.queuesList, Recording)
         self.mainCameraSender = messageHandlerSender(self.queuesList, mainCamera)
         self.serialCameraSender = messageHandlerSender(self.queuesList, serialCamera)
+        self.secondaryCameraSender = messageHandlerSender(self.queuesList, secondaryCamera)
         self.lane_keeping_sender = messageHandlerSender(self.queuesList, LaneKeeping)
 
         self.subscribe()
@@ -129,7 +130,6 @@ class threadCamera(ThreadWithStop):
                 # Crear una versión de baja resolución (lores) redimensionando la imagen
                 serialRequest = serialRequest[:, :320]  # Crops the image to the lores resolution
 
-                
                 # Codificar la imagen principal
                 _, mainEncodedImg = cv2.imencode(".jpg", mainRequest)
                 mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8")
@@ -149,6 +149,9 @@ class threadCamera(ThreadWithStop):
 
                 serial_encoded_processed_image_data = base64.b64encode(serial_encoded_processed_image).decode("utf-8")
                 self.serialCameraSender.send(serial_encoded_processed_image_data)
+                
+                # Send the same image to the secondary camera feed
+                self.secondaryCameraSender.send(serial_encoded_processed_image_data)
 
             send = not send
 

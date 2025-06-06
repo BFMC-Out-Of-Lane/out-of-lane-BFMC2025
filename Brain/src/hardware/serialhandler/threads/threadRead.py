@@ -61,6 +61,7 @@ class threadRead(ThreadWithStop):
         self.debugger = debugger
         self.currentSpeed = 0
         self.currentSteering = 0
+        self.last_position_time = time.time()  # Initialize last position time
 
         self.enableButtonSender = messageHandlerSender(self.queuesList, EnableButton)
         self.batteryLvlSender = messageHandlerSender(self.queuesList, BatteryLvl)
@@ -96,7 +97,10 @@ class threadRead(ThreadWithStop):
                     action, value = self.buff.split(":")  # @action:value;;
                     action = action[1:]
                     if action == "position":
-                        self.logger.info("Position data received: " + self.buff)
+                        current_time = time.time()
+                        time_since_last = current_time - self.last_position_time
+                        #self.logger.info(f"Position data received: {self.buff} Time since last position: {time_since_last:.3f}s")
+                        self.last_position_time = current_time
 
                     self.sendqueue(self.buff)
                 except Exception as e:

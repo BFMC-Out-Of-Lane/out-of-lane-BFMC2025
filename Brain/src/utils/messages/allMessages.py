@@ -65,6 +65,14 @@ class LaneKeeping(Enum):
     msgID = 5
     msgType = "dict"
 
+class secondaryCamera(Enum):
+    """Message for secondary camera."""
+    Queue = "General"
+    Owner = "threadCamera"
+    msgID = 6
+    msgType = "str"
+
+
 ################################# processCarsAndSemaphores ##################################
 
 
@@ -325,3 +333,5 @@ class SetNodeList(Enum):
     Owner = "threadDecisionMaker"
     msgID = 3
     msgType = "dict"
+
+

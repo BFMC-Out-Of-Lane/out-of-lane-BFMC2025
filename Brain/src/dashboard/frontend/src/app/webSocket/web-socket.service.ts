@@ -52,6 +52,7 @@ export class WebSocketService {
     'BatteryLvl',
     'ResourceMonitor',
     'serialCamera',
+    'secondaryCamera',
     'Recording',
     'CurrentSpeed',
     'CurrentSteer',
@@ -60,7 +61,7 @@ export class WebSocketService {
 
   constructor() {
     this.webSocket = new Socket({
-      url: "http://192.168.0.9:5005",
+      url: "http://192.168.0.34:5005",
       options: {},
     });
 
@@ -118,6 +119,11 @@ export class WebSocketService {
   // Method to receive image updates
   receiveCamera(): Observable<any> {
     return this.webSocket.fromEvent('serialCamera');
+  }
+
+  // Method to receive secondary camera updates
+  receiveSecondaryCamera(): Observable<any> {
+    return this.webSocket.fromEvent('secondaryCamera');
   }
 
   // Method to receive location updates
