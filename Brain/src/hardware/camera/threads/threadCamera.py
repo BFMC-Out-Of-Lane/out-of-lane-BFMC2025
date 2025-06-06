@@ -151,7 +151,7 @@ class threadCamera(ThreadWithStop):
                 self.serialCameraSender.send(serial_encoded_processed_image_data)
                 
                 # Send the same image to the secondary camera feed
-                self.secondaryCameraSender.send(serial_encoded_processed_image_data)
+                self.secondaryCameraSender.send(mainEncodedImageData)
 
             send = not send
 
