@@ -67,12 +67,12 @@ class threadDecisionMaker(ThreadWithStop):
 
     def run(self):
         flag = False
-        flag2 = True
+        flag2 = True 
         while self._running:
             self.klem = self.subscribers["Klem"].receive() or self.klem
             if self.klem == "0":
                 flag = True
-                flag2 = True
+                flag2 = False # TODO: Change to True if you want node following
             if flag and self.klem == "15":
                 self.raw_config_sender.send("#setAngle:180;;\r\n")
                 self.raw_config_sender.send("#setPosition:3500;740;;\r\n")
@@ -120,6 +120,7 @@ class threadDecisionMaker(ThreadWithStop):
             if self.cross_tracking_error and self.deviation:
                 self.steer_sender.send(str(self._calculate_steering_angle(
                     self.deviation, self.cross_tracking_error, self.current_speed)))
+                time.sleep(0.01)  # Allow some time for the steering to adjust
 
     def _handle_traffic_signs_message(self):
         """Handles the traffic signs, i.e.: decides if the vehicle should slow down, stop or continue"""
@@ -243,12 +244,13 @@ class threadDecisionMaker(ThreadWithStop):
 
     def _handle_node_index_message(self):
         node_index_message = self.subscribers["NodeIndex"].receive()
-        if node_index_message is not None and not self.gps.is_last(node_index_message["nodeIndex"]) and self.lane_keeping["deviation"] < 10:
-            angle = self.gps.calc_angle_between_previous_n_next_nodes(node_index_message["nodeIndex"])
-            if angle == 0 or angle == 180:
-                self.raw_config_sender.send(f"#setPosition:0;{self.gps.get_node(node_index_message).y};;\r\n")
-            elif angle == 90 or angle == -90:
-                self.raw_config_sender.send(f"#setPosition:{self.gps.get_node(node_index_message).x};0;;\r\n")
+        if node_index_message is not None and self.lane_keeping["deviation"] is not None:
+            if not self.gps.is_last(node_index_message) and self.lane_keeping["deviation"] < 10:
+                angle = self.gps.calc_angle_between_previous_n_next_nodes(node_index_message)
+                if angle == 0 or angle == 180:
+                    self.raw_config_sender.send(f"#setPosition:0;{self.gps.get_node(node_index_message).y};;\r\n")
+                elif angle == 90 or angle == -90:
+                    self.raw_config_sender.send(f"#setPosition:{self.gps.get_node(node_index_message).x};0;;\r\n")
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
         """
@@ -261,7 +263,7 @@ class threadDecisionMaker(ThreadWithStop):
             deviation = deviation + 360
 
         steering = int(deviation + math.atan(0.5 * cross_tracking_error /
-                                             int(current_speed)) * 180 / math.pi) * 10
+                                                 int(current_speed)) * 180 / math.pi) * 10
         if steering < -230:
             steering = -230
         elif steering > 230:
