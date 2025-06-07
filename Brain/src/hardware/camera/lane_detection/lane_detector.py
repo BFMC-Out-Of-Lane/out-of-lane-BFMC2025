@@ -23,7 +23,7 @@ class LaneDetector:
 
         self.MAX_WINDOWS_OVERLAPPING = 8
         self.NUM_OF_WINDOWS = 12
-        self.MIN_POLY_PIXEL = 4000
+        self.MIN_POLY_PIXEL = 1500
 
         self.left_line = Line()
         self.right_line = Line()

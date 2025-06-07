@@ -99,7 +99,7 @@ class threadRead(ThreadWithStop):
                     if action == "position":
                         current_time = time.time()
                         time_since_last = current_time - self.last_position_time
-                        #self.logger.info(f"Position data received: {self.buff} Time since last position: {time_since_last:.3f}s")
+                        self.logger.info(f"Position data received: {self.buff} Time since last position: {time_since_last:.3f}s")
                         self.last_position_time = current_time
 
                     self.sendqueue(self.buff)
