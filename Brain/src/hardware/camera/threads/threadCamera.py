@@ -30,7 +30,7 @@ class threadCamera(ThreadWithStop):
         self.recording = False
 
         self.video_writer = None
-        self.lane_detector = LaneDetector(min_offset=180, distance_to_aim=200, is_simu=False)
+        self.lane_detector = LaneDetector(min_offset=100, perc_of_sight_len=0.3)
 
         self.recordingSender = messageHandlerSender(self.queuesList, Recording)
         self.mainCameraSender = messageHandlerSender(self.queuesList, mainCamera)
@@ -136,22 +136,21 @@ class threadCamera(ThreadWithStop):
                 self.mainCameraSender.send(mainEncodedImageData)
 
                 traffic_sign = {"objectDict": {}}
-                #traffic_sign = self.trafficSubscriber.receive()
+                traffic_sign = self.trafficSubscriber.receive()
                 if traffic_sign is None:
                     traffic_sign = {"objectDict": {}}
-                #processed_image, cross_tracking_error, deviation = self.lane_detector.process_frame(serialRequest, traffic_sign)
-                #self.lane_keeping_sender.send({"cross_tracking_error": cross_tracking_error, "deviation": deviation})
+                processed_image, cross_tracking_error, deviation, binary_warped = self.lane_detector.process_frame(serialRequest, traffic_sign)
+                self.lane_keeping_sender.send({"cross_tracking_error": cross_tracking_error, "deviation": deviation})
                 
                 # Codificar la imagen procesada para el envío
-                #_, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)
-
-                _, serial_encoded_processed_image = cv2.imencode(".jpg", serialRequest)
-
+                _, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)
                 serial_encoded_processed_image_data = base64.b64encode(serial_encoded_processed_image).decode("utf-8")
                 self.serialCameraSender.send(serial_encoded_processed_image_data)
                 
-                # Send the same image to the secondary camera feed
-                self.secondaryCameraSender.send(mainEncodedImageData)
+                # Encode binary warped image before sending
+                _, binary_warped_encoded = cv2.imencode(".jpg", binary_warped)
+                binary_warped_encoded_data = base64.b64encode(binary_warped_encoded).decode("utf-8")
+                self.secondaryCameraSender.send(binary_warped_encoded_data)
 
             send = not send
 

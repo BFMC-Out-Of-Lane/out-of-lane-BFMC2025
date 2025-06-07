@@ -16,10 +16,9 @@ def calculate_derivative(a, b, x):
 
 
 class LaneDetector:
-    def __init__(self, min_offset, distance_to_aim, is_simu=False):
+    def __init__(self, min_offset, perc_of_sight_len):
         self.min_offset = min_offset
-        self.distance_to_aim = distance_to_aim
-        self.is_simu = is_simu
+        self.perc_of_sight_len = perc_of_sight_len
         self.traffic_sign = None
 
         self.MAX_WINDOWS_OVERLAPPING = 8
@@ -221,15 +220,6 @@ class LaneDetector:
                 num_sups += 1
 
             points.append((x_left, x_right))
-            # print(
-            # f"\033[34m A_left:\033[0m {leftA:2.5f}  "
-            # f"\033[34m x_left:\033[0m {x_left:7.2f}  "
-            # f"\033[31m A_right:\033[0m {rightA:2.5f}  "
-            # f"\033[31m x_right:\033[0m {x_right:7.2f}  "
-            # f"\033[33m diff:\033[0m {diff:7.2f}  "
-            # f"\033[33m xL :\033[0m {x_left:7.2f}  "
-            # f"\033[33m yL :\033[0m {y:7.2f}  "
-            # f"\033[35m super:\033[0m {superposition}")
         if num_sups > self.MAX_WINDOWS_OVERLAPPING:
             x_left, x_right = points[-1]
             x_center = (x_left + x_right) // 2
@@ -272,16 +262,11 @@ class LaneDetector:
 
     def _get_perspective_transform(self, image):
         height, width = image.shape[:2]
-        if self.is_simu:
-            self.top_left = [170, 300]
-            self.top_right = [450, 300]
-            self.bottom_right = [width * 1, height*0.98]
-            self.bottom_left = [width * 0, height*0.98]
-        else:
-            self.top_left = [width * 0.3, height * 0.8]
-            self.top_right = [width * 0.7, height * 0.8]
-            self.bottom_right = [width * 0.8, height * 0.98]
-            self.bottom_left = [width * 0.2, height * 0.98]
+
+        self.top_left = [width * 0.3, height * (1 - self.perc_of_sight_len)]
+        self.top_right = [width * 0.7, height * (1 - self.perc_of_sight_len)]
+        self.bottom_right = [width * 0.9, height * 0.95]
+        self.bottom_left = [width * 0.2, height * 0.95]
 
         src = np.float32([
             self.top_left,
@@ -344,27 +329,5 @@ class LaneDetector:
 
         # hist_image = self._render_histogram(self.histogram_data)
 
-        return result, self.cross_tracking_error, self.deviation
+        return result, self.cross_tracking_error, self.deviation, self.binary_warped
 
-# hist /= hist.sum()
-# `# Visualizar el histograma original
-# plt.figure(figsize=(10, 6))
-# plt.plot(hist)
-# plt.title("Histograma Original")
-# plt.xlabel("Intensidad de píxel")
-# plt.ylabel("Frecuencia")
-# plt.show()
-
-# # Umbral para detectar la meseta plana
-# lower_threshold = 0.005  # Un umbral bajo para detectar áreas planas
-# upper_threshold = 0.05   # Un umbral alto para detectar mesetas altas
-
-# # Identificar las intensidades de la meseta plana
-# flat_area = np.where((hist > lower_threshold) & (hist < upper_threshold))[0]
-
-# # Establecer los valores de la meseta plana a cero
-# for intensity in flat_area:
-#     hist[intensity] = 0
-
-# # Normalizar el histograma modificado
-# hist /= hist.sum()
