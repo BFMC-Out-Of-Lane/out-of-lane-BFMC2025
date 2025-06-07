@@ -4,7 +4,7 @@ import time
 from src.decision.decision_making.gps.gps import GPS
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
-                                            Klem, LaneKeeping, PointToFollow,
+                                            Klem, LaneKeeping, NodeIndex,
                                             Position, RawConfig, SetNodeList,
                                             SpeedMotor, SteerMotor,
                                             WarningSignal, trafficSigns)
@@ -12,8 +12,7 @@ from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
-
-MIN_DISTANCE_TO_SIGN = 20
+MIN_DISTANCE_TO_SIGN = 30
 MIN_DISTANCE_TO_CROSSWALK = 70
 TIME_AT_STOP_SIGN = 2
 
@@ -50,7 +49,6 @@ class threadDecisionMaker(ThreadWithStop):
         self.speed_sender = messageHandlerSender(self.queuesList, SpeedMotor)
         self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
         self.signal_sender = messageHandlerSender(self.queuesList, WarningSignal)
-        self.point_to_follow_sender = messageHandlerSender(self.queuesList, PointToFollow)
         self.node_list_sender = messageHandlerSender(self.queuesList, SetNodeList)
         self.raw_config_sender = messageHandlerSender(self.queuesList, RawConfig)
 
@@ -95,9 +93,9 @@ class threadDecisionMaker(ThreadWithStop):
                 self.position = self.subscribers["Position"].receive() or self.position
 
                 try:
-                    # self._handle_lane_keeping_message()
+                    self._handle_lane_keeping_message()
                     self._handle_traffic_signs_message()
-                    self._handle_position_message()
+                    self._handle_node_index_message()
                 except Exception as e:
                     self.logging.error(f'{{"threadDecisionMaker": {str(e)}}}')
 
@@ -111,6 +109,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.subscribers["Position"] = messageHandlerSubscriber(self.queuesList, Position, "lastonly", True)
         self.subscribers["ImuData"] = messageHandlerSubscriber(self.queuesList, ImuData, "lastonly", True)
         self.subscribers["Klem"] = messageHandlerSubscriber(self.queuesList, Klem, "lastonly", True)
+        self.subscribers["NodeIndex"] = messageHandlerSubscriber(self.queuesList, NodeIndex, "lastonly", True)
 
     def _handle_lane_keeping_message(self):
         """Handles the lane keeping message, i.e.: decides the steering angle"""
@@ -241,6 +240,15 @@ class threadDecisionMaker(ThreadWithStop):
 
         if int(self.current_speed) < 300 and time.time() - self.stop_timer > 3:
             self._send_speed(300)
+
+    def _handle_node_index_message(self):
+        node_index_message = self.subscribers["NodeIndex"].receive()
+        if node_index_message is not None and not self.gps.is_last(node_index_message["nodeIndex"]) and self.lane_keeping["deviation"] < 10:
+            angle = self.gps.calc_angle_between_previous_n_next_nodes(node_index_message["nodeIndex"])
+            if angle == 0 or angle == 180:
+                self.raw_config_sender.send(f"#setPosition:0;{self.gps.get_node(node_index_message).y};;\r\n")
+            elif angle == 90 or angle == -90:
+                self.raw_config_sender.send(f"#setPosition:{self.gps.get_node(node_index_message).x};0;;\r\n")
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
         """

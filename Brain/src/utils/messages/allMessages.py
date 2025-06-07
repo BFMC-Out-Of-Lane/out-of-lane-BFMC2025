@@ -275,6 +275,12 @@ class Position(Enum):
     msgID = 9
     msgType = "dict"
 
+class NodeIndex(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 10
+    msgType = "int"
+
 ################################# processTrafficSigns ##################################
 
 

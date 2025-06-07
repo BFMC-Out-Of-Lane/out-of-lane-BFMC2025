@@ -36,7 +36,7 @@ from src.utils.messages.allMessages import (BatteryLvl, CurrentSpeed,
                                             CurrentSteer, EnableButton, ImuAck,
                                             ImuData, InstantConsumption,
                                             Position, ResourceMonitor,
-                                            WarningSignal)
+                                            WarningSignal, NodeIndex)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 
 
@@ -73,6 +73,7 @@ class threadRead(ThreadWithStop):
         self.currentSteerSender = messageHandlerSender(self.queuesList, CurrentSteer)
         self.warningSender = messageHandlerSender(self.queuesList, WarningSignal)
         self.positionSender = messageHandlerSender(self.queuesList, Position)
+        self.nodeIndexSender = messageHandlerSender(self.queuesList, NodeIndex)
 
         self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
                                "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer": "between -25 and 25",
@@ -92,16 +93,6 @@ class threadRead(ThreadWithStop):
             if self.serialCon.in_waiting > 0:
                 try:
                     self.buff = self.serialCon.readline().decode("ascii")
-                    # self.buff = self.serialCon.read(500).decode("ascii")
-                    # self.buff = self.buff.split(";;")[0]  # Split the buffer by the end of message delimiter
-                    action, value = self.buff.split(":")  # @action:value;;
-                    action = action[1:]
-                    if action == "position":
-                        current_time = time.time()
-                        time_since_last = current_time - self.last_position_time
-                        self.logger.info(f"Position data received: {self.buff} Time since last position: {time_since_last:.3f}s")
-                        self.last_position_time = current_time
-
                     self.sendqueue(self.buff)
                 except Exception as e:
                     print("ThreadRead -> run method:", e, "->", self.buff)
@@ -176,6 +167,9 @@ class threadRead(ThreadWithStop):
                 splittedValue = value.split(";")
                 data = {"x": splittedValue[0], "y": splittedValue[1]}
                 self.positionSender.send(data)
+
+            elif action == "nodeIndex":
+                self.nodeIndexSender.send(int(value))
 
     def checkValidValue(self, action, message):
         if message == "syntax error":
