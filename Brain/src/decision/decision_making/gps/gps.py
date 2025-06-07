@@ -61,7 +61,7 @@ class GPS:
         if 0 <= index < len(self.path):
             node_data = self.G.nodes[self.path[index]]
             return Node(
-                node_id=self.path[index],
+                id=self.path[index],
                 x=node_data['x'],
                 y=node_data['y'],
             )
