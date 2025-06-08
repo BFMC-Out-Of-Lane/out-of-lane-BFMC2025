@@ -25,6 +25,9 @@ PARKING_SPEED = 100
 PARKING_INIT_X = 3500  # TODO: Change this to the correct value
 PARKING_INIT_Y = 740
 
+LANE_DETECTOR = "lane_detector"
+NODE_NAVIGATION = "node_navigation"
+
 
 class threadDecisionMaker(ThreadWithStop):
     """This thread handles decision_making.
@@ -45,6 +48,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.klem = "0"
         self.lane_keeping = None
         self.position = None
+        self.nav_mode = NODE_NAVIGATION
 
         self.speed_sender = messageHandlerSender(self.queuesList, SpeedMotor)
         self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
@@ -55,6 +59,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.subscribers = {}
         self.stop_timer = time.time() - 60
         self.parking_timer = time.time() - 60
+        self.set_position_timer = time.time()
 
         self.gps = GPS(
             path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/More_test_track_w_roundabout.graphml",
@@ -67,12 +72,12 @@ class threadDecisionMaker(ThreadWithStop):
 
     def run(self):
         flag = False
-        flag2 = True 
+        flag2 = True
         while self._running:
             self.klem = self.subscribers["Klem"].receive() or self.klem
             if self.klem == "0":
                 flag = True
-                flag2 = True # TODO: Change to True if you want node following
+                flag2 = True  # TODO: Change to True if you want node following
             if flag and self.klem == "15":
                 self.raw_config_sender.send("#setAngle:180;;\r\n")
                 self.raw_config_sender.send("#setPosition:3500;740;;\r\n")
@@ -93,6 +98,9 @@ class threadDecisionMaker(ThreadWithStop):
                 self.position = self.subscribers["Position"].receive() or self.position
 
                 try:
+                    if self.nav_mode == LANE_DETECTOR:
+                        self._handle_lane_keeping_message()
+
                     self._handle_traffic_signs_message()
                     self._handle_node_index_message()
                 except Exception as e:
@@ -242,25 +250,37 @@ class threadDecisionMaker(ThreadWithStop):
             self._send_speed(300)
 
     def _handle_node_index_message(self):
-        node_index_message = self.subscribers["NodeIndex"].receive()
+        current_node_index = self.gps.get_current_node(self.position)
         deviation = self.lane_keeping["deviation"]
         cross_tracking_error = self.lane_keeping["cross_tracking_error"]
-        if node_index_message is not None and node_index_message > 7 and deviation is not None and cross_tracking_error is not None:
-            if not self.gps.is_last(node_index_message) and cross_tracking_error < 10:
-                angle = self.gps.calc_angle_between_previous_n_next_nodes(node_index_message)
+
+        if deviation is not None and cross_tracking_error is not None and time.time() - self.set_position_timer > 0.1:
+            self.set_position_timer = time.time()
+
+            if not self.gps.is_last(current_node_index, 2) and abs(cross_tracking_error) < 10:
+                angle = self.gps.calc_angle_between_previous_n_next_nodes(current_node_index)
                 if angle == 0 or angle == 180:
-                    self.logging.info("Horizontal")
-                    self._handle_lane_keeping_message()
-                    self.raw_config_sender.send(f"#setPosition:0;{self.gps.get_node(node_index_message).y};;\r\n")
+                    self.nav_mode = LANE_DETECTOR
+                    self.raw_config_sender.send(f"#setPosition:0;{self.gps.get_node(current_node_index).y};;\r\n")
                 elif angle == 90 or angle == -90:
-                    self.logging.info("Vertical")
-                    self._handle_lane_keeping_message()
-                    self.raw_config_sender.send(f"#setPosition:{self.gps.get_node(node_index_message).x};0;;\r\n")
-                else:
+                    self.logging.info(self.gps.path[current_node_index])
+                    self.nav_mode = LANE_DETECTOR
+                    self.raw_config_sender.send(f"#setPosition:{self.gps.get_node(current_node_index).x};0;;\r\n")
+                elif self.nav_mode == LANE_DETECTOR:
+                    self.nav_mode = NODE_NAVIGATION
                     self.logging.info("Nodos")
-                    self.gps.cut_path_from(node_index_message)
+                    self.gps.cut_path_from(current_node_index + 1)
                     self.gps.send_to_nucleo()
                     self.raw_config_sender.send("#pointToFollow:2;0;0;;\r\n")
+            elif self.gps.is_last(current_node_index):
+                print("REINICIO")
+                self.gps = GPS(
+                    path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/More_test_track_w_roundabout.graphml",
+                    mandatory_nodes=["1", "35", "47"],
+                    raw_config_sender=self.raw_config_sender,
+                )
+                self.gps.send_to_nucleo()
+                self.raw_config_sender.send("#pointToFollow:2;0;0;;\r\n")
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
         """
@@ -273,7 +293,7 @@ class threadDecisionMaker(ThreadWithStop):
             deviation = deviation + 360
 
         steering = int(deviation + math.atan(2 * cross_tracking_error /
-                                                 int(current_speed)) * 180 / math.pi) * 10
+                                             int(current_speed)) * 180 / math.pi) * 10
         if steering < -230:
             steering = -230
         elif steering > 230:

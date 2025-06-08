@@ -39,15 +39,15 @@ class GPS:
             self.raw_config_sender.send(f"#setNodeList:{i};{int(x)};{int(y)};;\r\n")
             time.sleep(0.01)
 
-    def is_last(self, index: int) -> bool:
+    def is_last(self, index: int, offset: int = 1) -> bool:
         """
         Check if the current node is the last node in the path.
         """
-        return index == len(self.path) - 1
+        return index == len(self.path) - offset
 
     def calc_angle_between_previous_n_next_nodes(self, current_node_index: int) -> float:
-        prev_node = self.G.nodes[self.path[current_node_index - 1]]
-        next_node = self.G.nodes[self.path[current_node_index + 1]]
+        prev_node = self.G.nodes[self.path[current_node_index - 2]]
+        next_node = self.G.nodes[self.path[current_node_index + 2]]
 
         return np.arctan2(
             next_node['y'] - prev_node['y'],
@@ -74,3 +74,26 @@ class GPS:
         """
         if 0 <= index < len(self.path):
             self.path = self.path[index:]
+
+    def get_current_node(self, position) -> Node:
+        """
+        Get the current node based on the position.
+        """
+        self.min_distance = float('inf')
+        self.current_node = None
+        for i, node in enumerate(self.path):
+            map_node = self.G.nodes[node]
+            dist = self.distance(position, map_node)
+            if dist < self.min_distance:
+                self.min_distance = dist
+                self.current_node_index = i
+        return self.current_node_index
+
+    def distance(self, current_pos, node_pos) -> float:
+        """
+        Calculate the distance between the current position and a node position.
+        """
+        return np.sqrt(
+            (node_pos['x'] - float(current_pos['x'])) ** 2 +
+            (node_pos['y'] - float(current_pos['y'])) ** 2
+        )
