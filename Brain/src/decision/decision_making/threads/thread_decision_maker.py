@@ -262,7 +262,7 @@ class threadDecisionMaker(ThreadWithStop):
         elif deviation < -180:
             deviation = deviation + 360
 
-        steering = int(deviation + math.atan(0.5 * cross_tracking_error /
+        steering = int(deviation + math.atan(2 * cross_tracking_error /
                                                  int(current_speed)) * 180 / math.pi) * 10
         if steering < -230:
             steering = -230

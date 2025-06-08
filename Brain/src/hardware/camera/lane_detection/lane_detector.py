@@ -37,7 +37,7 @@ class LaneDetector:
         l_channel = hls[:, :, 1]
 
         # Threshold the L channel to get white colors
-        _, white_mask = cv2.threshold(l_channel, 200, 255, cv2.THRESH_BINARY)
+        _, white_mask = cv2.threshold(l_channel, 150, 255, cv2.THRESH_BINARY)
 
         # Edge detection using Sobel operator
         gray = cv2.cvtColor(blurred_frame, cv2.COLOR_BGR2GRAY)
@@ -266,7 +266,7 @@ class LaneDetector:
         self.top_left = [width * 0.3, height * (1 - self.perc_of_sight_len)]
         self.top_right = [width * 0.7, height * (1 - self.perc_of_sight_len)]
         self.bottom_right = [width * 0.9, height * 0.95]
-        self.bottom_left = [width * 0.2, height * 0.95]
+        self.bottom_left = [width * 0.1, height * 0.95]
 
         src = np.float32([
             self.top_left,
