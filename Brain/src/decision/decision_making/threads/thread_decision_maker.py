@@ -72,7 +72,7 @@ class threadDecisionMaker(ThreadWithStop):
             self.klem = self.subscribers["Klem"].receive() or self.klem
             if self.klem == "0":
                 flag = True
-                flag2 = False # TODO: Change to True if you want node following
+                flag2 = True # TODO: Change to True if you want node following
             if flag and self.klem == "15":
                 self.raw_config_sender.send("#setAngle:180;;\r\n")
                 self.raw_config_sender.send("#setPosition:3500;740;;\r\n")
@@ -93,7 +93,6 @@ class threadDecisionMaker(ThreadWithStop):
                 self.position = self.subscribers["Position"].receive() or self.position
 
                 try:
-                    self._handle_lane_keeping_message()
                     self._handle_traffic_signs_message()
                     self._handle_node_index_message()
                 except Exception as e:
@@ -244,13 +243,24 @@ class threadDecisionMaker(ThreadWithStop):
 
     def _handle_node_index_message(self):
         node_index_message = self.subscribers["NodeIndex"].receive()
-        if node_index_message is not None and self.lane_keeping["deviation"] is not None:
-            if not self.gps.is_last(node_index_message) and self.lane_keeping["deviation"] < 10:
+        deviation = self.lane_keeping["deviation"]
+        cross_tracking_error = self.lane_keeping["cross_tracking_error"]
+        if node_index_message is not None and node_index_message > 7 and deviation is not None and cross_tracking_error is not None:
+            if not self.gps.is_last(node_index_message) and cross_tracking_error < 10:
                 angle = self.gps.calc_angle_between_previous_n_next_nodes(node_index_message)
                 if angle == 0 or angle == 180:
+                    self.logging.info("Horizontal")
+                    self._handle_lane_keeping_message()
                     self.raw_config_sender.send(f"#setPosition:0;{self.gps.get_node(node_index_message).y};;\r\n")
                 elif angle == 90 or angle == -90:
+                    self.logging.info("Vertical")
+                    self._handle_lane_keeping_message()
                     self.raw_config_sender.send(f"#setPosition:{self.gps.get_node(node_index_message).x};0;;\r\n")
+                else:
+                    self.logging.info("Nodos")
+                    self.gps.cut_path_from(node_index_message)
+                    self.gps.send_to_nucleo()
+                    self.raw_config_sender.send("#pointToFollow:2;0;0;;\r\n")
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
         """

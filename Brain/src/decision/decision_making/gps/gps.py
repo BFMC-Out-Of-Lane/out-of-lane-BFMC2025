@@ -67,3 +67,10 @@ class GPS:
             )
         else:
             raise IndexError("Index out of bounds for the path.")
+
+    def cut_path_from(self, index: int) -> None:
+        """
+        Cut the path from the given index.
+        """
+        if 0 <= index < len(self.path):
+            self.path = self.path[index:]
