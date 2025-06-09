@@ -12,6 +12,8 @@ from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
+PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/More_test_track_w_roundabout.graphml"
+
 # Initial position
 INIT_X = 3500  # TODO: Change this to the correct value
 INIT_Y = 740
@@ -70,7 +72,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.set_position_timer = time.time()
 
         self.gps = GPS(
-            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/More_test_track_w_roundabout.graphml",
+            path2graphml=PATH_TO_GRAPHML,
             mandatory_nodes=["1", "35", "47"],
             raw_config_sender=self.raw_config_sender,
         )
