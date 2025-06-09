@@ -12,6 +12,13 @@ from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
+# Initial position
+INIT_X = 3500  # TODO: Change this to the correct value
+INIT_Y = 740
+INIT_ANGLE = 180
+
+
+# Traffic sign constants
 MIN_DISTANCE_TO_SIGN = 30
 MIN_DISTANCE_TO_CROSSWALK = 70
 TIME_AT_STOP_SIGN = 2
@@ -25,6 +32,7 @@ PARKING_SPEED = 100
 PARKING_INIT_X = 3500  # TODO: Change this to the correct value
 PARKING_INIT_Y = 740
 
+# Navigation modes
 LANE_DETECTOR = "lane_detector"
 NODE_NAVIGATION = "node_navigation"
 
@@ -71,27 +79,24 @@ class threadDecisionMaker(ThreadWithStop):
         super(threadDecisionMaker, self).__init__()
 
     def run(self):
-        flag = False
-        flag2 = True
+        send_gps_data = False
         while self._running:
             self.klem = self.subscribers["Klem"].receive() or self.klem
+            self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
+
             if self.klem == "0":
-                flag = True
-                flag2 = True  # TODO: Change to True if you want node following
-            if flag and self.klem == "15":
-                self.raw_config_sender.send("#setAngle:180;;\r\n")
-                self.raw_config_sender.send("#setPosition:3500;740;;\r\n")
+                send_gps_data = True
+
+            if send_gps_data and self.klem == "15":
+                self.raw_config_sender.send(f"#setAngle:{INIT_ANGLE};;\r\n")
+                self.raw_config_sender.send(f"#setPosition:{INIT_X};{INIT_Y};;\r\n")
                 self.gps.send_to_nucleo()
                 if self.debugging:
                     self.logging.info(f'threadDecisionMaker: GPS sent')
-                flag = False
 
-            self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
+                send_gps_data = False
+
             if self.klem == "30" and self.driving_mode == "auto":
-                if flag2:
-                    self.raw_config_sender.send("#pointToFollow:2;0;0;;\r\n")
-                    flag2 = False
-
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
                 self.imu_data = self.subscribers["ImuData"].receive() or self.imu_data
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive() or self.lane_keeping
@@ -250,36 +255,39 @@ class threadDecisionMaker(ThreadWithStop):
             self._send_speed(300)
 
     def _handle_node_index_message(self):
-        current_node_index = self.gps.get_current_node(self.position)
-        deviation = self.lane_keeping["deviation"]
-        cross_tracking_error = self.lane_keeping["cross_tracking_error"]
+        if self.position is not None and self.lane_keeping is not None:
+            current_node_index = self.gps.get_current_node(self.position)
+            deviation = self.lane_keeping["deviation"]
+            cross_tracking_error = self.lane_keeping["cross_tracking_error"]
 
-        if deviation is not None and cross_tracking_error is not None and time.time() - self.set_position_timer > 0.1:
-            self.set_position_timer = time.time()
+            if deviation is not None and cross_tracking_error is not None and time.time() - self.set_position_timer > 0.1:
+                self.set_position_timer = time.time()
 
-            if not self.gps.is_last(current_node_index, 2) and abs(cross_tracking_error) < 10:
-                angle = self.gps.calc_angle_between_previous_n_next_nodes(current_node_index)
-                if angle == 0 or angle == 180:
-                    self.nav_mode = LANE_DETECTOR
-                    self.raw_config_sender.send(f"#setPosition:0;{int(self.gps.get_node(current_node_index).y)};;\r\n")
-                elif angle == 90 or angle == -90:
-                    self.nav_mode = LANE_DETECTOR
-                    self.raw_config_sender.send(int(f"#setPosition:{self.gps.get_node(current_node_index).x};0;;\r\n"))
-                elif self.nav_mode == LANE_DETECTOR:
-                    self.nav_mode = NODE_NAVIGATION
-                    self.logging.info("Nodos")
-                    self.gps.cut_path_from(current_node_index + 1)
+                if not self.gps.is_last(current_node_index, 2) and abs(cross_tracking_error) < 10:
+                    angle = self.gps.calc_angle_between_previous_n_next_nodes(current_node_index)
+                    if angle == 0 or angle == 180:
+                        self.nav_mode = LANE_DETECTOR
+                        self.raw_config_sender.send(
+                            f"#setPosition:0;{int(self.gps.get_node(current_node_index).y)};;\r\n")
+                    elif angle == 90 or angle == -90:
+                        self.nav_mode = LANE_DETECTOR
+                        self.raw_config_sender.send(
+                            int(f"#setPosition:{self.gps.get_node(current_node_index).x};0;;\r\n"))
+                    elif self.nav_mode == LANE_DETECTOR:
+                        self.nav_mode = NODE_NAVIGATION
+                        self.logging.info("Nodos")
+                        self.gps.cut_path_from(current_node_index + 1)
+                        self.gps.send_to_nucleo()
+                        self.raw_config_sender.send("#pointToFollow:2;0;0;;\r\n")
+                elif self.gps.is_last(current_node_index):
+                    print("REINICIO")
+                    self.gps = GPS(
+                        path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/More_test_track_w_roundabout.graphml",
+                        mandatory_nodes=["1", "35", "47"],
+                        raw_config_sender=self.raw_config_sender,
+                    )
                     self.gps.send_to_nucleo()
                     self.raw_config_sender.send("#pointToFollow:2;0;0;;\r\n")
-            elif self.gps.is_last(current_node_index):
-                print("REINICIO")
-                self.gps = GPS(
-                    path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/More_test_track_w_roundabout.graphml",
-                    mandatory_nodes=["1", "35", "47"],
-                    raw_config_sender=self.raw_config_sender,
-                )
-                self.gps.send_to_nucleo()
-                self.raw_config_sender.send("#pointToFollow:2;0;0;;\r\n")
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
         """
