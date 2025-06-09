@@ -51,52 +51,52 @@ export class InstantConsumptionComponent {
 
   ngOnInit()
   {
-    this.updateNeedle();
+    // this.updateNeedle();
     
-    // Listen for instant
-    this.instantSubscription = this.webSocketService.receiveInstantConsumption().subscribe(
-      (message) => {
-        // 100% - 40Ah
-        // 0%   - 0Ah
-        this.instant = message.value * 100 / 40;
-        this.updateNeedle();
-      },
-      (error) => {
-        console.error('Error receiving disk usage:', error);
-      }
-    );
+    // // Listen for instant
+    // this.instantSubscription = this.webSocketService.receiveInstantConsumption().subscribe(
+    //   (message) => {
+    //     // 100% - 40Ah
+    //     // 0%   - 0Ah
+    //     this.instant = message.value * 100 / 40;
+    //     this.updateNeedle();
+    //   },
+    //   (error) => {
+    //     console.error('Error receiving disk usage:', error);
+    //   }
+    // );
   }
 
   ngOnDestroy() {
-    if (this.instantSubscription) {
-      this.instantSubscription.unsubscribe();
-    }
-    this.webSocketService.disconnectSocket();
+    // if (this.instantSubscription) {
+    //   this.instantSubscription.unsubscribe();
+    // }
+    // this.webSocketService.disconnectSocket();
   }
 
   updateNeedle(): void {
-    let xTranslation: number = 0;
-    let yTranslation: number = 0;
-    let rotation: number = 0;
-    const needle = document.getElementById("instant-consumption-needle-group");
-    const path = document.getElementById("instant-consumption-path");
+    // let xTranslation: number = 0;
+    // let yTranslation: number = 0;
+    // let rotation: number = 0;
+    // const needle = document.getElementById("instant-consumption-needle-group");
+    // const path = document.getElementById("instant-consumption-path");
 
-    rotation += this.needleStartRotation;
+    // rotation += this.needleStartRotation;
 
-    if (path instanceof SVGPathElement) {
-      const currentPoint = this.pathStartPoint + (this.pathEndPoint - this.pathStartPoint) * this.instant / 100;
-      const pathPoint = path.getPointAtLength(currentPoint);
-      xTranslation = pathPoint.x + this.xOffset;
-      yTranslation = pathPoint.y + this.yOffset;
+    // if (path instanceof SVGPathElement) {
+    //   const currentPoint = this.pathStartPoint + (this.pathEndPoint - this.pathStartPoint) * this.instant / 100;
+    //   const pathPoint = path.getPointAtLength(currentPoint);
+    //   xTranslation = pathPoint.x + this.xOffset;
+    //   yTranslation = pathPoint.y + this.yOffset;
 
-      const nextPoint = path.getPointAtLength((this.pathEndPoint - this.pathStartPoint) * (this.instant + 1) / 100);
-      const angle = Math.atan2(nextPoint.y - pathPoint.y, nextPoint.x - pathPoint.x) * 180 / Math.PI * this.angleAmplifier;
+    //   const nextPoint = path.getPointAtLength((this.pathEndPoint - this.pathStartPoint) * (this.instant + 1) / 100);
+    //   const angle = Math.atan2(nextPoint.y - pathPoint.y, nextPoint.x - pathPoint.x) * 180 / Math.PI * this.angleAmplifier;
       
-      rotation += angle;
-    }
+    //   rotation += angle;
+    // }
 
-    if (needle) { 
-      needle.style.transform = `translate(${xTranslation}px, ${yTranslation}px) rotate(${rotation}deg)`;
-    }
+    // if (needle) { 
+    //   needle.style.transform = `translate(${xTranslation}px, ${yTranslation}px) rotate(${rotation}deg)`;
+    // }
   }
 }
