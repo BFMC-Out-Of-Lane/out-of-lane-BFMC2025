@@ -35,8 +35,9 @@ from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (BatteryLvl, CurrentSpeed,
                                             CurrentSteer, EnableButton, ImuAck,
                                             ImuData, InstantConsumption,
+                                            NodeIndex, PointToFollowMode,
                                             Position, ResourceMonitor,
-                                            WarningSignal, NodeIndex)
+                                            WarningSignal)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 
 
@@ -74,6 +75,7 @@ class threadRead(ThreadWithStop):
         self.warningSender = messageHandlerSender(self.queuesList, WarningSignal)
         self.positionSender = messageHandlerSender(self.queuesList, Position)
         self.nodeIndexSender = messageHandlerSender(self.queuesList, NodeIndex)
+        self.pointToFollowSender = messageHandlerSender(self.queuesList, PointToFollowMode)
 
         self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
                                "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer": "between -25 and 25",
@@ -170,6 +172,10 @@ class threadRead(ThreadWithStop):
 
             elif action == "nodeIndex":
                 self.nodeIndexSender.send(int(value))
+
+            elif action == "pointToFollow":
+                splittedValue = value.split(";")
+                self.pointToFollowSender.send(int(splittedValue[0]))
 
     def checkValidValue(self, action, message):
         if message == "syntax error":

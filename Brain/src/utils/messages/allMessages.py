@@ -281,6 +281,12 @@ class NodeIndex(Enum):
     msgID = 10
     msgType = "int"
 
+class PointToFollowMode(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 11
+    msgType = "int"
+
 ################################# processTrafficSigns ##################################
 
 
@@ -327,7 +333,7 @@ class RawConfig(Enum):
     msgType = "str"
 
 
-class PointToFollow(Enum):
+class PointToFollowMode(Enum):
     Queue = "General"
     Owner = "threadDecisionMaker"
     msgID = 2

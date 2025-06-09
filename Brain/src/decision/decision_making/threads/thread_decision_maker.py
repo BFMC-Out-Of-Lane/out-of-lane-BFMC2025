@@ -5,9 +5,10 @@ from src.decision.decision_making.gps.gps import GPS
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
                                             Klem, LaneKeeping, NodeIndex,
-                                            Position, RawConfig, SetNodeList,
-                                            SpeedMotor, SteerMotor,
-                                            WarningSignal, trafficSigns)
+                                            PointToFollowMode, Position,
+                                            RawConfig, SetNodeList, SpeedMotor,
+                                            SteerMotor, WarningSignal,
+                                            trafficSigns)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
@@ -26,17 +27,19 @@ MIN_DISTANCE_TO_CROSSWALK = 70
 TIME_AT_STOP_SIGN = 2
 
 # Parking constants
+PTF_MODE_0 = 0
 PTF_MODE_3 = 3
 PARKING_MODE_IN = 1
 PARKING_MODE_OUT = -1
 PARKING_SIDE = 1
 PARKING_SPEED = 100
-PARKING_INIT_X = 3500  # TODO: Change this to the correct value
+PARKING_INIT_X = 1660  # TODO: Change this to the correct value
 PARKING_INIT_Y = 740
 
 # Navigation modes
 LANE_DETECTOR = "lane_detector"
 NODE_NAVIGATION = "node_navigation"
+PARKING = "parking"
 
 
 class threadDecisionMaker(ThreadWithStop):
@@ -59,6 +62,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.lane_keeping = None
         self.position = None
         self.nav_mode = NODE_NAVIGATION
+        self.point_to_follow_mode = None
 
         self.speed_sender = messageHandlerSender(self.queuesList, SpeedMotor)
         self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
@@ -109,7 +113,10 @@ class threadDecisionMaker(ThreadWithStop):
                         self._handle_lane_keeping_message()
 
                     self._handle_traffic_signs_message()
-                    self._handle_node_index_message()
+                    if self.nav_mode == NODE_NAVIGATION or self.nav_mode == LANE_DETECTOR:
+                        self._handle_node_index_message()
+                    if self.nav_mode == PARKING:
+                        self._handle_point_to_follow_mode_message()
                 except Exception as e:
                     self.logging.error(f'{{"threadDecisionMaker": {str(e)}}}')
 
@@ -124,6 +131,8 @@ class threadDecisionMaker(ThreadWithStop):
         self.subscribers["ImuData"] = messageHandlerSubscriber(self.queuesList, ImuData, "lastonly", True)
         self.subscribers["Klem"] = messageHandlerSubscriber(self.queuesList, Klem, "lastonly", True)
         self.subscribers["NodeIndex"] = messageHandlerSubscriber(self.queuesList, NodeIndex, "lastonly", True)
+        self.subscribers["PointToFollowMode"] = messageHandlerSubscriber(
+            self.queuesList, PointToFollowMode, "lastonly", True)
 
     def _handle_lane_keeping_message(self):
         """Handles the lane keeping message, i.e.: decides the steering angle"""
@@ -155,6 +164,9 @@ class threadDecisionMaker(ThreadWithStop):
         if traffic_signs_message is not None:
             detected_object_dict = traffic_signs_message["objectDict"]
 
+            self.logging.info(
+                f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict} }}}}')
+
             if "stop-sign" in detected_object_dict:
                 self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
                 if detected_object_dict["stop-sign"] > MIN_DISTANCE_TO_SIGN + 5 and time.time() - self.stop_timer > 12:
@@ -184,8 +196,13 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_SIGN:
-                self.signal_sender.send(str({"WarningName": "ped_on_crosswalk", "WarningID": 12}))
+            if (
+                ("pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_SIGN) or
+                ("roadblock" in detected_object_dict and detected_object_dict["roadblock"] > MIN_DISTANCE_TO_SIGN) or
+                ("car-white" in detected_object_dict and detected_object_dict["car-white"] > MIN_DISTANCE_TO_SIGN)
+            ):
+                if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_SIGN:
+                    self.signal_sender.send(str({"WarningName": "ped_on_crosswalk", "WarningID": 12}))
                 self.stop_timer = time.time()
                 self._send_speed(0)
 
@@ -212,11 +229,9 @@ class threadDecisionMaker(ThreadWithStop):
             if "parking-sign" in detected_object_dict and detected_object_dict["parking-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.parking_timer > 60:
                 self.signal_sender.send(str({"WarningName": "parking", "WarningID": 10}))
 
+                self.nav_mode = PARKING
                 self.raw_config_sender.send(f"#pointToFollow:{PTF_MODE_3};{PARKING_INIT_X};{PARKING_INIT_Y};;\r\n")
-                time.sleep(3)  # TODO: Receive acknowledgment from Nucleo
-                self.raw_config_sender.send(
-                    f"#setParkingMode:{PARKING_MODE_IN};{PARKING_SIDE};{PARKING_SPEED};;\r\n"
-                )
+                self._send_speed(300)
 
                 if self.debugging:
                     self.logging.info(
@@ -274,7 +289,7 @@ class threadDecisionMaker(ThreadWithStop):
                     elif angle == 90 or angle == -90:
                         self.nav_mode = LANE_DETECTOR
                         self.raw_config_sender.send(
-                            int(f"#setPosition:{self.gps.get_node(current_node_index).x};0;;\r\n"))
+                            int(f"#setPosition:{int(self.gps.get_node(current_node_index).x)};0;;\r\n"))
                     elif self.nav_mode == LANE_DETECTOR:
                         self.nav_mode = NODE_NAVIGATION
                         self.logging.info("Nodos")
@@ -290,6 +305,21 @@ class threadDecisionMaker(ThreadWithStop):
                     )
                     self.gps.send_to_nucleo()
                     self.raw_config_sender.send("#pointToFollow:2;0;0;;\r\n")
+
+    def _handle_point_to_follow_mode_message(self):
+        self.point_to_follow_mode = self.subscribers["PointToFollowMode"].receive()  # Wait for the point to be set
+        if self.point_to_follow_mode is not None:
+            self.logging.info(f'{{"threadDecisionMaker": {{ "PointToFollowMode": {self.point_to_follow_mode} }}}}')
+        if self.point_to_follow_mode is not None and self.point_to_follow_mode == PTF_MODE_0:
+            self.raw_config_sender.send(
+                f"#setParkingMode:{PARKING_MODE_IN};{PARKING_SIDE};{PARKING_SPEED};;\r\n"
+            )
+            time.sleep(10)  # TODO: Receive acknowledgment from Nucleo
+            self.raw_config_sender.send(
+                f"#setParkingMode:{PARKING_MODE_OUT};{PARKING_SIDE};{PARKING_SPEED};;\r\n"
+            )
+            time.sleep(10)  # TODO: Receive acknowledgment from Nucleo
+            self.nav_mode = LANE_DETECTOR
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
         """
