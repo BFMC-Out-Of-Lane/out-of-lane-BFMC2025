@@ -52,51 +52,51 @@ export class HardwareDataComponent {
 
   ngOnInit()
   {
-    // Listen for cpu data
-    this.cpuSubscription = this.webSocketService.receiveCpuUsage().subscribe(
-      (message) => {
-        this.cpuTemp = message['data']['temp'];
-        this.cpuUsage[0] = parseInt(message['data']['usage'][0]);
-        this.cpuUsage[1] = parseInt(message['data']['usage'][1]);
-        this.cpuUsage[2] = parseInt(message['data']['usage'][2]);
-        this.cpuUsage[3] = parseInt(message['data']['usage'][3]);
-      },
-      (error) => {
-        console.error('Error receiving disk usage:', error);
-      }
-    );
+    // // Listen for cpu data
+    // this.cpuSubscription = this.webSocketService.receiveCpuUsage().subscribe(
+    //   (message) => {
+    //     this.cpuTemp = message['data']['temp'];
+    //     this.cpuUsage[0] = parseInt(message['data']['usage'][0]);
+    //     this.cpuUsage[1] = parseInt(message['data']['usage'][1]);
+    //     this.cpuUsage[2] = parseInt(message['data']['usage'][2]);
+    //     this.cpuUsage[3] = parseInt(message['data']['usage'][3]);
+    //   },
+    //   (error) => {
+    //     console.error('Error receiving disk usage:', error);
+    //   }
+    // );
     
-    this.resourceSubscription = this.webSocketService.receiveResourceMonitor().subscribe(
-      (message) =>{
-        this.heap = Math.round(message.value['heap']);
-        this.stack = Math.round(message.value['stack']);
-      },
-      (error) => {
-        console.error('Error receiving resource monitor:', error);
-      }
-    );
+    // this.resourceSubscription = this.webSocketService.receiveResourceMonitor().subscribe(
+    //   (message) =>{
+    //     this.heap = Math.round(message.value['heap']);
+    //     this.stack = Math.round(message.value['stack']);
+    //   },
+    //   (error) => {
+    //     console.error('Error receiving resource monitor:', error);
+    //   }
+    // );
 
-    this.memorySubscription = this.webSocketService.receiveMemoryUsage().subscribe(
-      (message) => {
-        this.memoryUsage = Math.round(message['data']);
+    // this.memorySubscription = this.webSocketService.receiveMemoryUsage().subscribe(
+    //   (message) => {
+    //     this.memoryUsage = Math.round(message['data']);
         
-      },
-      (error) => {
-        console.error('Error receiving disk usage:', error);
-      }
-    );
+    //   },
+    //   (error) => {
+    //     console.error('Error receiving disk usage:', error);
+    //   }
+    // );
   }
 
   ngOnDestroy() {
-    if (this.cpuSubscription) {
-      this.cpuSubscription.unsubscribe();
-    }
-    if (this.memorySubscription) {
-      this.memorySubscription.unsubscribe();
-    }
-    if (this.resourceSubscription) {
-      this.resourceSubscription.unsubscribe();
-    }
-    this.webSocketService.disconnectSocket();
+    // if (this.cpuSubscription) {
+    //   this.cpuSubscription.unsubscribe();
+    // }
+    // if (this.memorySubscription) {
+    //   this.memorySubscription.unsubscribe();
+    // }
+    // if (this.resourceSubscription) {
+    //   this.resourceSubscription.unsubscribe();
+    // }
+    // this.webSocketService.disconnectSocket();
   }
 }
