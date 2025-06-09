@@ -5,11 +5,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from scipy.signal import find_peaks
-from src.hardware.camera.lane_detection.line import Line
+#from src.hardware.camera.lane_detection.line import Line
 
 # from lane_detection_interface import LaneDetectionInterface
-# from line import Line
+from line import Line
 
+HIGH_POINT = 10
+MIDDLE_POINT = 50
+LOW_POINT = 100
+SOME_DISTANCE_BETWEEN_POINTS = 100
 
 def calculate_derivative(a, b, x):
     return 2 * a * x + b
@@ -229,6 +233,7 @@ class LaneDetector:
             else:
                 self.left_line.best_fit = None
 
+ 
     def _draw_lane(self, original_image, binary_warped):
         left_fit = self.left_line.best_fit
         right_fit = self.right_line.best_fit
@@ -249,16 +254,37 @@ class LaneDetector:
             left_line_pts = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
             # Warp the lane line back onto the original image
             left_line_pts = cv2.perspectiveTransform(left_line_pts, self.Minv)
-            # c Drawing
+            # Draw circles along the polynomial
+            self._draw_circles_along_polynomial(result, left_fit, (255, 255, 0), [HIGH_POINT, MIDDLE_POINT, LOW_POINT])
+            # Drawing the line
             cv2.polylines(result, [np.int32(left_line_pts)], isClosed=False, color=(255, 0, 0), thickness=10)
 
         if right_fit is not None:
             right_fitx = right_fit[0] * ploty ** 2 + right_fit[1] * ploty + right_fit[2]
             right_line_pts = np.array([np.transpose(np.vstack([right_fitx, ploty]))])
             right_line_pts = cv2.perspectiveTransform(right_line_pts, self.Minv)
+            # Draw circles along the polynomial
+            self._draw_circles_along_polynomial(result, right_fit, (0, 255, 255), [HIGH_POINT, MIDDLE_POINT, LOW_POINT])
             cv2.polylines(result, [np.int32(right_line_pts)], isClosed=False, color=(0, 0, 255), thickness=10)
 
         return result
+
+    def _draw_circles_along_polynomial(self, result, fit, color, positions=[10, 50, 100]):
+        """
+        Draw circles along a polynomial curve at specified positions.
+        
+        Args:
+            result: The image to draw on
+            fit: The polynomial coefficients (a, b, c)
+            color: BGR color tuple for the circles
+            positions: List of percentages from top of image (0-100)
+        """
+        for pos in positions:
+            y = int(result.shape[0] * pos / 100)  # Convert percentage to y coordinate
+            x = int(fit[0] * y ** 2 + fit[1] * y + fit[2])
+            point = np.array([[[x, y]]], dtype=np.float32)
+            warped_point = cv2.perspectiveTransform(point, self.Minv)
+            cv2.circle(result, (int(warped_point[0][0][0]), int(warped_point[0][0][1])), 10, color, -1)
 
     def _get_perspective_transform(self, image):
         height, width = image.shape[:2]
@@ -321,7 +347,9 @@ class LaneDetector:
         self.left_line.add_fit(left_fit)
         self.right_line.add_fit(right_fit)
         self._check_overlap(self.left_line.best_fit, self.right_line.best_fit)
-
+        # cosito para paralelismo
+        self.are_lanes_parallel(self.left_line.best_fit, self.right_line.best_fit)
+        # --------------------------------------------------------------
         self.middle = frame.shape[1] // 2
         self._calculate_tracking_params()
 
@@ -330,4 +358,67 @@ class LaneDetector:
         # hist_image = self._render_histogram(self.histogram_data)
 
         return result, self.cross_tracking_error, self.deviation, self.binary_warped
+    
+    def are_lanes_parallel(self, left_fit, right_fit):
+        if left_fit is None or right_fit is None:
+            print("No fit")
+            return 
+        
+        # DIFFERENCE BETWEEN COEFFICIENTS --------------------------------
+        diff = left_fit - right_fit
+        #print(f"Quadratic term (a) difference: {diff[0]:.4f}, Linear term (b) difference: {diff[1]:.4f}, Constant term (c) difference: {diff[2]:.4f}")
+        # --------------------------------------------------------------
+        # DIFFERENCE BETWEEN HIGH POINTS --------------------------------
+        left_high = left_fit[0] * HIGH_POINT ** 2 + left_fit[1] * HIGH_POINT + left_fit[2]
+        right_high = right_fit[0] * HIGH_POINT ** 2 + right_fit[1] * HIGH_POINT + right_fit[2]
+        #print("Difference between high points: ", right_high - left_high)
+        # --------------------------------------------------------------
+        ## DIFFERENCE BETWEEN DERIVATIVES -------------------------------- Es el que mas me gusta, aprox cuando la dif es -1, es cuando se rompe el detector
+        left_derivative = calculate_derivative(left_fit[0], left_fit[1], MIDDLE_POINT) 
+        right_derivative = calculate_derivative(right_fit[0], right_fit[1], MIDDLE_POINT)
+        print("Difference between derivatives: ", right_derivative - left_derivative)
+        # --------------------------------------------------------------qq
+      
+            
 
+if __name__ == "__main__":
+    # Initialize the lane detector
+    detector = LaneDetector(min_offset=60, perc_of_sight_len=0.3)
+    
+    # Open the video file
+    cap = cv2.VideoCapture('Brain/src/hardware/camera/lane_detection/video.mp4')
+    
+    # Check if video opened successfully
+    if not cap.isOpened():
+        print("Error: Could not open video file")
+        exit()
+    
+    while True:
+        # Read a frame
+        ret, frame = cap.read()
+        
+        # Break the loop if we've reached the end of the video
+        if not ret:
+            break
+            
+        # Process the frame
+        result, cross_tracking_error, deviation, binary_warped = detector.process_frame(frame, None)
+        
+        # Display the results
+        cv2.imshow('Processed Frame', result)
+        cv2.imshow('Binary Warped', binary_warped)
+        
+        # Print tracking parameters
+        #print("--------------------------------")
+        #print(f"Cross Tracking Error: {cross_tracking_error}")
+        #print(f"Deviation: {deviation}")
+        #print("--------------------------------")
+        
+        # Break the loop if 'q' is pressed
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    
+    # Release resources
+    cap.release()
+    cv2.destroyAllWindows()
+    
