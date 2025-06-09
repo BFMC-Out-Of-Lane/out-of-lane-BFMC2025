@@ -261,11 +261,10 @@ class threadDecisionMaker(ThreadWithStop):
                 angle = self.gps.calc_angle_between_previous_n_next_nodes(current_node_index)
                 if angle == 0 or angle == 180:
                     self.nav_mode = LANE_DETECTOR
-                    self.raw_config_sender.send(f"#setPosition:0;{self.gps.get_node(current_node_index).y};;\r\n")
+                    self.raw_config_sender.send(f"#setPosition:0;{int(self.gps.get_node(current_node_index).y)};;\r\n")
                 elif angle == 90 or angle == -90:
-                    self.logging.info(self.gps.path[current_node_index])
                     self.nav_mode = LANE_DETECTOR
-                    self.raw_config_sender.send(f"#setPosition:{self.gps.get_node(current_node_index).x};0;;\r\n")
+                    self.raw_config_sender.send(int(f"#setPosition:{self.gps.get_node(current_node_index).x};0;;\r\n"))
                 elif self.nav_mode == LANE_DETECTOR:
                     self.nav_mode = NODE_NAVIGATION
                     self.logging.info("Nodos")

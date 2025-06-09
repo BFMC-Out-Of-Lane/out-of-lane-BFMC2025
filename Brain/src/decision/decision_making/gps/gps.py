@@ -46,7 +46,7 @@ class GPS:
         return index == len(self.path) - offset
 
     def calc_angle_between_previous_n_next_nodes(self, current_node_index: int) -> float:
-        prev_node = self.G.nodes[self.path[current_node_index - 2]]
+        prev_node = self.G.nodes[self.path[current_node_index - 1]]
         next_node = self.G.nodes[self.path[current_node_index + 2]]
 
         return np.arctan2(
