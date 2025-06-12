@@ -169,8 +169,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 .cluster-secondary-camera {
     position: absolute;
-    top: 20%;
-    left: 75%;
+    top: 76.5%;
+    left: 3%;
     width: 22%;
     height: auto;
 }
