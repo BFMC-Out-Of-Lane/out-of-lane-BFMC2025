@@ -60,9 +60,9 @@ class threadDecisionMaker(ThreadWithStop):
         self.imu_data = None
         self.klem = "0"
         self.lane_keeping = None
-        self.position = None
         self.nav_mode = NODE_NAVIGATION
         self.point_to_follow_mode = None
+        self.position = None
 
         self.speed_sender = messageHandlerSender(self.queuesList, SpeedMotor)
         self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
@@ -91,6 +91,7 @@ class threadDecisionMaker(ThreadWithStop):
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
 
             if self.klem == "0":
+                self.current_speed = "0"
                 send_gps_data = True
 
             if send_gps_data and self.klem == "15":
@@ -109,14 +110,14 @@ class threadDecisionMaker(ThreadWithStop):
                 self.position = self.subscribers["Position"].receive() or self.position
 
                 try:
-                    if self.nav_mode == LANE_DETECTOR:
-                        self._handle_lane_keeping_message()
-
                     self._handle_traffic_signs_message()
+
                     if self.nav_mode == NODE_NAVIGATION or self.nav_mode == LANE_DETECTOR:
                         self._handle_node_index_message()
-                    if self.nav_mode == PARKING:
-                        self._handle_point_to_follow_mode_message()
+                        if self.nav_mode == LANE_DETECTOR:
+                            self._handle_lane_keeping_message()
+                    elif self.nav_mode == PARKING:
+                        self._finish_parking_maneuver()
                 except Exception as e:
                     self.logging.error(f'{{"threadDecisionMaker": {str(e)}}}')
 
@@ -164,8 +165,9 @@ class threadDecisionMaker(ThreadWithStop):
         if traffic_signs_message is not None:
             detected_object_dict = traffic_signs_message["objectDict"]
 
-            self.logging.info(
-                f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict} }}}}')
+            if self.debugging:
+                self.logging.info(
+                    f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict} }}}}')
 
             if "stop-sign" in detected_object_dict:
                 self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
@@ -229,9 +231,7 @@ class threadDecisionMaker(ThreadWithStop):
             if "parking-sign" in detected_object_dict and detected_object_dict["parking-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.parking_timer > 60:
                 self.signal_sender.send(str({"WarningName": "parking", "WarningID": 10}))
 
-                self.nav_mode = PARKING
-                self.raw_config_sender.send(f"#pointToFollow:{PTF_MODE_3};{PARKING_INIT_X};{PARKING_INIT_Y};;\r\n")
-                self._send_speed(300)
+                self._start_parking_maneuver()
 
                 if self.debugging:
                     self.logging.info(
@@ -292,34 +292,23 @@ class threadDecisionMaker(ThreadWithStop):
                             int(f"#setPosition:{int(self.gps.get_node(current_node_index).x)};0;;\r\n"))
                     elif self.nav_mode == LANE_DETECTOR:
                         self.nav_mode = NODE_NAVIGATION
-                        self.logging.info("Nodos")
+                        if self.debugging:
+                            self.logging.info("nav_mode: NODE_NAVIGATION")
+
                         self.gps.cut_path_from(current_node_index + 1)
                         self.gps.send_to_nucleo()
-                        self.raw_config_sender.send("#pointToFollow:2;0;0;;\r\n")
+                        self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
                 elif self.gps.is_last(current_node_index):
-                    print("REINICIO")
-                    self.gps = GPS(
-                        path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/More_test_track_w_roundabout.graphml",
-                        mandatory_nodes=["1", "35", "47"],
-                        raw_config_sender=self.raw_config_sender,
-                    )
-                    self.gps.send_to_nucleo()
-                    self.raw_config_sender.send("#pointToFollow:2;0;0;;\r\n")
+                    self._start_parking_maneuver()
 
-    def _handle_point_to_follow_mode_message(self):
+    def _finish_parking_maneuver(self):
         self.point_to_follow_mode = self.subscribers["PointToFollowMode"].receive()  # Wait for the point to be set
-        if self.point_to_follow_mode is not None:
-            self.logging.info(f'{{"threadDecisionMaker": {{ "PointToFollowMode": {self.point_to_follow_mode} }}}}')
         if self.point_to_follow_mode is not None and self.point_to_follow_mode == PTF_MODE_0:
             self.raw_config_sender.send(
                 f"#setParkingMode:{PARKING_MODE_IN};{PARKING_SIDE};{PARKING_SPEED};;\r\n"
             )
-            time.sleep(10)  # TODO: Receive acknowledgment from Nucleo
-            self.raw_config_sender.send(
-                f"#setParkingMode:{PARKING_MODE_OUT};{PARKING_SIDE};{PARKING_SPEED};;\r\n"
-            )
-            time.sleep(10)  # TODO: Receive acknowledgment from Nucleo
-            self.nav_mode = LANE_DETECTOR
+            self.driving_mode = "stop"
+            self.klem = "0"
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
         """
@@ -339,6 +328,14 @@ class threadDecisionMaker(ThreadWithStop):
             steering = 230
 
         return steering
+
+    def _start_parking_maneuver(self):
+        if self.debugging:
+            self.logging.info("nav_mode: PARKING")
+
+        self.nav_mode = PARKING
+        self.raw_config_sender.send(f"#pointToFollow:{PTF_MODE_3};{PARKING_INIT_X};{PARKING_INIT_Y};;\r\n")
+        self._send_speed(300)
 
     def _send_speed(self, new_speed):
         self.speed_sender.send(str(new_speed))
