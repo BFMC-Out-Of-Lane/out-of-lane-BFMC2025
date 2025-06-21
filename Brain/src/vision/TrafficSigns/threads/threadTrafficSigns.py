@@ -42,8 +42,7 @@ class threadTrafficSigns(ThreadWithStop):
         #                                               # stream_buffer= True,
         #                                               # max_det=1,
         #                                               )
-        self.distanceCalculator = ObjectDetectionProcessor(yolo_path="src/vision/TrafficSigns/models/yolo11n_traffic_objects_V15.engine"
-                                                           )
+        self.distanceCalculator = ObjectDetectionProcessor(yolo_path="src/vision/TrafficSigns/models/yolo11n_traffic_objects_V15.pt")
 
         self.distanceToObjectMessage = {}
         # Send the detected signs to the decision maker

@@ -77,7 +77,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.gps = GPS(
             path2graphml=PATH_TO_GRAPHML,
-            mandatory_nodes=["243", "257", "317", "343", "255", "240"],
+            mandatory_nodes=["263", "257", "317", "343", "255", "225"],
             raw_config_sender=self.raw_config_sender,
         )
 
@@ -273,6 +273,7 @@ class threadDecisionMaker(ThreadWithStop):
             self._send_speed(300)
 
     def _handle_node_index_message(self):
+        self.logging.info(f'threadDecisionMaker: nav_mode: {self.nav_mode}')
         if self.position is not None and self.lane_keeping is not None:
             current_node_index = self.gps.get_current_node(self.position)
             deviation = self.lane_keeping["deviation"]
@@ -291,17 +292,25 @@ class threadDecisionMaker(ThreadWithStop):
                         self.nav_mode = LANE_DETECTOR
                         self.raw_config_sender.send(
                             int(f"#setPosition:{int(self.gps.get_node(current_node_index).x)};0;;\r\n"))
-                elif self.nav_mode == LANE_DETECTOR:
-                    self.nav_mode = NODE_NAVIGATION
-                    if self.debugging:
-                        self.logging.info("nav_mode: NODE_NAVIGATION")
+                    elif self.nav_mode == LANE_DETECTOR:
+                        self.nav_mode = NODE_NAVIGATION
+                        if self.debugging:
+                            self.logging.info("nav_mode: NODE_NAVIGATION")
 
-                    self.gps.cut_path_from(current_node_index + 1)
-                    self.gps.send_to_nucleo()
-                    self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
+                        self.gps.cut_path_from(current_node_index + 1)
+                        self.gps.send_to_nucleo()
+                        self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
+            elif self.nav_mode == LANE_DETECTOR:
+                self.nav_mode = NODE_NAVIGATION
+                if self.debugging:
+                    self.logging.info("nav_mode: NODE_NAVIGATION")
 
-                # elif self.gps.is_last(current_node_index):
-                #     self._start_parking_maneuver()
+                self.gps.cut_path_from(current_node_index + 1)
+                self.gps.send_to_nucleo()
+                self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
+
+            # elif self.gps.is_last(current_node_index):
+            #     self._start_parking_maneuver()
 
     def _finish_parking_maneuver(self):
         self.point_to_follow_mode = self.subscribers["PointToFollowMode"].receive()  # Wait for the point to be set
