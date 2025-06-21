@@ -13,12 +13,12 @@ from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
-PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/More_test_track_w_roundabout.graphml"
+PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/competition_track_graph.graphml"
 
 # Initial position
-INIT_X = 3500  # TODO: Change this to the correct value
-INIT_Y = 740
-INIT_ANGLE = 180
+INIT_X = 11770  # TODO: Change this to the correct value
+INIT_Y = 205
+INIT_ANGLE = 0
 
 
 # Traffic sign constants
@@ -77,7 +77,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.gps = GPS(
             path2graphml=PATH_TO_GRAPHML,
-            mandatory_nodes=["1", "35", "47"],
+            mandatory_nodes=["243", "257", "317", "343", "255", "240"],
             raw_config_sender=self.raw_config_sender,
         )
 

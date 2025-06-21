@@ -28,6 +28,7 @@ class threadCamera(ThreadWithStop):
         self.debugger = debugger
         self.frame_rate = 5
         self.recording = False
+        self.depth_scale = 0.001  # Default depth scale
 
         self.video_writer = None
         self.lane_detector = LaneDetector(min_offset=60, perc_of_sight_len=0.3)
@@ -90,6 +91,19 @@ class threadCamera(ThreadWithStop):
             )
 
         threading.Timer(1, self.Configs).start()
+
+    def depth_config(self):
+        try:
+            depth_sensor = self.camera.get_device().first_depth_sensor()
+            self.depth_scale = depth_sensor.get_depth_scale()
+            print(
+                f"RealSense Depth Scale Initialized: {self.depth_scale:.4f} meters per depth unit")
+        except Exception as e:
+            # Handle cases where the depth sensor might not be available or fails to initialize
+            print(f"Error getting depth sensor or scale: {e}")
+            self.depth_scale = 0.001  # Default to a common scale if real scale cannot be retrieved
+
+
 
     def run(self):
         """Captura imágenes, procesa y envía datos al gateway de procesos."""
@@ -182,7 +196,7 @@ class threadCamera(ThreadWithStop):
         config = rs.config()
         # Solo un stream de color a 1920×1080 @30 fps
         config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 15)
-        # config.enable_stream(rs.stream.depth,  640,  480, rs.format.z16,  30)
+        config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 
         # try:
         #     # Resuelvo la configuración contra el pipeline
