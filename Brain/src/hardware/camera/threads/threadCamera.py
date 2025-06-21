@@ -4,7 +4,7 @@ import time
 
 import cv2
 import numpy as np
-import pyrealsense2 as rs
+#import pyrealsense2 as rs
 from src.hardware.camera.lane_detection.lane_detector import LaneDetector
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (Brightness, Contrast, LaneKeeping,

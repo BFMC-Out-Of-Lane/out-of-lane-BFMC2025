@@ -1,12 +1,27 @@
-
 from collections import defaultdict
 
 import cv2
 
 from src.utils.visionManager.modelMOD import YOLO
-from ultralytics.utils import ASSETS_URL, DEFAULT_CFG_DICT, DEFAULT_SOL_DICT, LOGGER
+from ultralytics.utils import ASSETS_URL, DEFAULT_CFG_DICT, LOGGER
 from ultralytics.utils.checks import check_imshow, check_requirements
 
+# Default solutions configuration dictionary
+DEFAULT_SOL_DICT = {
+    "model": None,
+    "region": None,
+    "line_width": 2,
+    "classes": None,
+    "verbose": False,
+    "iou": 0.5,
+    "conf": 0.25,
+    "device": "cpu",
+    "max_det": 1000,
+    "half": False,
+    "tracker": "bytetrack.yaml",
+    "source": None,
+    "show": False
+}
 
 class BaseSolution:
     """

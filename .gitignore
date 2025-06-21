@@ -4,6 +4,7 @@
 devenv.lock
 .idea/
 venv/
+.venv/
 
 # YOLO
 # *.pt

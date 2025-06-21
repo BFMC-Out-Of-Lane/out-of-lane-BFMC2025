@@ -33,11 +33,12 @@ from twisted.internet import protocol
 
 # The server itself. Creates a new Protocol for each new connection and has the info for all of them.
 class tcpClient(protocol.ClientFactory):
-    def __init__(self, connectionBrokenCllbck, locsysID, locsysFrequency, queue):
+    def __init__(self, connectionBrokenCllbck, locsysID, locsysFrequency, queue, connectionEstablishedCllbck=None):
         self.connectiondata = None
         self.connection = None
         self.retry_delay = 1
         self.connectionBrokenCllbck = connectionBrokenCllbck
+        self.connectionEstablishedCllbck = connectionEstablishedCllbck
         self.locsysID = locsysID
         self.locsysFrequency = locsysFrequency
         self.queue = queue
@@ -69,8 +70,14 @@ class tcpClient(protocol.ClientFactory):
         return conn
 
     def send_data_to_server(self, message):
-        self.connection.send_data(message)
-
+        if self.connection is not None:
+            self.connection.send_data(message)
+        else:
+            print("Warning: Cannot send data - no active connection to server")
+    
+    def stopListening(self):
+        """Stop listening for connections. This is a no-op for client factories."""
+        pass
 
 # One class is generated for each new connection
 class SingleConnection(protocol.Protocol):
@@ -80,6 +87,10 @@ class SingleConnection(protocol.Protocol):
         self.factory.connection = self
         self.subscribeToLocaitonData(self.factory.locsysID, self.factory.locsysFrequency)
         print("Connection with server established : ", self.factory.connectiondata)
+        
+        # Call the connection established callback if provided
+        if self.factory.connectionEstablishedCllbck:
+            self.factory.connectionEstablishedCllbck()
 
     def dataReceived(self, data):
         dat = data.decode()
@@ -110,6 +121,7 @@ class SingleConnection(protocol.Protocol):
         self.transport.write(msg.encode())
     
     def subscribeToLocaitonData(self, id, frequency):
+        print("Subscribing to location data for id: ", id, " with frequency: ", frequency)
         # Sends the id you wish to subscribe to and the frequency you want to receive data. Frequency must be between 0.1 and 5. 
         msg = {
             "reqORinfo": "info",

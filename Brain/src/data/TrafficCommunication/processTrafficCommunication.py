@@ -70,7 +70,10 @@ class processTrafficCommunication(WorkerProcess):
     # ===================================== RUN ==========================================
     def run(self):
         """Apply the initializing methods and start the threads."""
-
+        self.shared_memory.insert("devicePos", [1.2, 2.3]) # send a position to the server
+        self.shared_memory.insert("deviceRot", [3.4]) # send a rotation to the server
+        self.shared_memory.insert("deviceSpeed", [4.5]) # send a speed to the server
+        self.shared_memory.insert("historyData", [5.6, 6.7, 8]) # send a history data point to the server
         super(processTrafficCommunication, self).run()
 
     # ===================================== INIT TH ======================================
@@ -100,7 +103,7 @@ if __name__ == "__main__":
         "Config": Queue(),
     }
     # filename = "useful/publickey_server.pem"
-    filename = "useful/publickey_server_test.pem"
+    filename = "src/data/TrafficCommunication/useful/publickey_server_test.pem"
     deviceID = 3
     frequency = 0.4
     traffic_communication = threadTrafficCommunication(
@@ -109,15 +112,15 @@ if __name__ == "__main__":
     traffic_communication.start()    
 
     start_time = time.time()
-    duration = 10  # specify the duration in seconds
+    duration = 10000  # specify the duration in seconds
     
     shared_memory.insert("devicePos", [1.2, 2.3]) # send a position to the server
     shared_memory.insert("deviceRot", [3.4]) # send a rotation to the server
     shared_memory.insert("deviceSpeed", [4.5]) # send a speed to the server
     shared_memory.insert("historyData", [5.6, 6.7, 8]) # send a history data point to the server
-
     while time.time() - start_time < duration:
         try:
             print(queueList["General"].get(timeout=1))
         except:pass
+
     traffic_communication.stop()

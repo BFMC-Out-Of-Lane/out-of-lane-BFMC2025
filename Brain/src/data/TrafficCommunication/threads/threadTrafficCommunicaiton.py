@@ -50,7 +50,7 @@ class threadTrafficCommunication(ThreadWithStop):
         self.listenPort = 9000
         self.queue = queueslist["General"]
 
-        self.tcp_factory = tcpClient(self.serverLost, deviceID, frequency, self.queue) # Handles the connection with the server
+        self.tcp_factory = tcpClient(self.serverLost, deviceID, frequency, self.queue, self.connectionEstablished) # Handles the connection with the server
 
         self.udp_factory = udpListener(decrypt_key, self.serverFound) #Listens for server broadcast and validates it
 
@@ -72,9 +72,12 @@ class threadTrafficCommunication(ThreadWithStop):
         
         self.reactor.connectTCP(address, port, self.tcp_factory)
         self.udp_factory.stopListening()
+        # Don't start the periodic task here - wait for connection to be established
+    
+    def connectionEstablished(self):
+        """Called when the TCP connection is fully established"""
+        print("TCP connection established, starting periodic task")
         self.period_task.start()
-
-
 
     # ======================================= RUN ==========================================
     def run(self):

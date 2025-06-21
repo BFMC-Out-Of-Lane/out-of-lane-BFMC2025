@@ -4,7 +4,6 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
         {
             "name": "Python: Debug main.py",
             "type": "debugpy",
@@ -12,7 +11,24 @@
             "program": "${workspaceFolder}/Brain/main.py",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "cwd": "${workspaceFolder}/Brain"
+            "cwd": "${workspaceFolder}/Brain",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/Brain"
+            }
+        },
+        {
+            "name": "Python: Debug processTrafficCommunication.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Brain/src/data/TrafficCommunication/processTrafficCommunication.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}/Brain",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/Brain"
+            }
         }
     ]
 }
