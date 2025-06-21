@@ -69,12 +69,12 @@ export class MapComponent {
   private semaphoreYOffset: number = 1.45;
 
   // For the competition, the map size is 20.67 x 13.76 meters
-  // private readonly MAP_WIDTH_IN_MM = 20.67;
-  // private readonly MAP_HEIGHT_IN_MM = 13.76;
+  private readonly MAP_WIDTH_IN_MM = 20670;
+  private readonly MAP_HEIGHT_IN_MM = 13760;
 
   // For the demo, the map size is 6000 x 6000 mm
-  private readonly MAP_WIDTH_IN_MM = 6000;
-  private readonly MAP_HEIGHT_IN_MM = 6000;
+  // private readonly MAP_WIDTH_IN_MM = 6000;
+  // private readonly MAP_HEIGHT_IN_MM = 6000;
 
   public semaphores: Map<number, Semaphore> = new Map<number, Semaphore>();
 
