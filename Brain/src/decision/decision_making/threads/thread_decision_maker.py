@@ -8,7 +8,7 @@ from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
                                             PointToFollowMode, Position,
                                             RawConfig, SetNodeList, SpeedMotor,
                                             SteerMotor, WarningSignal,
-                                            trafficSigns)
+                                            TrafficSignPosition)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
@@ -126,7 +126,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.subscribers["CurrentSpeed"] = messageHandlerSubscriber(self.queuesList, CurrentSpeed, "lastonly", True)
         self.subscribers["LaneKeeping"] = messageHandlerSubscriber(self.queuesList, LaneKeeping, "lastonly", True)
-        self.subscribers["trafficSigns"] = messageHandlerSubscriber(self.queuesList, trafficSigns, "lastonly", True)
+        self.subscribers["trafficSigns"] = messageHandlerSubscriber(self.queuesList, TrafficSignPosition, "lastonly", True)
         self.subscribers["DrivingMode"] = messageHandlerSubscriber(self.queuesList, DrivingMode, "lastonly", True)
         self.subscribers["Position"] = messageHandlerSubscriber(self.queuesList, Position, "lastonly", True)
         self.subscribers["ImuData"] = messageHandlerSubscriber(self.queuesList, ImuData, "lastonly", True)

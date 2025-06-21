@@ -9,7 +9,7 @@ from src.hardware.camera.lane_detection.lane_detector import LaneDetector
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (Brightness, Contrast, LaneKeeping,
                                             Record, Recording, mainCamera,
-                                            serialCamera, trafficSigns, secondaryCamera)
+                                            serialCamera, TrafficSignPosition, secondaryCamera)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 
@@ -49,7 +49,7 @@ class threadCamera(ThreadWithStop):
         self.recordSubscriber = messageHandlerSubscriber(self.queuesList, Record, "lastOnly", True)
         self.brightnessSubscriber = messageHandlerSubscriber(self.queuesList, Brightness, "lastOnly", True)
         self.contrastSubscriber = messageHandlerSubscriber(self.queuesList, Contrast, "lastOnly", True)
-        self.trafficSubscriber = messageHandlerSubscriber(self.queuesList, trafficSigns, "lastonly", True)
+        self.trafficSignPositionSubscriber = messageHandlerSubscriber(self.queuesList, TrafficSignPosition, "lastonly", True)
 
     def Queue_Sending(self):
         """Envía periódicamente el estado de grabación."""
@@ -92,18 +92,48 @@ class threadCamera(ThreadWithStop):
 
         threading.Timer(1, self.Configs).start()
 
-    def depth_config(self):
-        try:
-            depth_sensor = self.camera.get_device().first_depth_sensor()
-            self.depth_scale = depth_sensor.get_depth_scale()
-            print(
-                f"RealSense Depth Scale Initialized: {self.depth_scale:.4f} meters per depth unit")
-        except Exception as e:
-            # Handle cases where the depth sensor might not be available or fails to initialize
-            print(f"Error getting depth sensor or scale: {e}")
-            self.depth_scale = 0.001  # Default to a common scale if real scale cannot be retrieved
+    def distance_depth(self, point_x, point_y, depth_frame):
+        
+        # If no depth frame is available, continue to the next iteration.
+        if not depth_frame:        
+            return
 
+            # Convert the depth frame to a NumPy array for easier processing.
+            # The data is typically in raw units, so we multiply by the depth_scale to get meters.
+        depth_image_data = np.asanyarray(depth_frame.get_data()) * self.depth_scale
 
+            # Initialize variables for comprehensive depth statistics
+        valid_depth_pixels = 0
+        total_distance = 0.0
+
+        # Define the points around the center point for which we want to measure distance
+        # This is a list of points around the center point (point_x, point_y) to measure distance.
+        points = [(point_x, point_y),
+                (point_x+1, point_y),
+                (point_x, point_y+1),
+                (point_x+1, point_y+1),
+                (point_x-1, point_y),
+                (point_x, point_y-1),
+                (point_x-1, point_y-1),
+                (point_x+1, point_y-1),
+                (point_x-1, point_y+1),
+                ]  # List of 9 points around the center point
+        for (x, y) in points:
+        # Verificar si el punto está dentro de los límites de la imagen
+            if 0 <= x < 640 and 0 <= y < 480:
+                # Obtener la distancia del píxel actual en metros
+                dist = depth_image_data[y, x]
+                # print(f"Distancia medida en píxel ({x}, {y}): {dist:.2f} metros")
+
+                # Verificar si la distancia es válida (mayor que 0)
+                if dist > 0.001:  # Usar un umbral pequeño para filtrar ruido
+                    valid_depth_pixels += 1
+                    total_distance += dist
+
+            # Calculate average distance if there are valid pixels.
+        average_distance = total_distance / valid_depth_pixels if valid_depth_pixels > 0 else 0.0
+
+        return average_distance  # Return the average distance in meters for the center point
 
     def run(self):
         """Captura imágenes, procesa y envía datos al gateway de procesos."""
@@ -134,6 +164,7 @@ class threadCamera(ThreadWithStop):
             if send:
                 mainRequest = self.camera_capture("main")  # Main camera capture
                 serialRequest = self.camera_capture("lores")  # Low-resolution camera capture
+                depthFrame = self.camera_capture_depth("lores")  # Depth frame capture
                 
                 if self.recording == True:
                     self.video_writer.write(mainRequest)
@@ -149,13 +180,40 @@ class threadCamera(ThreadWithStop):
                 mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8")
                 self.mainCameraSender.send(mainEncodedImageData)
 
-                traffic_sign = {"objectDict": {}}
-                traffic_sign = self.trafficSubscriber.receive()
-                if traffic_sign is None:
-                    traffic_sign = {"objectDict": {}}
-                processed_image, cross_tracking_error, deviation, binary_warped = self.lane_detector.process_frame(serialRequest, traffic_sign)
+                traffic_sign_pos = self.trafficSignPositionSubscriber.receive()
+                if traffic_sign_pos is not None:
+                    for obj_data in traffic_sign_pos.values():  # Iterar sobre los valores del diccionario
+                    # Verificar si obj_data es una lista y tiene al menos 4 elementos
+                        print(f"Processing object data: {obj_data}")
+                        if isinstance(obj_data, list) and len(obj_data) >= 3:
+                            class_name = obj_data[0]  # Nombre de la clase del objeto
+                            # distance_cm = obj_data[1]  # Distancia en centímetros
+                            center_x = int(obj_data[1])  # Coordenada X del centro del objeto
+                            center_y = int(obj_data[2])  # Coordenada Y del centro del objeto
+                            print(f"Objeto detectado: {class_name}, Centro: ({center_x}, {center_y})")
+
+                            # Ensure the calculated center coordinates are within the original depth frame's dimensions (640x480)
+                            if 0 <= center_x < 640 and 0 <= center_y < 480:
+                                # Get the raw distance value from the depth frame at the object's center
+                                distance_meters = self.distance_depth (center_x, center_y, depthFrame)
+
+                                # Agrega la clase detectada y la distancia al diccionario
+                                traffic_sign_dist[class_name] = distance_meters
+                                print(f"Objeto detectado: {class_name}, Distancia: {distance_meters:.2f} cm, Centro: ({center_x}, {center_y})")
+
+                            else:
+                                traffic_sign_dist[class_name] = None  # Si las coordenadas están fuera de los límites, asigna None
+
+                else:
+                    traffic_sign_dist = None
+
+                if traffic_sign_dist is None:
+                    traffic_sign_dist = {"objectDict": {}}
+                processed_image, cross_tracking_error, deviation, binary_warped = self.lane_detector.process_frame(serialRequest, traffic_sign_dist)
                 self.lane_keeping_sender.send({"cross_tracking_error": cross_tracking_error, "deviation": deviation})
                 
+
+
                 # Codificar la imagen procesada para el envío
                 _, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)
                 serial_encoded_processed_image_data = base64.b64encode(serial_encoded_processed_image).decode("utf-8")
@@ -174,6 +232,21 @@ class threadCamera(ThreadWithStop):
         frames = self.camera.wait_for_frames()
         color_frame = frames.get_color_frame()
         frame = np.asanyarray(color_frame.get_data())
+
+        # Convertir el espacio de color de RGB a BGR
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+        if stream_name == "lores":
+            frame = cv2.resize(frame, (304, 171), interpolation=cv2.INTER_LINEAR)
+
+        return frame
+
+    def camera_capture_depth(self, stream_name):
+        """Captures images for 'main' and 'lores'."""
+
+        frames = self.camera.wait_for_frames()
+        depth_frame = frames.get_depth_frame()
+        frame = np.asanyarray(depth_frame.get_data())
 
         # Convertir el espacio de color de RGB a BGR
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)

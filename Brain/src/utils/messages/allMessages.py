@@ -65,6 +65,7 @@ class LaneKeeping(Enum):
     msgID = 5
     msgType = "dict"
 
+
 class secondaryCamera(Enum):
     """Message for secondary camera."""
     Queue = "General"
@@ -275,11 +276,13 @@ class Position(Enum):
     msgID = 9
     msgType = "dict"
 
+
 class NodeIndex(Enum):
     Queue = "General"
     Owner = "threadRead"
     msgID = 10
     msgType = "int"
+
 
 class PointToFollowMode(Enum):
     Queue = "General"
@@ -290,10 +293,17 @@ class PointToFollowMode(Enum):
 ################################# processTrafficSigns ##################################
 
 
-class trafficSigns(Enum):
+class TrafficSignPosition(Enum):
     Queue = "General"
     Owner = "threadTrafficSigns"
     msgID = 1
+    msgType = "dict"
+
+
+class TrafficSignDetection(Enum):
+    Queue = "General"
+    Owner = "threadTrafficSigns"
+    msgID = 2
     msgType = "dict"
 
 ################################# From Locsys ##################################
@@ -345,5 +355,3 @@ class SetNodeList(Enum):
     Owner = "threadDecisionMaker"
     msgID = 3
     msgType = "dict"
-
-
