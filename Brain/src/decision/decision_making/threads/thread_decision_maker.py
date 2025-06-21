@@ -228,14 +228,14 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            if "parking-sign" in detected_object_dict and detected_object_dict["parking-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.parking_timer > 60:
-                self.signal_sender.send(str({"WarningName": "parking", "WarningID": 10}))
+            # if "parking-sign" in detected_object_dict and detected_object_dict["parking-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.parking_timer > 60:
+            #     self.signal_sender.send(str({"WarningName": "parking", "WarningID": 10}))
 
-                self._start_parking_maneuver()
+            #     self._start_parking_maneuver()
 
-                if self.debugging:
-                    self.logging.info(
-                        f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
+            #     if self.debugging:
+            #         self.logging.info(
+            #             f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
             if "priority-sign" in detected_object_dict and detected_object_dict["priority-sign"] > MIN_DISTANCE_TO_SIGN:
                 self.signal_sender.send({"WarningName": "priority", "WarningID": 13})
@@ -298,8 +298,8 @@ class threadDecisionMaker(ThreadWithStop):
                         self.gps.cut_path_from(current_node_index + 1)
                         self.gps.send_to_nucleo()
                         self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
-                elif self.gps.is_last(current_node_index):
-                    self._start_parking_maneuver()
+                # elif self.gps.is_last(current_node_index):
+                #     self._start_parking_maneuver()
 
     def _finish_parking_maneuver(self):
         self.point_to_follow_mode = self.subscribers["PointToFollowMode"].receive()  # Wait for the point to be set
