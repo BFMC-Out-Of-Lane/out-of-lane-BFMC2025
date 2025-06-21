@@ -7,8 +7,8 @@ from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
                                             Klem, LaneKeeping, NodeIndex,
                                             PointToFollowMode, Position,
                                             RawConfig, SetNodeList, SpeedMotor,
-                                            SteerMotor, WarningSignal,
-                                            TrafficSignPosition)
+                                            SteerMotor, TrafficSignPosition,
+                                            WarningSignal)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
@@ -16,8 +16,8 @@ from src.utils.messages.messageHandlerSubscriber import \
 PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/competition_track_graph.graphml"
 
 # Initial position
-INIT_X = 14610  # TODO: Change this to the correct value
-INIT_Y = 930
+INIT_X = 11830  # TODO: Change this to the correct value
+INIT_Y = 2050
 INIT_ANGLE = 0
 
 
@@ -60,7 +60,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.imu_data = None
         self.klem = "0"
         self.lane_keeping = None
-        self.nav_mode = NODE_NAVIGATION
+        self.nav_mode = LANE_DETECTOR
         self.point_to_follow_mode = None
         self.position = None
 
@@ -109,8 +109,6 @@ class threadDecisionMaker(ThreadWithStop):
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive() or self.lane_keeping
                 self.position = self.subscribers["Position"].receive() or self.position
 
-                self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
-
                 try:
                     self._handle_traffic_signs_message()
 
@@ -128,7 +126,8 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.subscribers["CurrentSpeed"] = messageHandlerSubscriber(self.queuesList, CurrentSpeed, "lastonly", True)
         self.subscribers["LaneKeeping"] = messageHandlerSubscriber(self.queuesList, LaneKeeping, "lastonly", True)
-        self.subscribers["trafficSigns"] = messageHandlerSubscriber(self.queuesList, TrafficSignPosition, "lastonly", True)
+        self.subscribers["trafficSigns"] = messageHandlerSubscriber(
+            self.queuesList, TrafficSignPosition, "lastonly", True)
         self.subscribers["DrivingMode"] = messageHandlerSubscriber(self.queuesList, DrivingMode, "lastonly", True)
         self.subscribers["Position"] = messageHandlerSubscriber(self.queuesList, Position, "lastonly", True)
         self.subscribers["ImuData"] = messageHandlerSubscriber(self.queuesList, ImuData, "lastonly", True)
@@ -282,7 +281,7 @@ class threadDecisionMaker(ThreadWithStop):
             if deviation is not None and cross_tracking_error is not None and time.time() - self.set_position_timer > 0.1:
                 self.set_position_timer = time.time()
 
-                if not self.gps.is_last(current_node_index, 2) and abs(cross_tracking_error) < 10:
+                if not self.gps.is_last(current_node_index, 2) and abs(cross_tracking_error) < 5:
                     angle = self.gps.calc_angle_between_previous_n_next_nodes(current_node_index)
                     if angle == 0 or angle == 180:
                         self.nav_mode = LANE_DETECTOR
@@ -292,14 +291,15 @@ class threadDecisionMaker(ThreadWithStop):
                         self.nav_mode = LANE_DETECTOR
                         self.raw_config_sender.send(
                             int(f"#setPosition:{int(self.gps.get_node(current_node_index).x)};0;;\r\n"))
-                    elif self.nav_mode == LANE_DETECTOR:
-                        self.nav_mode = NODE_NAVIGATION
-                        if self.debugging:
-                            self.logging.info("nav_mode: NODE_NAVIGATION")
+                elif self.nav_mode == LANE_DETECTOR:
+                    self.nav_mode = NODE_NAVIGATION
+                    if self.debugging:
+                        self.logging.info("nav_mode: NODE_NAVIGATION")
 
-                        self.gps.cut_path_from(current_node_index + 1)
-                        self.gps.send_to_nucleo()
-                        self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
+                    self.gps.cut_path_from(current_node_index + 1)
+                    self.gps.send_to_nucleo()
+                    self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
+
                 # elif self.gps.is_last(current_node_index):
                 #     self._start_parking_maneuver()
 
