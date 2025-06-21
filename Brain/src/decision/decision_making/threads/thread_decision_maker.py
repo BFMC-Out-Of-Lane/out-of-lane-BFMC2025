@@ -16,8 +16,8 @@ from src.utils.messages.messageHandlerSubscriber import \
 PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/competition_track_graph.graphml"
 
 # Initial position
-INIT_X = 11770  # TODO: Change this to the correct value
-INIT_Y = 205
+INIT_X = 14610  # TODO: Change this to the correct value
+INIT_Y = 930
 INIT_ANGLE = 0
 
 
@@ -77,7 +77,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.gps = GPS(
             path2graphml=PATH_TO_GRAPHML,
-            mandatory_nodes=["243", "257", "317", "343", "255", "240"],
+            mandatory_nodes=["257", "317", "343", "255", "240"],
             raw_config_sender=self.raw_config_sender,
         )
 
@@ -109,13 +109,15 @@ class threadDecisionMaker(ThreadWithStop):
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive() or self.lane_keeping
                 self.position = self.subscribers["Position"].receive() or self.position
 
+                self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
+
                 try:
                     self._handle_traffic_signs_message()
 
                     if self.nav_mode == NODE_NAVIGATION or self.nav_mode == LANE_DETECTOR:
                         self._handle_node_index_message()
-                        if self.nav_mode == LANE_DETECTOR:
-                            self._handle_lane_keeping_message()
+                        # if self.nav_mode == LANE_DETECTOR:
+                        #     self._handle_lane_keeping_message()
                     elif self.nav_mode == PARKING:
                         self._finish_parking_maneuver()
                 except Exception as e:
