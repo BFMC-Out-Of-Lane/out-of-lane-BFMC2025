@@ -77,7 +77,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.gps = GPS(
             path2graphml=PATH_TO_GRAPHML,
-            mandatory_nodes=["257", "317", "343", "255", "240"],
+            mandatory_nodes=["243", "257", "317", "343", "255", "240"],
             raw_config_sender=self.raw_config_sender,
         )
 
@@ -116,8 +116,8 @@ class threadDecisionMaker(ThreadWithStop):
 
                     if self.nav_mode == NODE_NAVIGATION or self.nav_mode == LANE_DETECTOR:
                         self._handle_node_index_message()
-                        # if self.nav_mode == LANE_DETECTOR:
-                        #     self._handle_lane_keeping_message()
+                        if self.nav_mode == LANE_DETECTOR:
+                            self._handle_lane_keeping_message()
                     elif self.nav_mode == PARKING:
                         self._finish_parking_maneuver()
                 except Exception as e:
