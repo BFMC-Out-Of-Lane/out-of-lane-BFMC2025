@@ -14,6 +14,7 @@ from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
 PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/competition_track_graph.graphml"
+IS_LANE_KEEPING_ON = False  # If it is OFF only node following will work
 
 # Initial position
 INIT_X = 11830  # TODO: Change this to the correct value
@@ -110,14 +111,14 @@ class threadDecisionMaker(ThreadWithStop):
                 self.position = self.subscribers["Position"].receive() or self.position
 
                 try:
-                    self._handle_traffic_signs_message()
-
                     if self.nav_mode == NODE_NAVIGATION or self.nav_mode == LANE_DETECTOR:
                         self._handle_node_index_message()
                         if self.nav_mode == LANE_DETECTOR:
                             self._handle_lane_keeping_message()
                     elif self.nav_mode == PARKING:
                         self._finish_parking_maneuver()
+
+                    self._handle_traffic_signs_message()
                 except Exception as e:
                     self.logging.error(f'{{"threadDecisionMaker": {str(e)}}}')
 
@@ -273,13 +274,12 @@ class threadDecisionMaker(ThreadWithStop):
             self._send_speed(300)
 
     def _handle_node_index_message(self):
-        self.logging.info(f'threadDecisionMaker: nav_mode: {self.nav_mode}')
         if self.position is not None and self.lane_keeping is not None:
             current_node_index = self.gps.get_current_node(self.position)
             deviation = self.lane_keeping["deviation"]
             cross_tracking_error = self.lane_keeping["cross_tracking_error"]
 
-            if deviation is not None and cross_tracking_error is not None and time.time() - self.set_position_timer > 0.1:
+            if IS_LANE_KEEPING_ON and deviation is not None and cross_tracking_error is not None and time.time() - self.set_position_timer > 0.1:
                 self.set_position_timer = time.time()
 
                 if not self.gps.is_last(current_node_index, 2) and abs(cross_tracking_error) < 5:
