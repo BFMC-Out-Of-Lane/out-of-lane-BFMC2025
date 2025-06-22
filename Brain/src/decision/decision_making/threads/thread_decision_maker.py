@@ -18,17 +18,17 @@ PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/competition_track_gr
 IS_LANE_KEEPING_ON = True  # If it is OFF only node following will work
 
 # Initial position for competition
-INIT_X = 11830  # TODO: Change this to the correct value
-INIT_Y = 2050
-INIT_ANGLE = 0
-MANDATORY_NODES = ["257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
-                   "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
+# INIT_X = 11830  # TODO: Change this to the correct value
+# INIT_Y = 2050
+# INIT_ANGLE = 0
+# MANDATORY_NODES = ["257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
+                #    "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
 
 # Initial position for testing (COMMENT OUT!)
-# INIT_X = 14710  # TODO: Change this to the correct value
-# INIT_Y = 4010
-# INIT_ANGLE = 180
-# MANDATORY_NODES = ["49", "243"]
+INIT_X = 720  # TODO: Change this to the correct value
+INIT_Y = 10570
+INIT_ANGLE = 90
+MANDATORY_NODES = ["83", "243"]
 
 
 # Traffic sign constants
@@ -123,8 +123,6 @@ class threadDecisionMaker(ThreadWithStop):
                 # Publish the current position and rotation to shared memory
                 self.shared_memory.insert("devicePos", [self.position["x"], self.position["y"]])
                 self.shared_memory.insert("deviceRot", [self.imu_data["yaw"]])
-
-                print(self.shared_memory.get())  # Debugging line to see the shared memory content
 
                 try:
                     if self.nav_mode == NODE_NAVIGATION or self.nav_mode == LANE_DETECTOR:
@@ -292,13 +290,12 @@ class threadDecisionMaker(ThreadWithStop):
     def _handle_node_index_message(self):
         if self.position is not None and self.lane_keeping is not None:
             current_node_index = self.gps.get_current_node(self.position)
-            deviation = self.lane_keeping["deviation"]
             cross_tracking_error = self.lane_keeping["cross_tracking_error"]
 
             if IS_LANE_KEEPING_ON and time.time() - self.set_position_timer > 0.1:
                 self.set_position_timer = time.time()
 
-                if not self.gps.is_last(current_node_index, 2):
+                if not self.gps.is_last(current_node_index, 2) and cross_tracking_error:
                     angle = self.gps.calc_angle_between_previous_n_next_nodes(current_node_index)
                     if angle == 0 or angle == 180:
                         self.nav_mode = LANE_DETECTOR
