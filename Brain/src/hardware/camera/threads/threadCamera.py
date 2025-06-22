@@ -9,7 +9,7 @@ from src.hardware.camera.lane_detection.lane_detector import LaneDetector
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (Brightness, Contrast, LaneKeeping,
                                             Record, Recording, mainCamera,
-                                            serialCamera, TrafficSignPosition, secondaryCamera)
+                                            serialCamera, TrafficSignPosition, secondaryCamera, TrafficSignDetection)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 
@@ -187,29 +187,23 @@ class threadCamera(ThreadWithStop):
                 traffic_sign_dist = {}
                 
                 if traffic_sign_pos is not None and "objectDict" in traffic_sign_pos:
-                    print(traffic_sign_pos["objectDict"])
                     for class_name, center in traffic_sign_pos["objectDict"].items():
-                        # print(f"Objeto detectado: {class_name}, Centro: ({center[0]}, {center[1]})")
-                        print(center)
                         center_x = int(center[0])                        
                         center_y = int(center[1])
                         if 0 <= center_x < 1280 and 0 <= center_y < 720:
                             distance_meters = self.distance_depth(center_x, center_y, depthFrame)
                             distance_centimeters = distance_meters * 100  # Convert to centimeters
                             traffic_sign_dist[class_name] = int(distance_centimeters)
-                            # print(f"Objeto detectado: {class_name}, DistanciaxProfund: {distance_centimeters:.2f} cm, Centro: ({center_x}, {center_y})")
                         else:
                             traffic_sign_dist[class_name] = None
                 else:
                     traffic_sign_dist = None
 
-                if traffic_sign_dist is None:
-                    traffic_sign_dist = {}
-                    
-                self.distanceToObjectMessage = {
+                if traffic_sign_dist is not None:    
+                    self.distanceToObjectMessage = {
                         "objectDict": traffic_sign_dist,
                     }
-                self.signsSender.send(self.distanceToObjectMessage)
+                    self.signsSender.send(self.distanceToObjectMessage)
                 
                 processed_image, cross_tracking_error, deviation, binary_warped = self.lane_detector.process_frame(serialRequest, traffic_sign_dist)
                 self.lane_keeping_sender.send({"cross_tracking_error": cross_tracking_error, "deviation": deviation})

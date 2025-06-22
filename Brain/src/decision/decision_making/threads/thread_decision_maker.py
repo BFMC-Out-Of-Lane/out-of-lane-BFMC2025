@@ -7,7 +7,7 @@ from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
                                             Klem, LaneKeeping, NodeIndex,
                                             PointToFollowMode, Position,
                                             RawConfig, SetNodeList, SpeedMotor,
-                                            SteerMotor, TrafficSignPosition,
+                                            SteerMotor, TrafficSignDetection,
                                             WarningSignal)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
@@ -78,7 +78,7 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.gps = GPS(
             path2graphml=PATH_TO_GRAPHML,
-            mandatory_nodes=["263", "257", "317", "343", "255", "225"],
+            mandatory_nodes=["49", "243", "317", "343", "255", "225"],
             raw_config_sender=self.raw_config_sender,
         )
 
@@ -173,7 +173,7 @@ class threadDecisionMaker(ThreadWithStop):
 
             if "stop-sign" in detected_object_dict:
                 self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
-                if detected_object_dict["stop-sign"] > MIN_DISTANCE_TO_SIGN + 5 and time.time() - self.stop_timer > 12:
+                if detected_object_dict["stop-sign"] < MIN_DISTANCE_TO_SIGN and time.time() - self.stop_timer > 12:
                     self.stop_timer = time.time()
                     timer_stop_signal(TIME_AT_STOP_SIGN)
                     self._send_speed(300)
@@ -183,7 +183,7 @@ class threadDecisionMaker(ThreadWithStop):
                             f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
             if "no-entry-sign" in detected_object_dict:
-                if detected_object_dict["no-entry-sign"] > MIN_DISTANCE_TO_SIGN + 5 and time.time() - self.stop_timer > 12:
+                if detected_object_dict["no-entry-sign"] < MIN_DISTANCE_TO_SIGN and time.time() - self.stop_timer > 12:
                     self.signal_sender.send({"WarningName": "forbidden", "WarningID": 5})
                     self._send_speed(0)
 
@@ -191,7 +191,7 @@ class threadDecisionMaker(ThreadWithStop):
                         self.logging.info(
                             f'{{"threadDecisionMaker": {{ "Object-Distance": "stop-sign"}} }}')
 
-            if ("crosswalk-sign" in detected_object_dict and detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_SIGN) or ("crosswalk-road" in detected_object_dict and detected_object_dict["crosswalk-road"] > MIN_DISTANCE_TO_CROSSWALK):
+            if ("crosswalk-sign" in detected_object_dict and detected_object_dict["crosswalk-sign"] < MIN_DISTANCE_TO_SIGN) or ("crosswalk-road" in detected_object_dict and detected_object_dict["crosswalk-road"] < MIN_DISTANCE_TO_CROSSWALK):
                 self.signal_sender.send(str({"WarningName": "crosswalk", "WarningID": 4}))
                 self.stop_timer = time.time()
                 self._send_speed(100)
@@ -201,11 +201,11 @@ class threadDecisionMaker(ThreadWithStop):
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
             if (
-                ("pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_SIGN) or
-                ("roadblock" in detected_object_dict and detected_object_dict["roadblock"] > MIN_DISTANCE_TO_SIGN) or
-                ("car-white" in detected_object_dict and detected_object_dict["car-white"] > MIN_DISTANCE_TO_SIGN)
+                ("pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] < MIN_DISTANCE_TO_SIGN) or
+                ("roadblock" in detected_object_dict and detected_object_dict["roadblock"] < MIN_DISTANCE_TO_SIGN) or
+                ("car-white" in detected_object_dict and detected_object_dict["car-white"] < MIN_DISTANCE_TO_SIGN)
             ):
-                if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_SIGN:
+                if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] < MIN_DISTANCE_TO_SIGN:
                     self.signal_sender.send(str({"WarningName": "ped_on_crosswalk", "WarningID": 12}))
                 self.stop_timer = time.time()
                 self._send_speed(0)
@@ -214,7 +214,7 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            if "highway-entry-sign" in detected_object_dict and detected_object_dict["highway-entry-sign"] > MIN_DISTANCE_TO_SIGN:
+            if "highway-entry-sign" in detected_object_dict and detected_object_dict["highway-entry-sign"] < MIN_DISTANCE_TO_SIGN:
                 self.signal_sender.send(str({"WarningName": "highway_entrance", "WarningID": 6}))
                 self._send_speed(500)
 
@@ -222,7 +222,7 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            if "highway-end-sign" in detected_object_dict and detected_object_dict["highway-end-sign"] > MIN_DISTANCE_TO_SIGN:
+            if "highway-end-sign" in detected_object_dict and detected_object_dict["highway-end-sign"] < MIN_DISTANCE_TO_SIGN:
                 self.signal_sender.send(str({"WarningName": "highway_exit", "WarningID": 7}))
                 self._send_speed(300)
 
@@ -239,7 +239,7 @@ class threadDecisionMaker(ThreadWithStop):
             #         self.logging.info(
             #             f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            if "priority-sign" in detected_object_dict and detected_object_dict["priority-sign"] > MIN_DISTANCE_TO_SIGN:
+            if "priority-sign" in detected_object_dict and detected_object_dict["priority-sign"] < MIN_DISTANCE_TO_SIGN:
                 self.signal_sender.send({"WarningName": "priority", "WarningID": 13})
                 self._send_speed(300)
 
@@ -281,27 +281,27 @@ class threadDecisionMaker(ThreadWithStop):
 
             if IS_LANE_KEEPING_ON and deviation is not None and cross_tracking_error is not None and time.time() - self.set_position_timer > 0.1:
                 self.set_position_timer = time.time()
-
                 if not self.gps.is_last(current_node_index, 2) and abs(cross_tracking_error) < 5:
                     angle = self.gps.calc_angle_between_previous_n_next_nodes(current_node_index)
                     if angle == 0 or angle == 180:
+                        self.logging.info("lane")
                         self.nav_mode = LANE_DETECTOR
                         self.raw_config_sender.send(
                             f"#setPosition:0;{int(self.gps.get_node(current_node_index).y)};;\r\n")
                     elif angle == 90 or angle == -90:
+                        self.logging.info("lane")
                         self.nav_mode = LANE_DETECTOR
                         self.raw_config_sender.send(
                             int(f"#setPosition:{int(self.gps.get_node(current_node_index).x)};0;;\r\n"))
-            
-            if self.nav_mode == LANE_DETECTOR:
-                self.nav_mode = NODE_NAVIGATION
-                if self.debugging:
-                    self.logging.info("nav_mode: NODE_NAVIGATION")
+                    elif self.nav_mode == LANE_DETECTOR:
+                        self.nav_mode = NODE_NAVIGATION
+                        if self.debugging:
+                            self.logging.info("nav_mode: NODE_NAVIGATION")
 
-                self.gps.cut_path_from(current_node_index + 2)
-                self.gps.send_to_nucleo()
-                self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
-                self._send_speed(300)
+                        self.gps.cut_path_from(current_node_index + 2)
+                        self.gps.send_to_nucleo()
+                        self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
+                        self._send_speed(300)
 
             # elif self.gps.is_last(current_node_index):
             #     self._start_parking_maneuver()
