@@ -111,6 +111,10 @@ class threadDecisionMaker(ThreadWithStop):
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive() or self.lane_keeping
                 self.position = self.subscribers["Position"].receive() or self.position
 
+                # Publish the current position and rotation to shared memory
+                self.shared_memory.insert("devicePos", [self.position["x"], self.position["y"]])
+                self.shared_memory.insert("deviceRot", [self.imu_data["yaw"]])
+
                 try:
                     if self.nav_mode == NODE_NAVIGATION or self.nav_mode == LANE_DETECTOR:
                         self._handle_node_index_message()
