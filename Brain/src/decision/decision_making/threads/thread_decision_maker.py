@@ -261,28 +261,28 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            # if "red-light" in detected_object_dict and time.time() - self.stop_timer > 3:
-                # self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
-            #     self.stop_timer = time.time()
-            #     self._send_speed(0)
-            #
-            #     if self.debugging:
-            #         self.logging.info(
-            #             f'{{"threadDecisionMaker": {{ "Object detected: red-light" }}}}')
+            if "red-light" in detected_object_dict and time.time() - self.stop_timer > 3:
+                self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
+                self.stop_timer = time.time()
+                self._send_speed(0)
 
-            # if ("yellow-light" in detected_object_dict and detected_object_dict["yellow-light"] > MIN_DISTANCE_TO_SIGN):
-                # self.signal_sender.send({"WarningName": "yellow-light", "WarningID": 23})
-            #     self.stop_timer = time.time()
-            #     self._send_speed(100)
-            #     if self.debugging:
-            #         self.logging.info(
-            #             f'{{"threadDecisionMaker": {{ "Object detected:yellow-light" }}}}')
+                if self.debugging:
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected: red-light" }}}}')
 
-            # if "green-light" in detected_object_dict:
-                # self.signal_sender.send({"WarningName": "green-light", "WarningID": 24})
-            #     if self.debugging:
-            #         self.logging.info(
-            #             f'{{"threadDecisionMaker": {{ "Object detected: green-light" }}}}')
+            if "yellow-light" in detected_object_dict and detected_object_dict["yellow-light"] < MIN_DISTANCE_TO_SIGN:
+                self.signal_sender.send({"WarningName": "yellow-light", "WarningID": 23})
+                if self.debugging:
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected:yellow-light" }}}}')
+
+            if "green-light" in detected_object_dict and detected_object_dict["green-light"] < MIN_DISTANCE_TO_SIGN:
+                self.signal_sender.send({"WarningName": "green-light", "WarningID": 24})
+                self._send_speed(300)
+
+                if self.debugging:
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected: green-light" }}}}')
 
         if int(self.current_speed) < 300 and time.time() - self.stop_timer > 3:
             self._send_speed(300)
@@ -299,12 +299,10 @@ class threadDecisionMaker(ThreadWithStop):
                 if not self.gps.is_last(current_node_index, 2) and abs(cross_tracking_error) < 10:
                     angle = self.gps.calc_angle_between_previous_n_next_nodes(current_node_index)
                     if angle == 0 or angle == 180:
-                        self.logging.info("lane")
                         self.nav_mode = LANE_DETECTOR
                         self.raw_config_sender.send(
                             f"#setPosition:0;{int(self.gps.get_node(current_node_index).y)};;\r\n")
                     elif angle == 90 or angle == -90:
-                        self.logging.info("lane")
                         self.nav_mode = LANE_DETECTOR
                         self.raw_config_sender.send(
                             int(f"#setPosition:{int(self.gps.get_node(current_node_index).x)};0;;\r\n"))

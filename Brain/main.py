@@ -84,7 +84,7 @@ SerialHandler = True
 
 # ------ New component flags starts here ------#
 DecisionMaker = True
-TrafficSigns = False
+TrafficSigns = True
 # ------ New component flags ends here ------#
 
 # ===================================== SETUP PROCESSES ==================================
