@@ -21,14 +21,14 @@ IS_LANE_KEEPING_ON = True  # If it is OFF only node following will work
 INIT_X = 11830  # TODO: Change this to the correct value
 INIT_Y = 2050
 INIT_ANGLE = 0
-MANDATORY_NODES = ["263", "257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
+MANDATORY_NODES = ["257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
                    "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
 
 # Initial position for testing (COMMENT OUT!)
-INIT_X = 14710  # TODO: Change this to the correct value
-INIT_Y = 4010
-INIT_ANGLE = 180
-MANDATORY_NODES = ["49", "243"]
+# INIT_X = 14710  # TODO: Change this to the correct value
+# INIT_Y = 4010
+# INIT_ANGLE = 180
+# MANDATORY_NODES = ["49", "243"]
 
 
 # Traffic sign constants
@@ -123,6 +123,8 @@ class threadDecisionMaker(ThreadWithStop):
                 # Publish the current position and rotation to shared memory
                 self.shared_memory.insert("devicePos", [self.position["x"], self.position["y"]])
                 self.shared_memory.insert("deviceRot", [self.imu_data["yaw"]])
+
+                print(self.shared_memory.get())  # Debugging line to see the shared memory content
 
                 try:
                     if self.nav_mode == NODE_NAVIGATION or self.nav_mode == LANE_DETECTOR:
@@ -244,14 +246,14 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            # if "parking-sign" in detected_object_dict and detected_object_dict["parking-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.parking_timer > 60:
-            #     self.signal_sender.send(str({"WarningName": "parking", "WarningID": 10}))
+            if "parking-sign" in detected_object_dict and detected_object_dict["parking-sign"] < MIN_DISTANCE_TO_SIGN and time.time() - self.parking_timer > 60:
+                self.signal_sender.send(str({"WarningName": "parking", "WarningID": 10}))
 
-            #     self._start_parking_maneuver()
+                self._start_parking_maneuver()
 
-            #     if self.debugging:
-            #         self.logging.info(
-            #             f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
+                if self.debugging:
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
             if "priority-sign" in detected_object_dict and detected_object_dict["priority-sign"] < MIN_DISTANCE_TO_SIGN:
                 self.signal_sender.send({"WarningName": "priority", "WarningID": 13})
@@ -284,7 +286,7 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object detected: green-light" }}}}')
 
-        if int(self.current_speed) < 300 and time.time() - self.stop_timer > 3:
+        if int(self.current_speed) < 300 and time.time() - self.stop_timer > 5:
             self._send_speed(300)
 
     def _handle_node_index_message(self):
@@ -307,17 +309,20 @@ class threadDecisionMaker(ThreadWithStop):
                         self.raw_config_sender.send(
                             int(f"#setPosition:{int(self.gps.get_node(current_node_index).x)};0;;\r\n"))
                     elif self.nav_mode == LANE_DETECTOR:
-                        self.nav_mode = NODE_NAVIGATION
-                        if self.debugging:
-                            self.logging.info("nav_mode: NODE_NAVIGATION")
+                        self._node_navigation(current_node_index)
 
-                        self.gps.cut_path_from(current_node_index + 2)
-                        self.gps.send_to_nucleo()
-                        self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
-                        self._send_speed(300)
+            elif self.nav_mode == LANE_DETECTOR:
+                self._node_navigation(current_node_index)
 
             # elif self.gps.is_last(current_node_index):
             #     self._start_parking_maneuver()
+
+    def _node_navigation(self, current_node_index):
+        self.nav_mode = NODE_NAVIGATION
+        self.gps.cut_path_from(current_node_index + 2)
+        self.gps.send_to_nucleo()
+        self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
+        self._send_speed(300)
 
     def _finish_parking_maneuver(self):
         self.point_to_follow_mode = self.subscribers["PointToFollowMode"].receive()  # Wait for the point to be set

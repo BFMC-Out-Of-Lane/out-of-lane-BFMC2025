@@ -52,7 +52,7 @@ class processTrafficCommunication(WorkerProcess):
         self.queuesList = queueList
         self.logging = logging
         self.shared_memory = sharedMem()
-        self.filename = "src/data/TrafficCommunication/useful/publickey_server_test.pem"
+        self.filename = "src/data/TrafficCommunication/useful/publickey_server.pem"
         self.deviceID = deviceID
         self.frequency = frequency
         self.debugging = debugging
