@@ -295,18 +295,20 @@ class threadDecisionMaker(ThreadWithStop):
             deviation = self.lane_keeping["deviation"]
             cross_tracking_error = self.lane_keeping["cross_tracking_error"]
 
-            if IS_LANE_KEEPING_ON and deviation is not None and cross_tracking_error is not None and time.time() - self.set_position_timer > 0.1:
+            if IS_LANE_KEEPING_ON and time.time() - self.set_position_timer > 0.1:
                 self.set_position_timer = time.time()
 
-                if not self.gps.is_last(current_node_index, 2) and abs(cross_tracking_error) < 10:
+                if not self.gps.is_last(current_node_index, 2):
                     angle = self.gps.calc_angle_between_previous_n_next_nodes(current_node_index)
                     if angle == 0 or angle == 180:
                         self.nav_mode = LANE_DETECTOR
-                        self.raw_config_sender.send(
+                        if abs(cross_tracking_error) < 10:
+                            self.raw_config_sender.send(
                             f"#setPosition:0;{int(self.gps.get_node(current_node_index).y)};;\r\n")
                     elif angle == 90 or angle == -90:
                         self.nav_mode = LANE_DETECTOR
-                        self.raw_config_sender.send(
+                        if abs(cross_tracking_error) < 10:
+                            self.raw_config_sender.send(
                             int(f"#setPosition:{int(self.gps.get_node(current_node_index).x)};0;;\r\n"))
                     elif self.nav_mode == LANE_DETECTOR:
                         self._node_navigation(current_node_index)
