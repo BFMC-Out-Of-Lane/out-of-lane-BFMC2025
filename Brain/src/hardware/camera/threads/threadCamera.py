@@ -38,6 +38,9 @@ class threadCamera(ThreadWithStop):
         self.serialCameraSender = messageHandlerSender(self.queuesList, serialCamera)
         self.secondaryCameraSender = messageHandlerSender(self.queuesList, secondaryCamera)
         self.lane_keeping_sender = messageHandlerSender(self.queuesList, LaneKeeping)
+        self.signsSender = messageHandlerSender(self.queuesList, TrafficSignDetection)
+        
+        self.distanceToObjectMessage = {}
 
         self.subscribe()
         self._init_camera()
@@ -120,9 +123,8 @@ class threadCamera(ThreadWithStop):
                 ]  # List of 9 points around the center point
         for (x, y) in points:
         # Verificar si el punto está dentro de los límites de la imagen
-            if 0 <= x < 640 and 0 <= y < 480:
-                # Obtener la distancia del píxel actual en metros
-                dist = depth_image_data[y, x]
+            if 0 <= x < 1280 and 0 <= y < 720:  # Assuming the depth frame is 1280x720        
+                dist = depth_image_data[y, x]   # Obtener la distancia del píxel actual en metros
                 # print(f"Distancia medida en píxel ({x}, {y}): {dist:.2f} metros")
 
                 # Verificar si la distancia es válida (mayor que 0)
@@ -164,7 +166,7 @@ class threadCamera(ThreadWithStop):
             if send:
                 mainRequest = self.camera_capture("main")  # Main camera capture
                 serialRequest = self.camera_capture("lores")  # Low-resolution camera capture
-                depthFrame = self.camera_capture_depth("lores")  # Depth frame capture
+                depthFrame = self.camera_capture_depth()  # Depth frame capture
                 
                 if self.recording == True:
                     self.video_writer.write(mainRequest)
@@ -181,34 +183,34 @@ class threadCamera(ThreadWithStop):
                 self.mainCameraSender.send(mainEncodedImageData)
 
                 traffic_sign_pos = self.trafficSignPositionSubscriber.receive()
-                if traffic_sign_pos is not None:
-                    for obj_data in traffic_sign_pos.values():  # Iterar sobre los valores del diccionario
-                    # Verificar si obj_data es una lista y tiene al menos 4 elementos
-                        print(f"Processing object data: {obj_data}")
-                        if isinstance(obj_data, list) and len(obj_data) >= 3:
-                            class_name = obj_data[0]  # Nombre de la clase del objeto
-                            # distance_cm = obj_data[1]  # Distancia en centímetros
-                            center_x = int(obj_data[1])  # Coordenada X del centro del objeto
-                            center_y = int(obj_data[2])  # Coordenada Y del centro del objeto
-                            print(f"Objeto detectado: {class_name}, Centro: ({center_x}, {center_y})")
-
-                            # Ensure the calculated center coordinates are within the original depth frame's dimensions (640x480)
-                            if 0 <= center_x < 640 and 0 <= center_y < 480:
-                                # Get the raw distance value from the depth frame at the object's center
-                                distance_meters = self.distance_depth (center_x, center_y, depthFrame)
-
-                                # Agrega la clase detectada y la distancia al diccionario
-                                traffic_sign_dist[class_name] = distance_meters
-                                print(f"Objeto detectado: {class_name}, Distancia: {distance_meters:.2f} cm, Centro: ({center_x}, {center_y})")
-
-                            else:
-                                traffic_sign_dist[class_name] = None  # Si las coordenadas están fuera de los límites, asigna None
-
+                # print(f"traffic_sign_pos recibido: {traffic_sign_pos}") 
+                traffic_sign_dist = {}
+                
+                if traffic_sign_pos is not None and "objectDict" in traffic_sign_pos:
+                    print(traffic_sign_pos["objectDict"])
+                    for class_name, center in traffic_sign_pos["objectDict"].items():
+                        # print(f"Objeto detectado: {class_name}, Centro: ({center[0]}, {center[1]})")
+                        print(center)
+                        center_x = int(center[0])                        
+                        center_y = int(center[1])
+                        if 0 <= center_x < 1280 and 0 <= center_y < 720:
+                            distance_meters = self.distance_depth(center_x, center_y, depthFrame)
+                            distance_centimeters = distance_meters * 100  # Convert to centimeters
+                            traffic_sign_dist[class_name] = int(distance_centimeters)
+                            # print(f"Objeto detectado: {class_name}, DistanciaxProfund: {distance_centimeters:.2f} cm, Centro: ({center_x}, {center_y})")
+                        else:
+                            traffic_sign_dist[class_name] = None
                 else:
                     traffic_sign_dist = None
 
                 if traffic_sign_dist is None:
-                    traffic_sign_dist = {"objectDict": {}}
+                    traffic_sign_dist = {}
+                    
+                self.distanceToObjectMessage = {
+                        "objectDict": traffic_sign_dist,
+                    }
+                self.signsSender.send(self.distanceToObjectMessage)
+                
                 processed_image, cross_tracking_error, deviation, binary_warped = self.lane_detector.process_frame(serialRequest, traffic_sign_dist)
                 self.lane_keeping_sender.send({"cross_tracking_error": cross_tracking_error, "deviation": deviation})
                 
@@ -241,20 +243,13 @@ class threadCamera(ThreadWithStop):
 
         return frame
 
-    def camera_capture_depth(self, stream_name):
-        """Captures images for 'main' and 'lores'."""
-
+    def camera_capture_depth(self):
         frames = self.camera.wait_for_frames()
         depth_frame = frames.get_depth_frame()
-        frame = np.asanyarray(depth_frame.get_data())
-
-        # Convertir el espacio de color de RGB a BGR
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
-        if stream_name == "lores":
-            frame = cv2.resize(frame, (304, 171), interpolation=cv2.INTER_LINEAR)
-
-        return frame
+        if not depth_frame:
+            print("No depth frame captured!!!!!!!")
+            return None
+        return depth_frame
     
     def start(self):
         super(threadCamera, self).start()
@@ -269,14 +264,6 @@ class threadCamera(ThreadWithStop):
         config = rs.config()
         # Solo un stream de color a 1920×1080 @30 fps
         config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 15)
-        config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+        config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
 
-        # try:
-        #     # Resuelvo la configuración contra el pipeline
-        #     profile = config.resolve(self.camera)
-        # except Exception as e:
-        #     self.logger.error(f"Error al resolver streams: {e}")
-        #     raise
-
-        # self.camera.start(profile)
         self.camera.start(config)

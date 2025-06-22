@@ -310,7 +310,7 @@ class LaneDetector:
 
     def process_frame(self, frame, traffic_sign):
         if traffic_sign is not None:
-            self.traffic_sign = traffic_sign["objectDict"]
+            self.traffic_sign = traffic_sign
         self._get_perspective_transform(frame)
         warped = self._warp_image(frame, self.M)
         self.binary_warped = self._threshold_image(warped)

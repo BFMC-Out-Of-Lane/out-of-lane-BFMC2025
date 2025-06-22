@@ -52,28 +52,9 @@ class ObjectDetectionProcessor:
                 center_y = int((bbox[1] + bbox[3]) / 2)
 
                 # Añadir un array con los detalles al diccionario
-                # objects_distance_dict[i] = [class_name, distance_cm, center_x, center_y]
                 objects_distance_dict[class_name] = [center_x, center_y]
-
-
-                # # Set bounding box color based on distance
-                # bbox_color = (255, 0, 0) if distance_cm < 40 else (0, 0, 255)  
-                # valid_distance = distance_cm >= 40  # Mark distance as valid if >= 40 cm
-
-                # # Draw bounding box on the image
-                # cv2.rectangle(cv_image, (bbox[0], bbox[1]), (bbox[2], bbox[3]), bbox_color, 2)
-
-                # # Draw a circle at the center of the bounding box
-                # cv2.circle(cv_image, (center_x, center_y), 5, (0, 255, 255), -1) # Yellow circle
-
-                # # Overlay text with class name, confidence score, and estimated distance
-                # cv2.putText(cv_image,
-                #             f"{class_name}: {confidences[i]:.1f}, Dist: {round(distance_cm, 2)}cm, Center: ({center_x}, {center_y})",
-                #             (bbox[0], bbox[1] - 15),
-                #             cv2.FONT_HERSHEY_PLAIN,
-                #             1,
-                #             (255, 255, 255),  # White text
-                #             2)
+                # print(objects_distance_dict)
+                # print(f"Detected {class_name} at {distance_cm:.2f} cm, center at ({center_x}, {center_y})")
 
         # return cv_image, objects_distance_dict  # Return the processed image with annotations
         return objects_distance_dict  # Return the processed image with annotations

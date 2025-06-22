@@ -127,7 +127,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.subscribers["CurrentSpeed"] = messageHandlerSubscriber(self.queuesList, CurrentSpeed, "lastonly", True)
         self.subscribers["LaneKeeping"] = messageHandlerSubscriber(self.queuesList, LaneKeeping, "lastonly", True)
         self.subscribers["trafficSigns"] = messageHandlerSubscriber(
-            self.queuesList, TrafficSignPosition, "lastonly", True)
+            self.queuesList, TrafficSignDetection, "lastonly", True)
         self.subscribers["DrivingMode"] = messageHandlerSubscriber(self.queuesList, DrivingMode, "lastonly", True)
         self.subscribers["Position"] = messageHandlerSubscriber(self.queuesList, Position, "lastonly", True)
         self.subscribers["ImuData"] = messageHandlerSubscriber(self.queuesList, ImuData, "lastonly", True)
@@ -273,7 +273,7 @@ class threadDecisionMaker(ThreadWithStop):
             self._send_speed(300)
 
     def _handle_node_index_message(self):
-        self.logging.info(f'threadDecisionMaker: nav_mode: {self.nav_mode}')
+        # self.logging.info(f'threadDecisionMaker: nav_mode: {self.nav_mode}')
         if self.position is not None and self.lane_keeping is not None:
             current_node_index = self.gps.get_current_node(self.position)
             deviation = self.lane_keeping["deviation"]
