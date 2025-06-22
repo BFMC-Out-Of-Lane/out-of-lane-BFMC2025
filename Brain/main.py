@@ -137,7 +137,6 @@ if TrafficSigns:
 for process in allProcesses:
     process.daemon = True
     process.start()
-    print(process.pid, process.name)
 
 # ===================================== STAYING ALIVE ====================================
 blocker = Event()

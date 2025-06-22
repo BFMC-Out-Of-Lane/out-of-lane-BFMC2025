@@ -1,6 +1,7 @@
 import math
 import time
 
+from src.data.TrafficCommunication.useful.sharedMem import sharedMem
 from src.decision.decision_making.gps.gps import GPS
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
@@ -16,10 +17,18 @@ from src.utils.messages.messageHandlerSubscriber import \
 PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/competition_track_graph.graphml"
 IS_LANE_KEEPING_ON = True  # If it is OFF only node following will work
 
-# Initial position
+# Initial position for competition
 INIT_X = 11830  # TODO: Change this to the correct value
 INIT_Y = 2050
 INIT_ANGLE = 0
+MANDATORY_NODES = ["263", "257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
+                   "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
+
+# Initial position for testing (COMMENT OUT!)
+INIT_X = 14710  # TODO: Change this to the correct value
+INIT_Y = 4010
+INIT_ANGLE = 180
+MANDATORY_NODES = ["49", "243"]
 
 
 # Traffic sign constants
@@ -75,11 +84,11 @@ class threadDecisionMaker(ThreadWithStop):
         self.stop_timer = time.time() - 60
         self.parking_timer = time.time() - 60
         self.set_position_timer = time.time()
+        self.shared_memory = sharedMem()
 
         self.gps = GPS(
             path2graphml=PATH_TO_GRAPHML,
-            mandatory_nodes=["263", "257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
-                             "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"],
+            mandatory_nodes=MANDATORY_NODES,
             raw_config_sender=self.raw_config_sender,
         )
 
