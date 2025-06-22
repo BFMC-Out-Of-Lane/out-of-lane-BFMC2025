@@ -78,7 +78,8 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.gps = GPS(
             path2graphml=PATH_TO_GRAPHML,
-            mandatory_nodes=["263", "257", "317", "343", "255", "225"],
+            mandatory_nodes=["263", "257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
+                             "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"],
             raw_config_sender=self.raw_config_sender,
         )
 
@@ -282,7 +283,7 @@ class threadDecisionMaker(ThreadWithStop):
             if IS_LANE_KEEPING_ON and deviation is not None and cross_tracking_error is not None and time.time() - self.set_position_timer > 0.1:
                 self.set_position_timer = time.time()
 
-                if not self.gps.is_last(current_node_index, 2) and abs(cross_tracking_error) < 5:
+                if not self.gps.is_last(current_node_index, 2) and abs(cross_tracking_error) < 10:
                     angle = self.gps.calc_angle_between_previous_n_next_nodes(current_node_index)
                     if angle == 0 or angle == 180:
                         self.nav_mode = LANE_DETECTOR
@@ -292,7 +293,7 @@ class threadDecisionMaker(ThreadWithStop):
                         self.nav_mode = LANE_DETECTOR
                         self.raw_config_sender.send(
                             int(f"#setPosition:{int(self.gps.get_node(current_node_index).x)};0;;\r\n"))
-            
+
             if self.nav_mode == LANE_DETECTOR:
                 self.nav_mode = NODE_NAVIGATION
                 if self.debugging:
