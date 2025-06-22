@@ -14,7 +14,7 @@ from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
 PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/competition_track_graph.graphml"
-IS_LANE_KEEPING_ON = False  # If it is OFF only node following will work
+IS_LANE_KEEPING_ON = True  # If it is OFF only node following will work
 
 # Initial position
 INIT_X = 11830  # TODO: Change this to the correct value
@@ -292,22 +292,16 @@ class threadDecisionMaker(ThreadWithStop):
                         self.nav_mode = LANE_DETECTOR
                         self.raw_config_sender.send(
                             int(f"#setPosition:{int(self.gps.get_node(current_node_index).x)};0;;\r\n"))
-                    elif self.nav_mode == LANE_DETECTOR:
-                        self.nav_mode = NODE_NAVIGATION
-                        if self.debugging:
-                            self.logging.info("nav_mode: NODE_NAVIGATION")
-
-                        self.gps.cut_path_from(current_node_index + 1)
-                        self.gps.send_to_nucleo()
-                        self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
-            elif self.nav_mode == LANE_DETECTOR:
+            
+            if self.nav_mode == LANE_DETECTOR:
                 self.nav_mode = NODE_NAVIGATION
                 if self.debugging:
                     self.logging.info("nav_mode: NODE_NAVIGATION")
 
-                self.gps.cut_path_from(current_node_index + 1)
+                self.gps.cut_path_from(current_node_index + 2)
                 self.gps.send_to_nucleo()
                 self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
+                self._send_speed(300)
 
             # elif self.gps.is_last(current_node_index):
             #     self._start_parking_maneuver()
