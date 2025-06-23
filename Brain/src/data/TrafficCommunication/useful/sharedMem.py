@@ -66,6 +66,7 @@ class sharedMem:
     def insert(self, msg, values):
         with self.lock:  # Acquire the lock
             self.shared_memory[self.lastMem]["Command"] = msg  # Set the command string
+            #print(f"En mem shared {msg} y {values}")
             if len(values) > 0:
                 self.shared_memory[self.lastMem]["value1"] = values[0]  # Set the first value
             if len(values) > 1:

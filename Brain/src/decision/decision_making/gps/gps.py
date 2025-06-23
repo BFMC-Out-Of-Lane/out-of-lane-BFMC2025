@@ -97,3 +97,16 @@ class GPS:
             (node_pos['x'] - float(current_pos['x'])) ** 2 +
             (node_pos['y'] - float(current_pos['y'])) ** 2
         )
+
+
+    def get_target(self, source_id, attr_key="d2", attr_value="True"):
+        """
+        Devuelve una lista de nodos de destino conectados desde `source_id`
+        donde la arista tiene un atributo con clave `attr_key` y valor `attr_value`.
+        """
+        targets = []
+        for _, v, data in self.G.out_edges(source_id, data=True):
+            print(data)
+            if data.get(attr_key) == attr_value:
+                targets.append(v)
+        return targets

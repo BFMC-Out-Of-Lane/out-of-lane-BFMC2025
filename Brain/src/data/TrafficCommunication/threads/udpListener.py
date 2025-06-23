@@ -47,7 +47,7 @@ class udpListener(protocol.DatagramProtocol):
 
     def datagramReceived(self, datagram, address):
         """In this function we split the receive data and we call the callbackfunction"""
-        
+
         try:
             dat = datagram.split(b"(-.-)")
             if len(dat) != 2:

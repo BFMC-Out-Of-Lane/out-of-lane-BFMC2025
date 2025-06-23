@@ -29,6 +29,7 @@
 import json
 import time
 from src.utils.messages.allMessages import Location
+from src.utils.messages.messageHandlerSender import messageHandlerSender
 from twisted.internet import protocol
 
 # The server itself. Creates a new Protocol for each new connection and has the info for all of them.
@@ -41,6 +42,7 @@ class tcpClient(protocol.ClientFactory):
         self.locsysID = locsysID
         self.locsysFrequency = locsysFrequency
         self.queue = queue
+        self.sendLocation = messageHandlerSender(self.queue, Location)
 
     def clientConnectionLost(self, connector, reason):
         print(
@@ -68,8 +70,15 @@ class tcpClient(protocol.ClientFactory):
         conn.factory = self
         return conn
 
+    #def send_data_to_server(self, message):
+    #    self.connection.send_data(message)
     def send_data_to_server(self, message):
-        self.connection.send_data(message)
+        if self.connection is not None:
+            self.connection.send_data(message)
+        else:
+            print("[tcpClient] ⚠️ Aún no hay conexión TCP establecida. No se puede enviar:", message)
+
+        
 
 
 # One class is generated for each new connection
@@ -91,20 +100,14 @@ class SingleConnection(protocol.Protocol):
 
         if da["type"] == "location":
             da["id"] = self.factory.locsysID
-
-            message_to_send = {
-                "Owner": Location.Owner.value,
-                "msgID": Location.msgID.value,
-                "msgType": Location.msgType.value,
-                "msgValue": da,
-            }
-            self.factory.queue.put(message_to_send)
+            # fixed infinite loop on hooks (hopefully)
+            print("Recibiennndo lo")
+            self.factory.sendLocation.send(da)
         else:
             print(
                 "got message from trafficcommunication server: ",
                 self.factory.connectiondata,
             )
-
     def send_data(self, message):
         msg = json.dumps(message)
         self.transport.write(msg.encode())
