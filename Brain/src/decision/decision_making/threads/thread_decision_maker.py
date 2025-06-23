@@ -16,26 +16,26 @@ from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
 PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/competition_track_graph.graphml"
-IS_LANE_KEEPING_ON = True  # If it is OFF only node following will work
+IS_LANE_KEEPING_ON = False  # If it is OFF only node following will work
 
 # Initial position for competition
-INIT_X = 11830  # TODO: Change this to the correct value
-INIT_Y = 2050
-INIT_ANGLE = 0
-MANDATORY_NODES = ["257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
-                   "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
+# INIT_X = 11830  # TODO: Change this to the correct value
+# INIT_Y = 2050
+# INIT_ANGLE = 0
+# MANDATORY_NODES = ["263", "257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
+#                    "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
 
 # Initial position for testing (COMMENT OUT!)
-# INIT_X = 15660  # TODO: Change this to the correct value
-# INIT_Y = 4600
-# INIT_ANGLE = 90
-# MANDATORY_NODES = ["55", "243"]
+INIT_X = 15660  # TODO: Change this to the correct value
+INIT_Y = 4600
+INIT_ANGLE = 90
+MANDATORY_NODES = ["55", "243"]
 
 
 # Traffic sign constants
 MIN_DISTANCE_TO_SIGN = 30
-MIN_DISTANCE_TO_CAR = 60
-MIN_DISTANCE_TO_CROSSWALK = 70
+MIN_DISTANCE_TO_CAR = 50
+MIN_DISTANCE_TO_CROSSWALK = 50
 TIME_AT_STOP_SIGN = 2
 
 # Parking constants
@@ -381,7 +381,6 @@ class threadDecisionMaker(ThreadWithStop):
         if self.debugging:
             self.logging.info("maneuver: SKIPPING")
 
-        current_node_index = self.gps.get_current_node(self.position)
         self.raw_config_sender.send(f"#skipCarMode:{1};;\r\n")
         time.sleep(1)
-        self._node_navigation(current_node_index)
+        self._node_navigation(self.gps.get_current_node(self.position))

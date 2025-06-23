@@ -209,7 +209,6 @@ class threadCamera(ThreadWithStop):
                             traffic_sign_dist["fixed-point"] = int(fixed_distance_cm)
 
                 if traffic_sign_dist:    
-                    print("Traffic Sign Distances:", traffic_sign_dist)
                     self.distanceToObjectMessage = {
                         "objectDict": traffic_sign_dist,
                     }
