@@ -125,9 +125,9 @@ class threadDecisionMaker(ThreadWithStop):
 
                 if time.time() - self.shared_memory_timer >= 1:
                     self.shared_memory_timer = time.time()
-                    self.shared_memory.insert("deviceSpeed", [int(self.current_speed) / 100])
+                    self.shared_memory.insert("deviceSpeed", [int(self.current_speed) / 10])
                     self.shared_memory.insert("devicePos", [float(self.position['x']) / 1000, float(self.position['y']) / 1000])
-                    self.shared_memory.insert("deviceRot", [self.imu_data["yaw"]])
+                    self.shared_memory.insert("deviceRot", [360 - float(self.imu_data["yaw"])])
 
                 try:
                     if self.nav_mode == NODE_NAVIGATION or self.nav_mode == LANE_DETECTOR:

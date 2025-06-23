@@ -83,7 +83,7 @@ logging = logging.getLogger()
 shared_memory = sharedMem()
 
 Dashboard = True
-Camera = False
+Camera = True
 Semaphores = False
 TrafficCommunication = True
 SerialHandler = True
