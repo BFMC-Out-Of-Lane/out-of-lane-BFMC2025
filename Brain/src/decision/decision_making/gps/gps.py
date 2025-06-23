@@ -107,7 +107,6 @@ class GPS:
 
         targets = []
         for _, v, data in self.G.out_edges(source_id, data=True):
-            print(f"Checking edge from {source_id} to {v} with data: {data}")
             if data.get(attr_key) == attr_value:
                 targets.append(v)
         return targets

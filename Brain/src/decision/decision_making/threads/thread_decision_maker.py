@@ -23,7 +23,7 @@ INIT_X = 11830  # TODO: Change this to the correct value
 INIT_Y = 2050
 INIT_ANGLE = 0
 MANDATORY_NODES = ["257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
-   "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
+                   "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
 
 # Initial position for testing (COMMENT OUT!)
 # INIT_X = 15660  # TODO: Change this to the correct value
@@ -126,7 +126,8 @@ class threadDecisionMaker(ThreadWithStop):
                 if time.time() - self.shared_memory_timer >= 1:
                     self.shared_memory_timer = time.time()
                     self.shared_memory.insert("deviceSpeed", [int(self.current_speed) / 10])
-                    self.shared_memory.insert("devicePos", [float(self.position['x']) / 1000, float(self.position['y']) / 1000])
+                    self.shared_memory.insert(
+                        "devicePos", [float(self.position['x']) / 1000, float(self.position['y']) / 1000])
                     self.shared_memory.insert("deviceRot", [360 - float(self.imu_data["yaw"])])
 
                 try:
@@ -220,10 +221,8 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            if (
-                ("pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] < MIN_DISTANCE_TO_SIGN) or
-                ("roadblock" in detected_object_dict and detected_object_dict["roadblock"] < MIN_DISTANCE_TO_SIGN)
-            ):
+            if (("pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] < MIN_DISTANCE_TO_SIGN) or
+                    ("roadblock" in detected_object_dict and detected_object_dict["roadblock"] < MIN_DISTANCE_TO_SIGN)):
                 if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] < MIN_DISTANCE_TO_SIGN:
                     self.signal_sender.send(str({"WarningName": "ped_on_crosswalk", "WarningID": 12}))
                 self.stop_timer = time.time()
@@ -234,15 +233,14 @@ class threadDecisionMaker(ThreadWithStop):
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
             if (("car-white" in detected_object_dict and detected_object_dict["car-white"] < MIN_DISTANCE_TO_CAR) or
-               ("car-blue" in detected_object_dict and detected_object_dict["car-blue"] < MIN_DISTANCE_TO_CAR)):
+                    ("car-blue" in detected_object_dict and detected_object_dict["car-blue"] < MIN_DISTANCE_TO_CAR) or
+                    ("fixed-point" in detected_object_dict and detected_object_dict["fixed-point"] < MIN_DISTANCE_TO_CAR)):
                 self.signal_sender.send(str({"WarningName": "car_ahead", "WarningID": 2}))
                 current_index_in_path = self.gps.get_current_node(self.position)
                 targets_with_dashed_line = self.gps.get_target(
                     self.gps.get_node(current_index_in_path).id, attr_key="dotted")
                 if targets_with_dashed_line:
-                    self._start_skipping_maneuver()
-                    if self.debugging:
-                        self.logging.info("Skipping car ahead")
+                    self._skipping_maneuver()
                 else:
                     self.stop_timer = time.time()
                     self._send_speed(0)
@@ -379,8 +377,11 @@ class threadDecisionMaker(ThreadWithStop):
         self.speed_sender.send(str(new_speed))
         self.current_speed = str(new_speed)
 
-    def _start_skipping_maneuver(self):
+    def _skipping_maneuver(self):
         if self.debugging:
             self.logging.info("maneuver: SKIPPING")
 
+        current_node_index = self.gps.get_current_node(self.position)
         self.raw_config_sender.send(f"#skipCarMode:{1};;\r\n")
+        time.sleep(1)
+        self._node_navigation(current_node_index)
