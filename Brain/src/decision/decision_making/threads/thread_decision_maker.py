@@ -61,9 +61,10 @@ class threadDecisionMaker(ThreadWithStop):
         debugging (bool, optional): A flag for debugging. Defaults to False.
     """
 
-    def __init__(self, queueList, logging, debugging=False):
+    def __init__(self, queueList, logging, shared_memory, debugging=False):
         self.queuesList = queueList
         self.logging = logging
+        self.shared_memory = shared_memory
         self.debugging = debugging
 
         self.current_speed = "0"
@@ -85,7 +86,6 @@ class threadDecisionMaker(ThreadWithStop):
         self.stop_timer = time.time() - 60
         self.parking_timer = time.time() - 60
         self.set_position_timer = time.time()
-        self.shared_memory = sharedMem()
 
         self.gps = GPS(
             path2graphml=PATH_TO_GRAPHML,
@@ -101,10 +101,7 @@ class threadDecisionMaker(ThreadWithStop):
         while self._running:
             self.klem = self.subscribers["Klem"].receive() or self.klem
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
-
-            loc = self.subscribers["Location"].receive()
-            if loc:
-                print(f'{{"threadDecisionMaker": {{ "Location": {loc} }}}}')
+            self.shared_memory.insert("devicePos", [12, 12])
 
             if self.klem == "0":
                 self.current_speed = "0"
@@ -124,6 +121,9 @@ class threadDecisionMaker(ThreadWithStop):
                 self.imu_data = self.subscribers["ImuData"].receive() or self.imu_data
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive() or self.lane_keeping
                 self.position = self.subscribers["Position"].receive() or self.position
+
+                self.shared_memory.insert("devicePos", [12, 12])
+                self.shared_memory.insert("deviceRot", [self.imu_data["yaw"]])
 
                 try:
                     if self.nav_mode == NODE_NAVIGATION or self.nav_mode == LANE_DETECTOR:
