@@ -202,9 +202,9 @@ class threadCamera(ThreadWithStop):
                     self.fixedPointTimer = time.time()
                     if depthFrame is not None:
                         center_x = 640  # Center of the image width
-                        center_y = 500  # Center of the image height
+                        center_y = 380  # Center of the image height - 380: min: 47cm, max:77
                         fixed_distance_m = self.distance_depth(center_x, center_y, depthFrame)
-                        if fixed_distance_m is not None:
+                        if fixed_distance_m is not None and fixed_distance_m > 0.020:
                             fixed_distance_cm = fixed_distance_m * 100  # Convert to centimeters
                             traffic_sign_dist["fixed-point"] = int(fixed_distance_cm)
                         print("traffic sign dist fixed p: ", traffic_sign_dist)
