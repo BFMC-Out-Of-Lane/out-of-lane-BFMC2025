@@ -86,11 +86,11 @@ class threadDecisionMaker(ThreadWithStop):
         self.set_position_timer = time.time()
         self.shared_memory = sharedMem()
 
-        self.gps = GPS(
-            path2graphml=PATH_TO_GRAPHML,
-            mandatory_nodes=MANDATORY_NODES,
-            raw_config_sender=self.raw_config_sender,
-        )
+        # self.gps = GPS(
+        #     path2graphml=PATH_TO_GRAPHML,
+        #     mandatory_nodes=MANDATORY_NODES,
+        #     raw_config_sender=self.raw_config_sender,
+        # )
 
         self.subscribe()
         super(threadDecisionMaker, self).__init__()
@@ -100,7 +100,6 @@ class threadDecisionMaker(ThreadWithStop):
         while self._running:
             self.klem = self.subscribers["Klem"].receive() or self.klem
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
-
             if self.klem == "0":
                 self.current_speed = "0"
                 send_gps_data = True

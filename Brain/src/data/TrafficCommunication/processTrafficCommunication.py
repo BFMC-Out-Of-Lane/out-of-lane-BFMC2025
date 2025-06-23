@@ -37,6 +37,8 @@ from src.templates.workerprocess import WorkerProcess
 from src.data.TrafficCommunication.threads.threadTrafficCommunicaiton import (
     threadTrafficCommunication,
 )
+from src.data.TrafficCommunication.test_periodic_sender import PeriodicSenderThread
+
 class processTrafficCommunication(WorkerProcess):
     """This process receives the location of the car and sends it to the processGateway.
     
@@ -52,7 +54,7 @@ class processTrafficCommunication(WorkerProcess):
         self.queuesList = queueList
         self.logging = logging
         self.shared_memory = sharedMem()
-        self.filename = "src/data/TrafficCommunication/useful/publickey_server.pem"
+        self.filename = "src/data/TrafficCommunication/useful/publickey_server_test.pem"
         self.deviceID = deviceID
         self.frequency = frequency
         self.debugging = debugging
@@ -70,10 +72,7 @@ class processTrafficCommunication(WorkerProcess):
     # ===================================== RUN ==========================================
     def run(self):
         """Apply the initializing methods and start the threads."""
-        self.shared_memory.insert("devicePos", [1.2, 2.3]) # send a position to the server
-        self.shared_memory.insert("deviceRot", [3.4]) # send a rotation to the server
-        self.shared_memory.insert("deviceSpeed", [4.5]) # send a speed to the server
-        self.shared_memory.insert("historyData", [5.6, 6.7, 8]) # send a history data point to the server
+    
         super(processTrafficCommunication, self).run()
 
     # ===================================== INIT TH ======================================
@@ -105,6 +104,8 @@ if __name__ == "__main__":
     # filename = "useful/publickey_server.pem"
     filename = "src/data/TrafficCommunication/useful/publickey_server_test.pem"
     deviceID = 3
+    mockSender = PeriodicSenderThread(queueList, interval=5)
+    mockSender.start()
     frequency = 0.4
     traffic_communication = threadTrafficCommunication(
         shared_memory, queueList, deviceID, frequency, filename
@@ -114,13 +115,10 @@ if __name__ == "__main__":
     start_time = time.time()
     duration = 10000  # specify the duration in seconds
     
-    shared_memory.insert("devicePos", [1.2, 2.3]) # send a position to the server
-    shared_memory.insert("deviceRot", [3.4]) # send a rotation to the server
-    shared_memory.insert("deviceSpeed", [4.5]) # send a speed to the server
-    shared_memory.insert("historyData", [5.6, 6.7, 8]) # send a history data point to the server
     while time.time() - start_time < duration:
         try:
-            print(queueList["General"].get(timeout=1))
+           test = queueList["General"].get(timeout=1)
+           #print(test)
         except:pass
 
     traffic_communication.stop()

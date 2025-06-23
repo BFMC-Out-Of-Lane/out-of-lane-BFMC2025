@@ -26,11 +26,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 from twisted.internet import task
-
+from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
+from src.utils.messages.allMessages import Position, ImuData
 
 class periodicTask(task.LoopingCall):
-    def __init__(self, interval, shrd_mem, tcp_factory):
+    def __init__(self, interval, shrd_mem, tcp_factory, queuesList):
         super().__init__(self.periodicCheck)
+        self.queuesList = queuesList
+        self.subscribers = {}
+        self.subscribe()
+       
         self.interval = interval
         self.shrd_mem = shrd_mem
         self.tcp_factory = tcp_factory
@@ -45,6 +50,27 @@ class periodicTask(task.LoopingCall):
         """
         Perform the periodic check and send data to the server.
         """
+        position = self.subscribers["Position"].receive()
+        imu = self.subscribers["ImuData"].receive()
+        print(f"periodicCheck - Position: {position}, IMU: {imu}")
+        
+        # Handle position message if received
+        if position is not None:
+            print(f"Processing position message: {position}")
+            self.shrd_mem.insert("devicePos", [position["x"], position["y"]])
+        
+        # Handle IMU message if received
+        if imu is not None:
+            print(f"Processing IMU message: {imu}")
+            self.shrd_mem.insert("deviceRot", [imu["angle"]])
+         
+        # Send any accumulated data to server
         tosend = self.shrd_mem.get()
         for mem in tosend:
             self.tcp_factory.send_data_to_server(mem)
+
+    
+    def subscribe(self):
+        """Subscribes to the messages you are interested in"""
+        self.subscribers["Position"] = messageHandlerSubscriber(self.queuesList, Position, "lastonly", True)
+        self.subscribers["ImuData"] = messageHandlerSubscriber(self.queuesList, ImuData, "lastonly", True)

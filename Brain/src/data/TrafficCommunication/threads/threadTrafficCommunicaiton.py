@@ -54,7 +54,7 @@ class threadTrafficCommunication(ThreadWithStop):
 
         self.udp_factory = udpListener(decrypt_key, self.serverFound) #Listens for server broadcast and validates it
 
-        self.period_task = periodicTask(1, shrd_mem, self.tcp_factory) # Handles the Queue of errors accumulated so far.
+        self.period_task = periodicTask(1, shrd_mem, self.tcp_factory, queueslist) # Handles the Queue of errors accumulated so far.
 
         self.reactor = reactor
         self.reactor.listenUDP(self.listenPort, self.udp_factory)
