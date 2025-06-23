@@ -53,17 +53,7 @@ class periodicTask(task.LoopingCall):
         position = self.subscribers["Position"].receive()
         imu = self.subscribers["ImuData"].receive()
         print(f"periodicCheck - Position: {position}, IMU: {imu}")
-        
-        # Handle position message if received
-        if position is not None:
-            print(f"Processing position message: {position}")
-            self.shrd_mem.insert("devicePos", [position["x"], position["y"]])
-        
-        # Handle IMU message if received
-        if imu is not None:
-            print(f"Processing IMU message: {imu}")
-            self.shrd_mem.insert("deviceRot", [imu["angle"]])
-         
+        self.shrd_mem.insert("devicePos", [69,420]) # I'm very funny pls clap
         # Send any accumulated data to server
         tosend = self.shrd_mem.get()
         for mem in tosend:
