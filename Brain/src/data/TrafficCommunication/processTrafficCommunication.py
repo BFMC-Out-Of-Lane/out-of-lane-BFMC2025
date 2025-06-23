@@ -34,7 +34,7 @@ if __name__ == "__main__":
 from multiprocessing import Pipe
 from src.data.TrafficCommunication.useful.sharedMem import sharedMem
 from src.templates.workerprocess import WorkerProcess
-from src.data.TrafficCommunication.threads.threadTrafficCommunicaiton import (
+from src.data.TrafficCommunication.threads.threadTrafficCommunication import (
     threadTrafficCommunication,
 )
 class processTrafficCommunication(WorkerProcess):
@@ -48,11 +48,11 @@ class processTrafficCommunication(WorkerProcess):
     """
 
     # ====================================== INIT ==========================================
-    def __init__(self, queueList, logging, deviceID, debugging, frequency=1):
+    def __init__(self, queueList, logging, deviceID, debugging, frequency=1, shared_mem = None):
         self.queuesList = queueList
         self.logging = logging
-        self.shared_memory = sharedMem()
-        self.filename = "src/data/TrafficCommunication/useful/publickey_server.pem"
+        self.shared_memory = shared_mem
+        self.filename = "src/data/TrafficCommunication/useful/publickey_server_test.pem"
         self.deviceID = deviceID
         self.frequency = frequency
         self.debugging = debugging
@@ -75,12 +75,28 @@ class processTrafficCommunication(WorkerProcess):
 
     # ===================================== INIT TH ======================================
     def _init_threads(self):
-        """Create the Traffic Communication thread and add it to the list of threads."""
+        """
+        Initialize the threads needed for the process.
+        """
+        print("[ProcessTraffic] Iniciando threads...")
+        
+        # Create the shared memory
+        print("[ProcessTraffic] Creando memoria compartida...")
 
+        # Create the thread
+        print("[ProcessTraffic] Creando threadTrafficCommunication...")
         TrafficComTh = threadTrafficCommunication(
-            self.shared_memory, self.queuesList, self.deviceID, self.frequency, self.filename
+            self.shared_memory, 
+            self.queuesList, 
+            self.deviceID, 
+            self.frequency, 
+            self.filename
         )
+
+        # Add the thread to the list
+        print("[ProcessTraffic] Agregando thread a la lista...")
         self.threads.append(TrafficComTh)
+        print("[ProcessTraffic] Threads inicializados correctamente")
 
 
 # =================================== EXAMPLE =========================================
@@ -110,7 +126,7 @@ if __name__ == "__main__":
 
     start_time = time.time()
     duration = 10  # specify the duration in seconds
-    
+    print("Traffic Communication started. Waiting for messages...")
     shared_memory.insert("devicePos", [1.2, 2.3]) # send a position to the server
     shared_memory.insert("deviceRot", [3.4]) # send a rotation to the server
     shared_memory.insert("deviceSpeed", [4.5]) # send a speed to the server
