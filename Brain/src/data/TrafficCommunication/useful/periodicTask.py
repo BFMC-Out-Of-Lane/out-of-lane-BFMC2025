@@ -28,23 +28,41 @@
 from twisted.internet import task
 
 
-class periodicTask(task.LoopingCall):
-    def __init__(self, interval, shrd_mem, tcp_factory):
-        super().__init__(self.periodicCheck)
-        self.interval = interval
+class periodicTask():
+    """Class which will handle the periodic task of sending data to the server
+
+    Args:
+        period (int): The period of the task in seconds.
+        shrd_mem (sharedMem): A space in memory for mwhere we will get and update data.
+        tcp_factory (tcpClient): The tcp client which will send the data to the server.
+    """
+
+    def __init__(self, period, shrd_mem, tcp_factory):
+        self.period = period
         self.shrd_mem = shrd_mem
         self.tcp_factory = tcp_factory
+        self.task = task.LoopingCall(self.periodicCheck)
 
     def start(self):
-        """
-        Start the periodic task with the specified interval.
-        """
-        super().start(self.interval)
+        """Start the periodic task"""
+        self.task.start(self.period)
+
+    def stop(self):
+        """Stop the periodic task"""
+        if self.task.running:
+            self.task.stop()
 
     def periodicCheck(self):
-        """
-        Perform the periodic check and send data to the server.
-        """
+        """Checks if there are any errors in the queue and sends them to the server"""
         tosend = self.shrd_mem.get()
+        
+        if not tosend:
+            return
+            
         for mem in tosend:
-            self.tcp_factory.send_data_to_server(mem)
+            #print("[PeriodicTask] Enviando al servidor:", mem)
+            try:
+                self.tcp_factory.send_data_to_server(mem)
+                #print("[PeriodicTask] Datos enviados correctamente")
+            except Exception as e:
+                print("[PeriodicTask] Error al enviar datos:", str(e))

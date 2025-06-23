@@ -79,7 +79,7 @@ logging = logging.getLogger()
 Dashboard = True
 Camera = True
 Semaphores = False
-TrafficCommunication = True
+TrafficCommunication = False
 SerialHandler = True
 
 # ------ New component flags starts here ------#
@@ -115,7 +115,7 @@ if Semaphores:
 
 # Initializing GPS
 if TrafficCommunication:
-    processTrafficCommunication = processTrafficCommunication(queueList, logging, 3, debugging = False)
+    processTrafficCommunication = processTrafficCommunication(queueList, logging, 3, debugging = True)
     allProcesses.append(processTrafficCommunication)
 
 # Initializing serial connection NUCLEO - > PI

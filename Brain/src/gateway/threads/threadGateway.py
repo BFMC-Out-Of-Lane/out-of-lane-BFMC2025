@@ -27,34 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 import time
-import queue
-from threading import Thread
-
 from src.templates.threadwithstop import ThreadWithStop
-
-class SenderThread(Thread):
-    def __init__(self, pipe, logger, debugging):
-        super(SenderThread, self).__init__()
-        self.pipe = pipe
-        self.logger = logger
-        self.debugging = debugging
-        self.message_queue = queue.Queue()
-        self.daemon = True
-        self._running = True
-
-    def run(self):
-        while self._running:
-            try:
-                message = self.message_queue.get(timeout=0.1)
-                self.pipe.send(message)
-            except queue.Empty:
-                continue
-            except Exception as e:
-                if True:
-                    self.logger.error(f"Failed to send message: {str(e)}")
-
-    def stop(self):
-        self._running = False
 
 class threadGateway(ThreadWithStop):
     """Thread which will handle processGateway functionalities.\n
@@ -73,7 +46,6 @@ class threadGateway(ThreadWithStop):
         self.sendingList = {}
         self.queuesList = queueList
         self.messageApproved = []
-        self.sender_threads = {}
 
     # =================================== SUBSCRIBE ======================================
 
@@ -82,23 +54,19 @@ class threadGateway(ThreadWithStop):
         Args:
             message(dictionary): Dictionary received from the multiprocessing queues ( the config one).
         """
-
+        
         # Declaration of variables:
         Owner = message["Owner"]
         Id = message["msgID"]
         To = message["To"]["receiver"]
-        Pipe = message["To"]["pipe"]
-        print(Owner, Id, To, Pipe)
+        Queue = message["To"]["queue"]
+        print(Owner, Id, To, Queue)
         if not Owner in self.sendingList.keys():
             self.sendingList[Owner] = {}
         if not Id in self.sendingList[Owner].keys():
             self.sendingList[Owner][Id] = {}
         if not To in self.sendingList[Owner][Id].keys():
-            self.sendingList[Owner][Id][To] = Pipe
-            # Create a sender thread for this pipe
-            sender = SenderThread(Pipe, self.logger, self.debugging)
-            sender.start()
-            self.sender_threads[(Owner, Id, To)] = sender
+            self.sendingList[Owner][Id][To] = Queue
         self.messageApproved.append((Owner, Id))
         # Debugging( you can comment this):
         if self.debugging:
@@ -115,11 +83,6 @@ class threadGateway(ThreadWithStop):
         Owner = message["Owner"]
         Id = message["msgID"]
         To = message["To"]["receiver"]
-
-        # Stop and remove the sender thread
-        if (Owner, Id, To) in self.sender_threads:
-            self.sender_threads[(Owner, Id, To)].stop()
-            del self.sender_threads[(Owner, Id, To)]
 
         # We delete the value from Dictionary
         del self.sendingList[Owner][Id][To]
@@ -141,16 +104,12 @@ class threadGateway(ThreadWithStop):
         Value = message["msgValue"]
         if (Owner, Id) in self.messageApproved:
             for element in self.sendingList[Owner][Id]:
+                # We send a dictionary that contain the type of the message and message
+                self.sendingList[Owner][Id][element].put(
+                    {"Type": Type, "value": Value, "id": Id, "Owner": Owner}
+                )
                 if self.debugging:
-                    print(self.sendingList[Owner][Id][element])
-                try:
-                    # Queue the message for sending
-                    self.sender_threads[(Owner, Id, element)].message_queue.put(
-                        {"Type": Type, "value": Value, "id": Id, "Owner": Owner}
-                    )
-                except Exception as e:
-                    if True:
-                        self.logger.error(f"Failed to queue message for {element}: {str(e)}")
+                    self.logger.warning(message)
 
     # ====================================================================================
 
@@ -162,35 +121,38 @@ class threadGateway(ThreadWithStop):
 
     # ==================================== RUN ===========================================
 
+
     def run(self):
-        """This function will take the messages in priority order form the queues.\n
-        the prioirty is: Critical > Warning > General
         """
+        Processes messages in priority order: Critical > Warning > General.
+        Also handles Config messages independently.
+        """
+        priority_order = ["Critical", "Warning", "General"]
 
         while self._running:
             message = None
-            # We are using "elif" because we are processing one message at a time.
-            # We work with the queues in the priority order( We start from the high priority to low priority)
-            if not self.queuesList["Critical"].empty():
-                message = self.queuesList["Critical"].get()
-            elif not self.queuesList["Warning"].empty():
-                message = self.queuesList["Warning"].get()
-            elif not self.queuesList["General"].empty():
-                message = self.queuesList["General"].get()
-            if message is not None:
+
+            # Procesar mensaje prioritario
+            for priority in priority_order:
+                if not self.queuesList[priority].empty():
+                    message = self.queuesList[priority].get()
+                    break  # Solo procesamos un mensaje por ciclo
+
+            if message:
                 self.send(message)
 
-            if not self.queuesList["Config"].empty():
-                message2 = self.queuesList["Config"].get()
-                if str.lower(message2["Subscribe/Unsubscribe"]) == "subscribe":
-                    self.subscribe(message2)
+            # Procesar mensajes de configuración si hay
+            while not self.queuesList["Config"].empty():
+                config_msg = self.queuesList["Config"].get()
+                action = config_msg.get("Subscribe/Unsubscribe", "").lower()
+                if action == "subscribe":
+                    self.subscribe(config_msg)
                 else:
-                    self.unsubscribe(message2)
+                    self.unsubscribe(config_msg)
 
-    def stop(self):
-        """Stop all sender threads when the gateway stops"""
-        for sender in self.sender_threads.values():
-            sender.stop()
-        super(threadGateway, self).stop()
+            # Evita consumir CPU innecesariamente
+            if not message:
+                time.sleep(0.01)
+
 
 # =====================================================================================

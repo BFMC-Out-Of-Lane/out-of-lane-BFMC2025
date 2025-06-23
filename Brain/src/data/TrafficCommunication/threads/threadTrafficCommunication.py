@@ -48,14 +48,13 @@ class threadTrafficCommunication(ThreadWithStop):
     def __init__(self, shrd_mem, queueslist, deviceID, frequency, decrypt_key):
         super(threadTrafficCommunication, self).__init__()
         self.listenPort = 9000
-        self.queue = queueslist["General"]
+        self.queue = queueslist
 
         self.tcp_factory = tcpClient(self.serverLost, deviceID, frequency, self.queue) # Handles the connection with the server
-
         self.udp_factory = udpListener(decrypt_key, self.serverFound) #Listens for server broadcast and validates it
 
         self.period_task = periodicTask(1, shrd_mem, self.tcp_factory) # Handles the Queue of errors accumulated so far.
-
+        self.shared_memory = shrd_mem
         self.reactor = reactor
         self.reactor.listenUDP(self.listenPort, self.udp_factory)
 
@@ -71,6 +70,7 @@ class threadTrafficCommunication(ThreadWithStop):
         """If the server was found, we stop the factory listening, connect the reactor, and start the periodic task"""
         
         self.reactor.connectTCP(address, port, self.tcp_factory)
+        print(f"[ThreadTrafficCommunication] Server found at {address}:{port}, connecting...")
         self.udp_factory.stopListening()
         self.period_task.start()
 
@@ -79,6 +79,7 @@ class threadTrafficCommunication(ThreadWithStop):
     # ======================================= RUN ==========================================
     def run(self):
         self.reactor.run(installSignalHandlers=False)
+    
 
     # ====================================== STOP ==========================================
     def stop(self):

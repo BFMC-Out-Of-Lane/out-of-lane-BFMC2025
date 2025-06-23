@@ -9,7 +9,7 @@ from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
                                             PointToFollowMode, Position,
                                             RawConfig, SetNodeList, SpeedMotor,
                                             SteerMotor, TrafficSignDetection,
-                                            WarningSignal)
+                                            WarningSignal, Location)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
@@ -25,14 +25,15 @@ IS_LANE_KEEPING_ON = True  # If it is OFF only node following will work
                 #    "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
 
 # Initial position for testing (COMMENT OUT!)
-INIT_X = 720  # TODO: Change this to the correct value
-INIT_Y = 10570
+INIT_X = 15660  # TODO: Change this to the correct value
+INIT_Y = 4600
 INIT_ANGLE = 90
-MANDATORY_NODES = ["83", "243"]
+MANDATORY_NODES = ["55", "243"]
 
 
 # Traffic sign constants
 MIN_DISTANCE_TO_SIGN = 30
+MIN_DISTANCE_TO_CAR = 50
 MIN_DISTANCE_TO_CROSSWALK = 70
 TIME_AT_STOP_SIGN = 2
 
@@ -101,6 +102,10 @@ class threadDecisionMaker(ThreadWithStop):
             self.klem = self.subscribers["Klem"].receive() or self.klem
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
 
+            loc = self.subscribers["Location"].receive()
+            if loc:
+                print(f'{{"threadDecisionMaker": {{ "Location": {loc} }}}}')
+
             if self.klem == "0":
                 self.current_speed = "0"
                 send_gps_data = True
@@ -119,10 +124,6 @@ class threadDecisionMaker(ThreadWithStop):
                 self.imu_data = self.subscribers["ImuData"].receive() or self.imu_data
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive() or self.lane_keeping
                 self.position = self.subscribers["Position"].receive() or self.position
-
-                # Publish the current position and rotation to shared memory
-                self.shared_memory.insert("devicePos", [self.position["x"], self.position["y"]])
-                self.shared_memory.insert("deviceRot", [self.imu_data["yaw"]])
 
                 try:
                     if self.nav_mode == NODE_NAVIGATION or self.nav_mode == LANE_DETECTOR:
@@ -150,6 +151,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.subscribers["NodeIndex"] = messageHandlerSubscriber(self.queuesList, NodeIndex, "lastonly", True)
         self.subscribers["PointToFollowMode"] = messageHandlerSubscriber(
             self.queuesList, PointToFollowMode, "lastonly", True)
+        self.subscribers["Location"] = messageHandlerSubscriber(self.queuesList, Location, "lastonly", True)
 
     def _handle_lane_keeping_message(self):
         """Handles the lane keeping message, i.e.: decides the steering angle"""
@@ -216,8 +218,7 @@ class threadDecisionMaker(ThreadWithStop):
 
             if (
                 ("pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] < MIN_DISTANCE_TO_SIGN) or
-                ("roadblock" in detected_object_dict and detected_object_dict["roadblock"] < MIN_DISTANCE_TO_SIGN) or
-                ("car-white" in detected_object_dict and detected_object_dict["car-white"] < MIN_DISTANCE_TO_SIGN)
+                ("roadblock" in detected_object_dict and detected_object_dict["roadblock"] < MIN_DISTANCE_TO_SIGN)
             ):
                 if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] < MIN_DISTANCE_TO_SIGN:
                     self.signal_sender.send(str({"WarningName": "ped_on_crosswalk", "WarningID": 12}))
@@ -228,6 +229,19 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
+            if (("car-white" in detected_object_dict and detected_object_dict["car-white"] < MIN_DISTANCE_TO_CAR) or 
+               ("car-blue" in detected_object_dict and detected_object_dict["car-blue"] < MIN_DISTANCE_TO_CAR)):
+                self.signal_sender.send(str({"WarningName": "car_ahead", "WarningID": 2}))
+                current_index_in_path = self.gps.get_current_node(self.position)
+                targets_with_dashed_line = self.gps.get_target(self.gps.G,self.gps.get_node(current_index_in_path).id)
+                if targets_with_dashed_line:
+                    self._start_skipping_maneuver()
+                    if self.debugging:
+                        self.logging.info("Skipping car ahead")
+                else:
+                    self.stop_timer = time.time()
+                    self._send_speed(0) 
+            
             if "highway-entry-sign" in detected_object_dict and detected_object_dict["highway-entry-sign"] < MIN_DISTANCE_TO_SIGN:
                 self.signal_sender.send(str({"WarningName": "highway_entrance", "WarningID": 6}))
                 self._send_speed(500)
@@ -313,9 +327,6 @@ class threadDecisionMaker(ThreadWithStop):
             elif self.nav_mode == LANE_DETECTOR:
                 self._node_navigation(current_node_index)
 
-            # elif self.gps.is_last(current_node_index):
-            #     self._start_parking_maneuver()
-
     def _node_navigation(self, current_node_index):
         self.nav_mode = NODE_NAVIGATION
         self.gps.cut_path_from(current_node_index + 2)
@@ -362,3 +373,9 @@ class threadDecisionMaker(ThreadWithStop):
     def _send_speed(self, new_speed):
         self.speed_sender.send(str(new_speed))
         self.current_speed = str(new_speed)
+
+    def _start_skipping_maneuver(self):
+        if self.debugging:
+            self.logging.info("maneuver: SKIPPING")
+            
+        self.raw_config_sender.send(f"#skipCarMode:{1};;\r\n")
