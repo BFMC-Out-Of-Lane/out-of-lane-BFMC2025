@@ -2,13 +2,14 @@ from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (
     mainCamera,
     serialCamera,
-    trafficSigns)
+    TrafficSignPosition)
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 from src.utils.messages.messageHandlerSender import messageHandlerSender
-from src.utils.visionManager.distanceCalculator import DistanceCalculation
+# from src.utils.visionManager.distanceCalculator import DistanceCalculation
 import cv2
 import numpy as np
 import base64
+from src.utils.visionManager.objectDetector import ObjectDetectionProcessor
 
 
 class threadTrafficSigns(ThreadWithStop):
@@ -34,16 +35,18 @@ class threadTrafficSigns(ThreadWithStop):
         # yolo11n_traffic_objects_V11.pt
         # yolov8n.pt
 
-        self.distanceCalculator = DistanceCalculation(model="src/vision/TrafficSigns/models/yolo11n_traffic_objects_V15.pt",
-                                                      conf=0.6,
-                                                      # classes = [0,8],
-                                                      vid_stride=10,
-                                                      # stream_buffer= True,
-                                                      # max_det=1,
-                                                      )
+        # self.distanceCalculator = DistanceCalculation(model="src/vision/TrafficSigns/models/yolo11n_traffic_objects_V15.pt",
+        #                                               conf=0.6,
+        #                                               # classes = [0,8],
+        #                                               vid_stride=10,
+        #                                               # stream_buffer= True,
+        #                                               # max_det=1,
+        #                                               )
+        self.distanceCalculator = ObjectDetectionProcessor(yolo_path="src/vision/TrafficSigns/models/yolo11n_traffic_objects_V15.pt")
+
         self.distanceToObjectMessage = {}
         # Send the detected signs to the decision maker
-        self.signsSender = messageHandlerSender(self.queuesList, trafficSigns)
+        self.signsSender = messageHandlerSender(self.queuesList, TrafficSignPosition)
 
     def run(self):
         while self._running:
@@ -80,18 +83,16 @@ class threadTrafficSigns(ThreadWithStop):
 
         try:
             if self.isDetectorActive:
-                detectedObjectDistanceDict = self.distanceCalculator.calculate(image)
+                detectedObjectDistanceDict = self.distanceCalculator.process_image(image)
                 if detectedObjectDistanceDict:
-                    # Las variables toman los siguientes valores:
-                    # detectedClassName = ["stop-signal", "crosswalk-signal" ]
-                    # distanceToObject = [200.0, 100.0]
 
                     self.distanceToObjectMessage = {
                         "objectDict": detectedObjectDistanceDict,
                     }
+                    
                     if self.debugging:
                         self.logging.info(
-                            f'{{"threadTrafficSigns": {{ "Object-Distance": {self.distanceToObjectMessage["objectDict"]}}} }}')
+                            f'{{"threadTrafficSigns": {{ "Object-Position": {self.distanceToObjectMessage["objectDict"]}}} }}')
 
                     self.signsSender.send(self.distanceToObjectMessage)
         except Exception as e:

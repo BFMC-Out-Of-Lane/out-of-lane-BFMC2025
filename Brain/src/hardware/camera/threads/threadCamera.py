@@ -9,7 +9,7 @@ from src.hardware.camera.lane_detection.lane_detector import LaneDetector
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (Brightness, Contrast, LaneKeeping,
                                             Record, Recording, mainCamera,
-                                            serialCamera, trafficSigns, secondaryCamera)
+                                            serialCamera, TrafficSignPosition, secondaryCamera, TrafficSignDetection)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import messageHandlerSubscriber
 
@@ -28,6 +28,7 @@ class threadCamera(ThreadWithStop):
         self.debugger = debugger
         self.frame_rate = 5
         self.recording = False
+        self.depth_scale = 0.001  # Default depth scale
 
         self.video_writer = None
         self.lane_detector = LaneDetector(min_offset=60, perc_of_sight_len=0.3)
@@ -37,6 +38,9 @@ class threadCamera(ThreadWithStop):
         self.serialCameraSender = messageHandlerSender(self.queuesList, serialCamera)
         self.secondaryCameraSender = messageHandlerSender(self.queuesList, secondaryCamera)
         self.lane_keeping_sender = messageHandlerSender(self.queuesList, LaneKeeping)
+        self.signsSender = messageHandlerSender(self.queuesList, TrafficSignDetection)
+        
+        self.distanceToObjectMessage = {}
 
         self.subscribe()
         self._init_camera()
@@ -48,7 +52,7 @@ class threadCamera(ThreadWithStop):
         self.recordSubscriber = messageHandlerSubscriber(self.queuesList, Record, "lastOnly", True)
         self.brightnessSubscriber = messageHandlerSubscriber(self.queuesList, Brightness, "lastOnly", True)
         self.contrastSubscriber = messageHandlerSubscriber(self.queuesList, Contrast, "lastOnly", True)
-        self.trafficSubscriber = messageHandlerSubscriber(self.queuesList, trafficSigns, "lastonly", True)
+        self.trafficSignPositionSubscriber = messageHandlerSubscriber(self.queuesList, TrafficSignPosition, "lastonly", True)
 
     def Queue_Sending(self):
         """Envía periódicamente el estado de grabación."""
@@ -91,6 +95,48 @@ class threadCamera(ThreadWithStop):
 
         threading.Timer(1, self.Configs).start()
 
+    def distance_depth(self, point_x, point_y, depth_frame):
+        
+        # If no depth frame is available, continue to the next iteration.
+        if not depth_frame:        
+            return
+
+            # Convert the depth frame to a NumPy array for easier processing.
+            # The data is typically in raw units, so we multiply by the depth_scale to get meters.
+        depth_image_data = np.asanyarray(depth_frame.get_data()) * self.depth_scale
+
+            # Initialize variables for comprehensive depth statistics
+        valid_depth_pixels = 0
+        total_distance = 0.0
+
+        # Define the points around the center point for which we want to measure distance
+        # This is a list of points around the center point (point_x, point_y) to measure distance.
+        points = [(point_x, point_y),
+                (point_x+1, point_y),
+                (point_x, point_y+1),
+                (point_x+1, point_y+1),
+                (point_x-1, point_y),
+                (point_x, point_y-1),
+                (point_x-1, point_y-1),
+                (point_x+1, point_y-1),
+                (point_x-1, point_y+1),
+                ]  # List of 9 points around the center point
+        for (x, y) in points:
+        # Verificar si el punto está dentro de los límites de la imagen
+            if 0 <= x < 1280 and 0 <= y < 720:  # Assuming the depth frame is 1280x720        
+                dist = depth_image_data[y, x]   # Obtener la distancia del píxel actual en metros
+                # print(f"Distancia medida en píxel ({x}, {y}): {dist:.2f} metros")
+
+                # Verificar si la distancia es válida (mayor que 0)
+                if dist > 0.001:  # Usar un umbral pequeño para filtrar ruido
+                    valid_depth_pixels += 1
+                    total_distance += dist
+
+            # Calculate average distance if there are valid pixels.
+        average_distance = total_distance / valid_depth_pixels if valid_depth_pixels > 0 else 0.0
+
+        return average_distance  # Return the average distance in meters for the center point
+
     def run(self):
         """Captura imágenes, procesa y envía datos al gateway de procesos."""
         send = True
@@ -120,6 +166,7 @@ class threadCamera(ThreadWithStop):
             if send:
                 mainRequest = self.camera_capture("main")  # Main camera capture
                 serialRequest = self.camera_capture("lores")  # Low-resolution camera capture
+                depthFrame = self.camera_capture_depth()  # Depth frame capture
                 
                 if self.recording == True:
                     self.video_writer.write(mainRequest)
@@ -135,13 +182,34 @@ class threadCamera(ThreadWithStop):
                 mainEncodedImageData = base64.b64encode(mainEncodedImg).decode("utf-8")
                 self.mainCameraSender.send(mainEncodedImageData)
 
-                traffic_sign = {"objectDict": {}}
-                traffic_sign = self.trafficSubscriber.receive()
-                if traffic_sign is None:
-                    traffic_sign = {"objectDict": {}}
-                processed_image, cross_tracking_error, deviation, binary_warped = self.lane_detector.process_frame(serialRequest, traffic_sign)
+                traffic_sign_pos = self.trafficSignPositionSubscriber.receive()
+                # print(f"traffic_sign_pos recibido: {traffic_sign_pos}") 
+                traffic_sign_dist = {}
+                
+                if traffic_sign_pos is not None and "objectDict" in traffic_sign_pos:
+                    for class_name, center in traffic_sign_pos["objectDict"].items():
+                        center_x = int(center[0])                        
+                        center_y = int(center[1])
+                        if 0 <= center_x < 1280 and 0 <= center_y < 720:
+                            distance_meters = self.distance_depth(center_x, center_y, depthFrame)
+                            distance_centimeters = distance_meters * 100  # Convert to centimeters
+                            traffic_sign_dist[class_name] = int(distance_centimeters)
+                        else:
+                            traffic_sign_dist[class_name] = None
+                else:
+                    traffic_sign_dist = None
+
+                if traffic_sign_dist is not None:    
+                    self.distanceToObjectMessage = {
+                        "objectDict": traffic_sign_dist,
+                    }
+                    self.signsSender.send(self.distanceToObjectMessage)
+                
+                processed_image, cross_tracking_error, deviation, binary_warped = self.lane_detector.process_frame(serialRequest, traffic_sign_dist)
                 self.lane_keeping_sender.send({"cross_tracking_error": cross_tracking_error, "deviation": deviation})
                 
+
+
                 # Codificar la imagen procesada para el envío
                 _, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)
                 serial_encoded_processed_image_data = base64.b64encode(serial_encoded_processed_image).decode("utf-8")
@@ -168,6 +236,14 @@ class threadCamera(ThreadWithStop):
             frame = cv2.resize(frame, (304, 171), interpolation=cv2.INTER_LINEAR)
 
         return frame
+
+    def camera_capture_depth(self):
+        frames = self.camera.wait_for_frames()
+        depth_frame = frames.get_depth_frame()
+        if not depth_frame:
+            print("No depth frame captured!!!!!!!")
+            return None
+        return depth_frame
     
     def start(self):
         super(threadCamera, self).start()
@@ -182,14 +258,6 @@ class threadCamera(ThreadWithStop):
         config = rs.config()
         # Solo un stream de color a 1920×1080 @30 fps
         config.enable_stream(rs.stream.color, 1280, 720, rs.format.rgb8, 15)
-        # config.enable_stream(rs.stream.depth,  640,  480, rs.format.z16,  30)
+        config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
 
-        # try:
-        #     # Resuelvo la configuración contra el pipeline
-        #     profile = config.resolve(self.camera)
-        # except Exception as e:
-        #     self.logger.error(f"Error al resolver streams: {e}")
-        #     raise
-
-        # self.camera.start(profile)
         self.camera.start(config)

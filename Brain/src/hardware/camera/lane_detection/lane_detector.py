@@ -93,7 +93,7 @@ class LaneDetector:
 
         left_peaks = find_peaks(histogram[:midpoint], height=0)[0]
         right_peaks = find_peaks(histogram[midpoint:], height=0)[0]
-        if self.traffic_sign is not None and "crosswalk-road" in self.traffic_sign and self.traffic_sign["crosswalk-road"] > 50:
+        if self.traffic_sign is not None and "crosswalk-road" in self.traffic_sign and self.traffic_sign["crosswalk-road"] < 50:
             leftx_base = left_peaks[0] if len(left_peaks) > 0 else midpoint - self.min_offset
             rightx_base = right_peaks[-1] + midpoint if len(right_peaks) > 0 else midpoint + self.min_offset
         else:
@@ -310,7 +310,7 @@ class LaneDetector:
 
     def process_frame(self, frame, traffic_sign):
         if traffic_sign is not None:
-            self.traffic_sign = traffic_sign["objectDict"]
+            self.traffic_sign = traffic_sign
         self._get_perspective_transform(frame)
         warped = self._warp_image(frame, self.M)
         self.binary_warped = self._threshold_image(warped)
