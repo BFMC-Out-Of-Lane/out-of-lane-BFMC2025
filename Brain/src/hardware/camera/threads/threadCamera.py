@@ -41,6 +41,7 @@ class threadCamera(ThreadWithStop):
         self.signsSender = messageHandlerSender(self.queuesList, TrafficSignDetection)
         
         self.distanceToObjectMessage = {}
+        self.fixedPointTimer = time.time()
 
         self.subscribe()
         self._init_camera()
@@ -183,7 +184,6 @@ class threadCamera(ThreadWithStop):
                 self.mainCameraSender.send(mainEncodedImageData)
 
                 traffic_sign_pos = self.trafficSignPositionSubscriber.receive()
-                # print(f"traffic_sign_pos recibido: {traffic_sign_pos}") 
                 traffic_sign_dist = {}
                 
                 if traffic_sign_pos is not None and "objectDict" in traffic_sign_pos:
@@ -196,10 +196,20 @@ class threadCamera(ThreadWithStop):
                             traffic_sign_dist[class_name] = int(distance_centimeters)
                         else:
                             traffic_sign_dist[class_name] = None
-                else:
-                    traffic_sign_dist = None
 
-                if traffic_sign_dist is not None:    
+                # Fixed point distance
+                if time.time() - self.fixedPointTimer > 0.2:  # Update every 0.2 seconds
+                    self.fixedPointTimer = time.time()
+                    if depthFrame is not None:
+                        center_x = 640  # Center of the image width
+                        center_y = 500  # Center of the image height
+                        fixed_distance_m = self.distance_depth(center_x, center_y, depthFrame)
+                        if fixed_distance_m is not None:
+                            fixed_distance_cm = fixed_distance_m * 100  # Convert to centimeters
+                            traffic_sign_dist["fixed-point"] = int(fixed_distance_cm)
+                        print("traffic sign dist fixed p: ", traffic_sign_dist)
+
+                if traffic_sign_dist is not None and traffic_sign_dist is not {}:    
                     self.distanceToObjectMessage = {
                         "objectDict": traffic_sign_dist,
                     }
@@ -207,8 +217,6 @@ class threadCamera(ThreadWithStop):
                 
                 processed_image, cross_tracking_error, deviation, binary_warped = self.lane_detector.process_frame(serialRequest, traffic_sign_dist)
                 self.lane_keeping_sender.send({"cross_tracking_error": cross_tracking_error, "deviation": deviation})
-                
-
 
                 # Codificar la imagen procesada para el envío
                 _, serial_encoded_processed_image = cv2.imencode(".jpg", processed_image)
@@ -241,7 +249,6 @@ class threadCamera(ThreadWithStop):
         frames = self.camera.wait_for_frames()
         depth_frame = frames.get_depth_frame()
         if not depth_frame:
-            print("No depth frame captured!!!!!!!")
             return None
         return depth_frame
     
