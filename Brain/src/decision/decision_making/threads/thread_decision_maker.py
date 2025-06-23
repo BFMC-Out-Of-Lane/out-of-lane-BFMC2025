@@ -15,7 +15,7 @@ from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
 PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/competition_track_graph.graphml"
-IS_LANE_KEEPING_ON = False  # If it is OFF only node following will work
+IS_LANE_KEEPING_ON = True  # If it is OFF only node following will work
 
 # Initial position for competition
 # INIT_X = 11830  # TODO: Change this to the correct value
@@ -33,7 +33,7 @@ MANDATORY_NODES = ["55", "243"]
 
 # Traffic sign constants
 MIN_DISTANCE_TO_SIGN = 30
-MIN_DISTANCE_TO_CAR = 50
+MIN_DISTANCE_TO_CAR = 60
 MIN_DISTANCE_TO_CROSSWALK = 70
 TIME_AT_STOP_SIGN = 2
 
@@ -233,7 +233,7 @@ class threadDecisionMaker(ThreadWithStop):
                ("car-blue" in detected_object_dict and detected_object_dict["car-blue"] < MIN_DISTANCE_TO_CAR)):
                 self.signal_sender.send(str({"WarningName": "car_ahead", "WarningID": 2}))
                 current_index_in_path = self.gps.get_current_node(self.position)
-                targets_with_dashed_line = self.gps.get_target(self.gps.G,self.gps.get_node(current_index_in_path).id)
+                targets_with_dashed_line = self.gps.get_target(self.gps.get_node(current_index_in_path).id, attr_key="dotted")
                 if targets_with_dashed_line:
                     self._start_skipping_maneuver()
                     if self.debugging:
