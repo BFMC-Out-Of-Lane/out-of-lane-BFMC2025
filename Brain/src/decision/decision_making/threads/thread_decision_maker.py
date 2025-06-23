@@ -5,11 +5,12 @@ from src.data.TrafficCommunication.useful.sharedMem import sharedMem
 from src.decision.decision_making.gps.gps import GPS
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
-                                            Klem, LaneKeeping, NodeIndex,
-                                            PointToFollowMode, Position,
-                                            RawConfig, SetNodeList, SpeedMotor,
-                                            SteerMotor, TrafficSignDetection,
-                                            WarningSignal, Location)
+                                            Klem, LaneKeeping, Location,
+                                            NodeIndex, PointToFollowMode,
+                                            Position, RawConfig, SetNodeList,
+                                            SpeedMotor, SteerMotor,
+                                            TrafficSignDetection,
+                                            WarningSignal)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
@@ -18,17 +19,17 @@ PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/competition_track_gr
 IS_LANE_KEEPING_ON = True  # If it is OFF only node following will work
 
 # Initial position for competition
-# INIT_X = 11830  # TODO: Change this to the correct value
-# INIT_Y = 2050
-# INIT_ANGLE = 0
-# MANDATORY_NODES = ["257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
-                #    "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
+INIT_X = 11830  # TODO: Change this to the correct value
+INIT_Y = 2050
+INIT_ANGLE = 0
+MANDATORY_NODES = ["257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
+   "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
 
 # Initial position for testing (COMMENT OUT!)
-INIT_X = 15660  # TODO: Change this to the correct value
-INIT_Y = 4600
-INIT_ANGLE = 90
-MANDATORY_NODES = ["55", "243"]
+# INIT_X = 15660  # TODO: Change this to the correct value
+# INIT_Y = 4600
+# INIT_ANGLE = 90
+# MANDATORY_NODES = ["55", "243"]
 
 
 # Traffic sign constants
@@ -86,6 +87,7 @@ class threadDecisionMaker(ThreadWithStop):
         self.stop_timer = time.time() - 60
         self.parking_timer = time.time() - 60
         self.set_position_timer = time.time()
+        self.shared_memory_timer = time.time()
 
         self.gps = GPS(
             path2graphml=PATH_TO_GRAPHML,
@@ -101,7 +103,6 @@ class threadDecisionMaker(ThreadWithStop):
         while self._running:
             self.klem = self.subscribers["Klem"].receive() or self.klem
             self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
-            self.shared_memory.insert("devicePos", [12, 12])
 
             if self.klem == "0":
                 self.current_speed = "0"
@@ -122,8 +123,11 @@ class threadDecisionMaker(ThreadWithStop):
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive() or self.lane_keeping
                 self.position = self.subscribers["Position"].receive() or self.position
 
-                self.shared_memory.insert("devicePos", [12, 12])
-                self.shared_memory.insert("deviceRot", [self.imu_data["yaw"]])
+                if time.time() - self.shared_memory_timer >= 1:
+                    self.shared_memory_timer = time.time()
+                    self.shared_memory.insert("deviceSpeed", [int(self.current_speed) / 100])
+                    self.shared_memory.insert("devicePos", [float(self.position['x']) / 1000, float(self.position['y']) / 1000])
+                    self.shared_memory.insert("deviceRot", [self.imu_data["yaw"]])
 
                 try:
                     if self.nav_mode == NODE_NAVIGATION or self.nav_mode == LANE_DETECTOR:
@@ -229,19 +233,20 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            if (("car-white" in detected_object_dict and detected_object_dict["car-white"] < MIN_DISTANCE_TO_CAR) or 
+            if (("car-white" in detected_object_dict and detected_object_dict["car-white"] < MIN_DISTANCE_TO_CAR) or
                ("car-blue" in detected_object_dict and detected_object_dict["car-blue"] < MIN_DISTANCE_TO_CAR)):
                 self.signal_sender.send(str({"WarningName": "car_ahead", "WarningID": 2}))
                 current_index_in_path = self.gps.get_current_node(self.position)
-                targets_with_dashed_line = self.gps.get_target(self.gps.get_node(current_index_in_path).id, attr_key="dotted")
+                targets_with_dashed_line = self.gps.get_target(
+                    self.gps.get_node(current_index_in_path).id, attr_key="dotted")
                 if targets_with_dashed_line:
                     self._start_skipping_maneuver()
                     if self.debugging:
                         self.logging.info("Skipping car ahead")
                 else:
                     self.stop_timer = time.time()
-                    self._send_speed(0) 
-            
+                    self._send_speed(0)
+
             if "highway-entry-sign" in detected_object_dict and detected_object_dict["highway-entry-sign"] < MIN_DISTANCE_TO_SIGN:
                 self.signal_sender.send(str({"WarningName": "highway_entrance", "WarningID": 6}))
                 self._send_speed(500)
@@ -315,12 +320,12 @@ class threadDecisionMaker(ThreadWithStop):
                         self.nav_mode = LANE_DETECTOR
                         if abs(cross_tracking_error) < 10:
                             self.raw_config_sender.send(
-                            f"#setPosition:0;{int(self.gps.get_node(current_node_index).y)};;\r\n")
+                                f"#setPosition:0;{int(self.gps.get_node(current_node_index).y)};;\r\n")
                     elif angle == 90 or angle == -90:
                         self.nav_mode = LANE_DETECTOR
                         if abs(cross_tracking_error) < 10:
                             self.raw_config_sender.send(
-                            int(f"#setPosition:{int(self.gps.get_node(current_node_index).x)};0;;\r\n"))
+                                int(f"#setPosition:{int(self.gps.get_node(current_node_index).x)};0;;\r\n"))
                     elif self.nav_mode == LANE_DETECTOR:
                         self._node_navigation(current_node_index)
 
@@ -377,5 +382,5 @@ class threadDecisionMaker(ThreadWithStop):
     def _start_skipping_maneuver(self):
         if self.debugging:
             self.logging.info("maneuver: SKIPPING")
-            
+
         self.raw_config_sender.send(f"#skipCarMode:{1};;\r\n")
