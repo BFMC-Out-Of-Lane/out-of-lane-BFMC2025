@@ -19,17 +19,17 @@ PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/competition_track_gr
 IS_LANE_KEEPING_ON = False  # If it is OFF only node following will work
 
 # Initial position for competition
-# INIT_X = 11830  # TODO: Change this to the correct value
-# INIT_Y = 2050
-# INIT_ANGLE = 0
-# MANDATORY_NODES = ["263", "257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
-#                    "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
+INIT_X = 11830  # TODO: Change this to the correct value
+INIT_Y = 2050
+INIT_ANGLE = 0
+MANDATORY_NODES = ["263", "257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
+                   "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
 
 # Initial position for testing (COMMENT OUT!)
-INIT_X = 15660  # TODO: Change this to the correct value
-INIT_Y = 4600
-INIT_ANGLE = 90
-MANDATORY_NODES = ["55", "243"]
+# INIT_X = 15660  # TODO: Change this to the correct value
+# INIT_Y = 4600
+# INIT_ANGLE = 90
+# MANDATORY_NODES = ["55", "243"]
 
 
 # Traffic sign constants
@@ -127,7 +127,7 @@ class threadDecisionMaker(ThreadWithStop):
                     self.shared_memory_timer = time.time()
                     self.shared_memory.insert("deviceSpeed", [int(self.current_speed) / 10])
                     self.shared_memory.insert(
-                        "devicePos", [float(self.position['x']) / 1000, float(self.position['y']) / 1000])
+                        "devicePos", self._position_to_meters())
                     self.shared_memory.insert("deviceRot", [360 - float(self.imu_data["yaw"])])
 
                 try:
@@ -196,6 +196,7 @@ class threadDecisionMaker(ThreadWithStop):
                 self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
                 if detected_object_dict["stop-sign"] < MIN_DISTANCE_TO_SIGN and time.time() - self.stop_timer > 12:
                     self.stop_timer = time.time()
+                    self.shared_memory.insert("historyData", [1, self._position_to_meters()[0], self._position_to_meters()[1]])
                     timer_stop_signal(TIME_AT_STOP_SIGN)
                     self._send_speed(300)
 
@@ -206,6 +207,7 @@ class threadDecisionMaker(ThreadWithStop):
             if "no-entry-sign" in detected_object_dict:
                 if detected_object_dict["no-entry-sign"] < MIN_DISTANCE_TO_SIGN and time.time() - self.stop_timer > 12:
                     self.signal_sender.send({"WarningName": "forbidden", "WarningID": 5})
+                    self.shared_memory.insert("historyData", [9, self._position_to_meters()[0], self._position_to_meters()[1]])
                     self._send_speed(0)
 
                     if self.debugging:
@@ -214,6 +216,7 @@ class threadDecisionMaker(ThreadWithStop):
 
             if ("crosswalk-sign" in detected_object_dict and detected_object_dict["crosswalk-sign"] < MIN_DISTANCE_TO_SIGN) or ("crosswalk-road" in detected_object_dict and detected_object_dict["crosswalk-road"] < MIN_DISTANCE_TO_CROSSWALK):
                 self.signal_sender.send(str({"WarningName": "crosswalk", "WarningID": 4}))
+                self.shared_memory.insert("historyData", [4, self._position_to_meters()[0], self._position_to_meters()[1]])
                 self.stop_timer = time.time()
                 self._send_speed(100)
 
@@ -225,6 +228,10 @@ class threadDecisionMaker(ThreadWithStop):
                     ("roadblock" in detected_object_dict and detected_object_dict["roadblock"] < MIN_DISTANCE_TO_SIGN)):
                 if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] < MIN_DISTANCE_TO_SIGN:
                     self.signal_sender.send(str({"WarningName": "ped_on_crosswalk", "WarningID": 12}))
+                    self.shared_memory.insert("historyData", [12, self._position_to_meters()[0], self._position_to_meters()[1]])
+                else:
+                    self.shared_memory.insert("historyData", [13, self._position_to_meters()[0], self._position_to_meters()[1]])
+                    
                 self.stop_timer = time.time()
                 self._send_speed(0)
 
@@ -239,7 +246,7 @@ class threadDecisionMaker(ThreadWithStop):
                 current_index_in_path = self.gps.get_current_node(self.position)
                 targets_with_dashed_line = self.gps.get_target(
                     self.gps.get_node(current_index_in_path).id, attr_key="dotted")
-                if targets_with_dashed_line:
+                if False and targets_with_dashed_line:
                     self._skipping_maneuver()
                 else:
                     self.stop_timer = time.time()
@@ -247,6 +254,7 @@ class threadDecisionMaker(ThreadWithStop):
 
             if "highway-entry-sign" in detected_object_dict and detected_object_dict["highway-entry-sign"] < MIN_DISTANCE_TO_SIGN:
                 self.signal_sender.send(str({"WarningName": "highway_entrance", "WarningID": 6}))
+                self.shared_memory.insert("historyData", [5, self._position_to_meters()[0], self._position_to_meters()[1]])
                 self._send_speed(500)
 
                 if self.debugging:
@@ -255,6 +263,7 @@ class threadDecisionMaker(ThreadWithStop):
 
             if "highway-end-sign" in detected_object_dict and detected_object_dict["highway-end-sign"] < MIN_DISTANCE_TO_SIGN:
                 self.signal_sender.send(str({"WarningName": "highway_exit", "WarningID": 7}))
+                self.shared_memory.insert("historyData", [6, self._position_to_meters()[0], self._position_to_meters()[1]])
                 self._send_speed(300)
 
                 if self.debugging:
@@ -263,8 +272,9 @@ class threadDecisionMaker(ThreadWithStop):
 
             if "parking-sign" in detected_object_dict and detected_object_dict["parking-sign"] < MIN_DISTANCE_TO_SIGN and time.time() - self.parking_timer > 60:
                 self.signal_sender.send(str({"WarningName": "parking", "WarningID": 10}))
+                self.shared_memory.insert("historyData", [3, self._position_to_meters()[0], self._position_to_meters()[1]])
 
-                self._start_parking_maneuver()
+                # self._start_parking_maneuver()
 
                 if self.debugging:
                     self.logging.info(
@@ -272,6 +282,7 @@ class threadDecisionMaker(ThreadWithStop):
 
             if "priority-sign" in detected_object_dict and detected_object_dict["priority-sign"] < MIN_DISTANCE_TO_SIGN:
                 self.signal_sender.send({"WarningName": "priority", "WarningID": 13})
+                self.shared_memory.insert("historyData", [3, self._position_to_meters()[0], self._position_to_meters()[1]])
                 self._send_speed(300)
 
                 if self.debugging:
@@ -280,6 +291,7 @@ class threadDecisionMaker(ThreadWithStop):
 
             if "red-light" in detected_object_dict and time.time() - self.stop_timer > 3:
                 self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
+                self.shared_memory.insert("historyData", [14, self._position_to_meters()[0], self._position_to_meters()[1]])
                 self.stop_timer = time.time()
                 self._send_speed(0)
 
@@ -289,12 +301,14 @@ class threadDecisionMaker(ThreadWithStop):
 
             if "yellow-light" in detected_object_dict and detected_object_dict["yellow-light"] < MIN_DISTANCE_TO_SIGN:
                 self.signal_sender.send({"WarningName": "yellow-light", "WarningID": 23})
+                self.shared_memory.insert("historyData", [14, self._position_to_meters()[0], self._position_to_meters()[1]])
                 if self.debugging:
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object detected:yellow-light" }}}}')
 
             if "green-light" in detected_object_dict and detected_object_dict["green-light"] < MIN_DISTANCE_TO_SIGN:
                 self.signal_sender.send({"WarningName": "green-light", "WarningID": 24})
+                self.shared_memory.insert("historyData", [14, self._position_to_meters()[0], self._position_to_meters()[1]])
                 self._send_speed(300)
 
                 if self.debugging:
@@ -384,3 +398,6 @@ class threadDecisionMaker(ThreadWithStop):
         self.raw_config_sender.send(f"#skipCarMode:{1};;\r\n")
         time.sleep(1)
         self._node_navigation(self.gps.get_current_node(self.position))
+        
+    def _position_to_meters(self):
+        return [float(self.position['x']) / 1000, float(self.position['y']) / 1000]
