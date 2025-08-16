@@ -69,7 +69,8 @@ class tcpClient(protocol.ClientFactory):
         return conn
 
     def send_data_to_server(self, message):
-        self.connection.send_data(message)
+        if self.connection:
+            self.connection.send_data(message)
 
 
 # One class is generated for each new connection

@@ -65,6 +65,15 @@ class LaneKeeping(Enum):
     msgID = 5
     msgType = "dict"
 
+
+class secondaryCamera(Enum):
+    """Message for secondary camera."""
+    Queue = "General"
+    Owner = "threadCamera"
+    msgID = 6
+    msgType = "str"
+
+
 ################################# processCarsAndSemaphores ##################################
 
 
@@ -255,7 +264,7 @@ class ImuAck(Enum):
 
 
 class WarningSignal(Enum):
-    Queue = "General"
+    Queue = "Warning"
     Owner = "threadRead"
     msgID = 8
     msgType = "str"
@@ -267,13 +276,34 @@ class Position(Enum):
     msgID = 9
     msgType = "dict"
 
+
+class NodeIndex(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 10
+    msgType = "int"
+
+
+class PointToFollowMode(Enum):
+    Queue = "General"
+    Owner = "threadRead"
+    msgID = 11
+    msgType = "int"
+
 ################################# processTrafficSigns ##################################
 
 
-class trafficSigns(Enum):
+class TrafficSignPosition(Enum):
     Queue = "General"
     Owner = "threadTrafficSigns"
     msgID = 1
+    msgType = "dict"
+
+
+class TrafficSignDetection(Enum):
+    Queue = "General"
+    Owner = "threadTrafficSigns"
+    msgID = 2
     msgType = "dict"
 
 ################################# From Locsys ##################################
@@ -296,7 +326,7 @@ class EnableButton(Enum):
 
 
 class WarningSignal(Enum):
-    Queue = "General"
+    Queue = "Warning"
     Owner = "brain"
     msgID = 2
     msgType = "str"
@@ -313,7 +343,7 @@ class RawConfig(Enum):
     msgType = "str"
 
 
-class PointToFollow(Enum):
+class PointToFollowMode(Enum):
     Queue = "General"
     Owner = "threadDecisionMaker"
     msgID = 2

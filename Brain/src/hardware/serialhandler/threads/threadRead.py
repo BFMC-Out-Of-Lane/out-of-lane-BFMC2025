@@ -35,6 +35,7 @@ from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (BatteryLvl, CurrentSpeed,
                                             CurrentSteer, EnableButton, ImuAck,
                                             ImuData, InstantConsumption,
+                                            NodeIndex, PointToFollowMode,
                                             Position, ResourceMonitor,
                                             WarningSignal)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
@@ -61,6 +62,7 @@ class threadRead(ThreadWithStop):
         self.debugger = debugger
         self.currentSpeed = 0
         self.currentSteering = 0
+        self.last_position_time = time.time()  # Initialize last position time
 
         self.enableButtonSender = messageHandlerSender(self.queuesList, EnableButton)
         self.batteryLvlSender = messageHandlerSender(self.queuesList, BatteryLvl)
@@ -72,6 +74,8 @@ class threadRead(ThreadWithStop):
         self.currentSteerSender = messageHandlerSender(self.queuesList, CurrentSteer)
         self.warningSender = messageHandlerSender(self.queuesList, WarningSignal)
         self.positionSender = messageHandlerSender(self.queuesList, Position)
+        self.nodeIndexSender = messageHandlerSender(self.queuesList, NodeIndex)
+        self.pointToFollowSender = messageHandlerSender(self.queuesList, PointToFollowMode)
 
         self.expectedValues = {"kl": "0, 15 or 30", "instant": "1 or 0", "battery": "1 or 0",
                                "resourceMonitor": "1 or 0", "imu": "1 or 0", "steer": "between -25 and 25",
@@ -85,6 +89,7 @@ class threadRead(ThreadWithStop):
         super(threadRead, self).__init__()
 
     # ====================================== RUN ==========================================
+
     def run(self):
         while self._running:
             if self.serialCon.in_waiting > 0:
@@ -164,6 +169,13 @@ class threadRead(ThreadWithStop):
                 splittedValue = value.split(";")
                 data = {"x": splittedValue[0], "y": splittedValue[1]}
                 self.positionSender.send(data)
+
+            elif action == "nodeIndex":
+                self.nodeIndexSender.send(int(value))
+
+            elif action == "pointToFollow":
+                splittedValue = value.split(";")
+                self.pointToFollowSender.send(int(splittedValue[0]))
 
     def checkValidValue(self, action, message):
         if message == "syntax error":

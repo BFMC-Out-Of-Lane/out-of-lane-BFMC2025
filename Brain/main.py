@@ -41,27 +41,31 @@
 #       npm start
 # ===================================== GENERAL IMPORTS ==================================
 import sys
-import subprocess
 
 sys.path.append(".")
-from multiprocessing import Queue, Event
 import logging
+from multiprocessing import Event, Queue
+
+from src.data.TrafficCommunication.useful.sharedMem import sharedMem
 
 logging.basicConfig(level=logging.INFO)
 
 # ===================================== PROCESS IMPORTS ==================================
 
-from src.gateway.processGateway import processGateway
 from src.dashboard.processDashboard import processDashboard
-from src.hardware.camera.processCamera import processCamera
-from src.hardware.serialhandler.processSerialHandler import processSerialHandler
 from src.data.Semaphores.Semaphores import processSemaphores
-from src.data.TrafficCommunication.processTrafficCommunication import processTrafficCommunication
-from src.utils.ipManager.IpReplacement import IPManager
-
+from src.data.TrafficCommunication.processTrafficCommunication import \
+    processTrafficCommunication
 # ------ New component imports starts here ------#
-from src.decision.decision_making.process_decision_maker import processDecisionMaker
+from src.decision.decision_making.process_decision_maker import \
+    processDecisionMaker
+from src.gateway.processGateway import processGateway
+from src.hardware.camera.processCamera import processCamera
+from src.hardware.serialhandler.processSerialHandler import \
+    processSerialHandler
+from src.utils.ipManager.IpReplacement import IPManager
 from src.vision.TrafficSigns.processTrafficSigns import processTrafficSigns
+
 # ------ New component imports ends here ------#
 
 # ======================================== SETTING UP ====================================
@@ -76,10 +80,12 @@ queueList = {
 
 logging = logging.getLogger()
 
+shared_memory = sharedMem()
+
 Dashboard = True
 Camera = True
 Semaphores = False
-TrafficCommunication = False
+TrafficCommunication = True
 SerialHandler = True
 
 # ------ New component flags starts here ------#
@@ -115,7 +121,7 @@ if Semaphores:
 
 # Initializing GPS
 if TrafficCommunication:
-    processTrafficCommunication = processTrafficCommunication(queueList, logging, 3, debugging = False)
+    processTrafficCommunication = processTrafficCommunication(queueList, logging, 3, shared_memory, debugging = False)
     allProcesses.append(processTrafficCommunication)
 
 # Initializing serial connection NUCLEO - > PI
@@ -125,7 +131,7 @@ if SerialHandler:
 
 # ------ New component runs starts here ------#
 if DecisionMaker:
-    processDecisionMaker = processDecisionMaker(queueList, logging, debugging = True)
+    processDecisionMaker = processDecisionMaker(queueList, logging, shared_memory, debugging = True)
     allProcesses.append(processDecisionMaker)
 
 if TrafficSigns:

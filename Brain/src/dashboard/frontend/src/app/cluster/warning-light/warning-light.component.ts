@@ -54,7 +54,7 @@ import { warningLightDictionary } from './warningLightDictionary';
 export class WarningLightComponent {
   private warningsSubscription: Subscription | undefined;
   warningLights: Array<{"type": string, "time": number}> = [];
-  private warningLightDisplayTime: number = 5;
+  private warningLightDisplayTime: number = 1;
   private callInterval: number = 0.5;
   private intervalId: any;
   private warningLightDictionaryLength: number = Object.keys(warningLightDictionary).length;

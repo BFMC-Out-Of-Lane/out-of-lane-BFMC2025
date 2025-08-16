@@ -1,39 +1,57 @@
 import math
 import time
 
+from src.data.TrafficCommunication.useful.sharedMem import sharedMem
 from src.decision.decision_making.gps.gps import GPS
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (CurrentSpeed, DrivingMode, ImuData,
-                                            Klem, LaneKeeping, PointToFollow,
+                                            Klem, LaneKeeping, Location,
+                                            NodeIndex, PointToFollowMode,
                                             Position, RawConfig, SetNodeList,
                                             SpeedMotor, SteerMotor,
-                                            WarningSignal, trafficSigns)
+                                            TrafficSignDetection,
+                                            WarningSignal)
 from src.utils.messages.messageHandlerSender import messageHandlerSender
 from src.utils.messages.messageHandlerSubscriber import \
     messageHandlerSubscriber
 
-MIN_DISTANCE_TO_STOP = 200
-MIN_DISTANCE_TO_SIGN = 20
-MIN_DISTANCE_TO_CROSSWALK = 70
+PATH_TO_GRAPHML = "/home/ool/out-of-lane-BFMC2025/racetrack/competition_track_graph.graphml"
+IS_LANE_KEEPING_ON = False  # If it is OFF only node following will work
+
+# Initial position for competition
+INIT_X = 11830  # TODO: Change this to the correct value
+INIT_Y = 2050
+INIT_ANGLE = 0
+MANDATORY_NODES = ["263", "257", "261", "317", "368", "386", "343", "363", "398", "426", "436", "183", "126", "75", "185", "198", "6",
+                   "82", "419", "404", "318", "330", "288", "42", "25", "110", "118", "121", "29", "71", "31", "89", "177", "225", "228", "240"]
+
+# Initial position for testing (COMMENT OUT!)
+# INIT_X = 15660  # TODO: Change this to the correct value
+# INIT_Y = 4600
+# INIT_ANGLE = 90
+# MANDATORY_NODES = ["55", "243"]
+
+
+# Traffic sign constants
+MIN_DISTANCE_TO_SIGN = 30
+MIN_DISTANCE_TO_CAR = 50
+MIN_DISTANCE_TO_CROSSWALK = 50
 TIME_AT_STOP_SIGN = 2
 
 # Parking constants
-PARKING_STEP1_DISTANCE = 390
-PARKING_STEP2_DISTANCE = 250
-PARKING_STEP3_DISTANCE = 120
-PARKING_MODE_SPEED = 100
-MANEUVERING_SPEED = 100
-PARKING_SPOT_NUMBER = 1
-LENGTH_SPOT = 756
-LENGHT_CAR = 400
-DISTANCE_ENTER_PARKING_ZONE = 1050
-DISTANCE_PARKING_SIGNAL_FROM_PARKING = 100
-DISTANCE_ENTER_PARKING_ZONE2 = DISTANCE_PARKING_SIGNAL_FROM_PARKING + MIN_DISTANCE_TO_SIGN
-RIGHT_LANE_SIDE = 1
-ANGLE_PARKING = 230
-FORWARD = 1
-REVERSE = -1
-TIME_BEING_PARKED = 4
+PTF_MODE_0 = 0
+PTF_MODE_3 = 3
+PARKING_MODE_IN = 1
+PARKING_MODE_OUT = -1
+PARKING_SIDE = 1
+PARKING_SPEED = 100
+PARKING_INIT_X = 1660  # TODO: Change this to the correct value
+PARKING_INIT_Y = 740
+
+# Navigation modes
+LANE_DETECTOR = "lane_detector"
+NODE_NAVIGATION = "node_navigation"
+PARKING = "parking"
 
 
 class threadDecisionMaker(ThreadWithStop):
@@ -44,9 +62,10 @@ class threadDecisionMaker(ThreadWithStop):
         debugging (bool, optional): A flag for debugging. Defaults to False.
     """
 
-    def __init__(self, queueList, logging, debugging=False):
+    def __init__(self, queueList, logging, shared_memory, debugging=False):
         self.queuesList = queueList
         self.logging = logging
+        self.shared_memory = shared_memory
         self.debugging = debugging
 
         self.current_speed = "0"
@@ -54,22 +73,25 @@ class threadDecisionMaker(ThreadWithStop):
         self.imu_data = None
         self.klem = "0"
         self.lane_keeping = None
+        self.nav_mode = LANE_DETECTOR
+        self.point_to_follow_mode = None
         self.position = None
 
         self.speed_sender = messageHandlerSender(self.queuesList, SpeedMotor)
         self.steer_sender = messageHandlerSender(self.queuesList, SteerMotor)
         self.signal_sender = messageHandlerSender(self.queuesList, WarningSignal)
-        self.point_to_follow_sender = messageHandlerSender(self.queuesList, PointToFollow)
         self.node_list_sender = messageHandlerSender(self.queuesList, SetNodeList)
         self.raw_config_sender = messageHandlerSender(self.queuesList, RawConfig)
 
         self.subscribers = {}
         self.stop_timer = time.time() - 60
         self.parking_timer = time.time() - 60
+        self.set_position_timer = time.time()
+        self.shared_memory_timer = time.time()
 
         self.gps = GPS(
-            path2graphml="/home/ool/out-of-lane-BFMC2025/racetrack/test_track_w_roundabout_new.graphml",
-            mandatory_nodes=["1", "15", "34"],
+            path2graphml=PATH_TO_GRAPHML,
+            mandatory_nodes=MANDATORY_NODES,
             raw_config_sender=self.raw_config_sender,
         )
 
@@ -77,36 +99,46 @@ class threadDecisionMaker(ThreadWithStop):
         super(threadDecisionMaker, self).__init__()
 
     def run(self):
-        flag = False
-        flag2 = True
+        send_gps_data = False
         while self._running:
             self.klem = self.subscribers["Klem"].receive() or self.klem
+            self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
+
             if self.klem == "0":
-                flag = True
-                flag2 = True
-            if flag and self.klem == "15":
-                self.raw_config_sender.send("#setAngle:180;;\r\n")
-                self.raw_config_sender.send("#setPosition:3500;740;;\r\n")
+                self.current_speed = "0"
+                send_gps_data = True
+
+            if send_gps_data and self.klem == "15":
+                self.raw_config_sender.send(f"#setAngle:{INIT_ANGLE};;\r\n")
+                self.raw_config_sender.send(f"#setPosition:{INIT_X};{INIT_Y};;\r\n")
                 self.gps.send_to_nucleo()
                 if self.debugging:
                     self.logging.info(f'threadDecisionMaker: GPS sent')
-                flag = False
 
-            self.driving_mode = self.subscribers["DrivingMode"].receive() or self.driving_mode
+                send_gps_data = False
+
             if self.klem == "30" and self.driving_mode == "auto":
-                if flag2:
-                    self.raw_config_sender.send("#pointToFollow:2;0;0;;\r\n")
-                    flag2 = False
-
                 self.current_speed = self.subscribers["CurrentSpeed"].receive() or self.current_speed
                 self.imu_data = self.subscribers["ImuData"].receive() or self.imu_data
                 self.lane_keeping = self.subscribers["LaneKeeping"].receive() or self.lane_keeping
                 self.position = self.subscribers["Position"].receive() or self.position
 
+                if time.time() - self.shared_memory_timer >= 1:
+                    self.shared_memory_timer = time.time()
+                    self.shared_memory.insert("deviceSpeed", [int(self.current_speed) / 10])
+                    self.shared_memory.insert(
+                        "devicePos", self._position_to_meters())
+                    self.shared_memory.insert("deviceRot", [360 - float(self.imu_data["yaw"])])
+
                 try:
-                    # self._handle_lane_keeping_message()
+                    if self.nav_mode == NODE_NAVIGATION or self.nav_mode == LANE_DETECTOR:
+                        self._handle_node_index_message()
+                        if self.nav_mode == LANE_DETECTOR:
+                            self._handle_lane_keeping_message()
+                    elif self.nav_mode == PARKING:
+                        self._finish_parking_maneuver()
+
                     self._handle_traffic_signs_message()
-                    self._handle_position_message()
                 except Exception as e:
                     self.logging.error(f'{{"threadDecisionMaker": {str(e)}}}')
 
@@ -115,11 +147,16 @@ class threadDecisionMaker(ThreadWithStop):
 
         self.subscribers["CurrentSpeed"] = messageHandlerSubscriber(self.queuesList, CurrentSpeed, "lastonly", True)
         self.subscribers["LaneKeeping"] = messageHandlerSubscriber(self.queuesList, LaneKeeping, "lastonly", True)
-        self.subscribers["trafficSigns"] = messageHandlerSubscriber(self.queuesList, trafficSigns, "lastonly", True)
+        self.subscribers["trafficSigns"] = messageHandlerSubscriber(
+            self.queuesList, TrafficSignDetection, "lastonly", True)
         self.subscribers["DrivingMode"] = messageHandlerSubscriber(self.queuesList, DrivingMode, "lastonly", True)
         self.subscribers["Position"] = messageHandlerSubscriber(self.queuesList, Position, "lastonly", True)
         self.subscribers["ImuData"] = messageHandlerSubscriber(self.queuesList, ImuData, "lastonly", True)
         self.subscribers["Klem"] = messageHandlerSubscriber(self.queuesList, Klem, "lastonly", True)
+        self.subscribers["NodeIndex"] = messageHandlerSubscriber(self.queuesList, NodeIndex, "lastonly", True)
+        self.subscribers["PointToFollowMode"] = messageHandlerSubscriber(
+            self.queuesList, PointToFollowMode, "lastonly", True)
+        self.subscribers["Location"] = messageHandlerSubscriber(self.queuesList, Location, "lastonly", True)
 
     def _handle_lane_keeping_message(self):
         """Handles the lane keeping message, i.e.: decides the steering angle"""
@@ -130,6 +167,7 @@ class threadDecisionMaker(ThreadWithStop):
             if self.cross_tracking_error and self.deviation:
                 self.steer_sender.send(str(self._calculate_steering_angle(
                     self.deviation, self.cross_tracking_error, self.current_speed)))
+                time.sleep(0.01)  # Allow some time for the steering to adjust
 
     def _handle_traffic_signs_message(self):
         """Handles the traffic signs, i.e.: decides if the vehicle should slow down, stop or continue"""
@@ -142,8 +180,6 @@ class threadDecisionMaker(ThreadWithStop):
             self._send_speed(0)
             time.sleep(0.2)
             self._send_speed(0)
-            time.sleep(0.2)
-            self._send_speed(0)
 
             time.sleep(t)
 
@@ -152,10 +188,15 @@ class threadDecisionMaker(ThreadWithStop):
         if traffic_signs_message is not None:
             detected_object_dict = traffic_signs_message["objectDict"]
 
+            if self.debugging:
+                self.logging.info(
+                    f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict} }}}}')
+
             if "stop-sign" in detected_object_dict:
-                # self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
-                if detected_object_dict["stop-sign"] > MIN_DISTANCE_TO_SIGN + 5 and time.time() - self.stop_timer > 12:
+                self.signal_sender.send(str({"WarningName": "stop", "WarningID": 20}))
+                if detected_object_dict["stop-sign"] < MIN_DISTANCE_TO_SIGN and time.time() - self.stop_timer > 12:
                     self.stop_timer = time.time()
+                    self.shared_memory.insert("historyData", [1, self._position_to_meters()[0], self._position_to_meters()[1]])
                     timer_stop_signal(TIME_AT_STOP_SIGN)
                     self._send_speed(300)
 
@@ -164,16 +205,18 @@ class threadDecisionMaker(ThreadWithStop):
                             f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
             if "no-entry-sign" in detected_object_dict:
-                if detected_object_dict["no-entry-sign"] > MIN_DISTANCE_TO_SIGN + 5 and time.time() - self.stop_timer > 12:
-                    # self.signal_sender.send({"WarningName": "forbidden", "WarningID": 5})
+                if detected_object_dict["no-entry-sign"] < MIN_DISTANCE_TO_SIGN and time.time() - self.stop_timer > 12:
+                    self.signal_sender.send({"WarningName": "forbidden", "WarningID": 5})
+                    self.shared_memory.insert("historyData", [9, self._position_to_meters()[0], self._position_to_meters()[1]])
                     self._send_speed(0)
 
                     if self.debugging:
                         self.logging.info(
                             f'{{"threadDecisionMaker": {{ "Object-Distance": "stop-sign"}} }}')
 
-            if ("crosswalk-sign" in detected_object_dict and detected_object_dict["crosswalk-sign"] > MIN_DISTANCE_TO_SIGN) or ("crosswalk-road" in detected_object_dict and detected_object_dict["crosswalk-road"] > MIN_DISTANCE_TO_CROSSWALK):
-                # self.signal_sender.send(str({"WarningName": "crosswalk", "WarningID": 4}))
+            if ("crosswalk-sign" in detected_object_dict and detected_object_dict["crosswalk-sign"] < MIN_DISTANCE_TO_SIGN) or ("crosswalk-road" in detected_object_dict and detected_object_dict["crosswalk-road"] < MIN_DISTANCE_TO_CROSSWALK):
+                self.signal_sender.send(str({"WarningName": "crosswalk", "WarningID": 4}))
+                self.shared_memory.insert("historyData", [4, self._position_to_meters()[0], self._position_to_meters()[1]])
                 self.stop_timer = time.time()
                 self._send_speed(100)
 
@@ -181,8 +224,14 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] > MIN_DISTANCE_TO_SIGN:
-                # self.signal_sender.send(str({"WarningName": "ped_on_crosswalk", "WarningID": 12}))
+            if (("pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] < MIN_DISTANCE_TO_SIGN) or
+                    ("roadblock" in detected_object_dict and detected_object_dict["roadblock"] < MIN_DISTANCE_TO_SIGN)):
+                if "pedestrian" in detected_object_dict and detected_object_dict["pedestrian"] < MIN_DISTANCE_TO_SIGN:
+                    self.signal_sender.send(str({"WarningName": "ped_on_crosswalk", "WarningID": 12}))
+                    self.shared_memory.insert("historyData", [12, self._position_to_meters()[0], self._position_to_meters()[1]])
+                else:
+                    self.shared_memory.insert("historyData", [13, self._position_to_meters()[0], self._position_to_meters()[1]])
+                    
                 self.stop_timer = time.time()
                 self._send_speed(0)
 
@@ -190,87 +239,126 @@ class threadDecisionMaker(ThreadWithStop):
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            if "highway-entry-sign" in detected_object_dict and detected_object_dict["highway-entry-sign"] > MIN_DISTANCE_TO_SIGN:
-                # self.signal_sender.send(str({"WarningName": "highway_entrance", "WarningID": 6}))
+            if (("car-white" in detected_object_dict and detected_object_dict["car-white"] < MIN_DISTANCE_TO_CAR) or
+                    ("car-blue" in detected_object_dict and detected_object_dict["car-blue"] < MIN_DISTANCE_TO_CAR) or
+                    ("fixed-point" in detected_object_dict and detected_object_dict["fixed-point"] < MIN_DISTANCE_TO_CAR)):
+                self.signal_sender.send(str({"WarningName": "car_ahead", "WarningID": 2}))
+                current_index_in_path = self.gps.get_current_node(self.position)
+                targets_with_dashed_line = self.gps.get_target(
+                    self.gps.get_node(current_index_in_path).id, attr_key="dotted")
+                if False and targets_with_dashed_line:
+                    self._skipping_maneuver()
+                else:
+                    self.stop_timer = time.time()
+                    self._send_speed(0)
+
+            if "highway-entry-sign" in detected_object_dict and detected_object_dict["highway-entry-sign"] < MIN_DISTANCE_TO_SIGN:
+                self.signal_sender.send(str({"WarningName": "highway_entrance", "WarningID": 6}))
+                self.shared_memory.insert("historyData", [5, self._position_to_meters()[0], self._position_to_meters()[1]])
                 self._send_speed(500)
 
                 if self.debugging:
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            if "highway-end-sign" in detected_object_dict and detected_object_dict["highway-end-sign"] > MIN_DISTANCE_TO_SIGN:
-                # self.signal_sender.send(str({"WarningName": "highway_exit", "WarningID": 7}))
+            if "highway-end-sign" in detected_object_dict and detected_object_dict["highway-end-sign"] < MIN_DISTANCE_TO_SIGN:
+                self.signal_sender.send(str({"WarningName": "highway_exit", "WarningID": 7}))
+                self.shared_memory.insert("historyData", [6, self._position_to_meters()[0], self._position_to_meters()[1]])
                 self._send_speed(300)
 
                 if self.debugging:
                     self.logging.info(
                         f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
 
-            if "parking-sign" in detected_object_dict and detected_object_dict["parking-sign"] > MIN_DISTANCE_TO_SIGN and time.time() - self.parking_timer > 60:
-                # self.signal_sender.send(str({"WarningName": "parking", "WarningID": 10}))
-                self.parking_timer = time.time()
+            if "parking-sign" in detected_object_dict and detected_object_dict["parking-sign"] < MIN_DISTANCE_TO_SIGN and time.time() - self.parking_timer > 60:
+                self.signal_sender.send(str({"WarningName": "parking", "WarningID": 10}))
+                self.shared_memory.insert("historyData", [3, self._position_to_meters()[0], self._position_to_meters()[1]])
+
+                # self._start_parking_maneuver()
+
+                if self.debugging:
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
+
+            if "priority-sign" in detected_object_dict and detected_object_dict["priority-sign"] < MIN_DISTANCE_TO_SIGN:
+                self.signal_sender.send({"WarningName": "priority", "WarningID": 13})
+                self.shared_memory.insert("historyData", [3, self._position_to_meters()[0], self._position_to_meters()[1]])
+                self._send_speed(300)
+
+                if self.debugging:
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
+
+            if "red-light" in detected_object_dict and time.time() - self.stop_timer > 3:
+                self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
+                self.shared_memory.insert("historyData", [14, self._position_to_meters()[0], self._position_to_meters()[1]])
+                self.stop_timer = time.time()
                 self._send_speed(0)
-                self._activate_parking_mode()
 
                 if self.debugging:
                     self.logging.info(
-                        f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
+                        f'{{"threadDecisionMaker": {{ "Object detected: red-light" }}}}')
 
-            if "priority-sign" in detected_object_dict and detected_object_dict["priority-sign"] > MIN_DISTANCE_TO_SIGN:
-                # self.signal_sender.send({"WarningName": "priority", "WarningID": 13})
+            if "yellow-light" in detected_object_dict and detected_object_dict["yellow-light"] < MIN_DISTANCE_TO_SIGN:
+                self.signal_sender.send({"WarningName": "yellow-light", "WarningID": 23})
+                self.shared_memory.insert("historyData", [14, self._position_to_meters()[0], self._position_to_meters()[1]])
+                if self.debugging:
+                    self.logging.info(
+                        f'{{"threadDecisionMaker": {{ "Object detected:yellow-light" }}}}')
+
+            if "green-light" in detected_object_dict and detected_object_dict["green-light"] < MIN_DISTANCE_TO_SIGN:
+                self.signal_sender.send({"WarningName": "green-light", "WarningID": 24})
+                self.shared_memory.insert("historyData", [14, self._position_to_meters()[0], self._position_to_meters()[1]])
                 self._send_speed(300)
 
                 if self.debugging:
                     self.logging.info(
-                        f'{{"threadDecisionMaker": {{ "Object-Distance": {detected_object_dict}}} }}')
+                        f'{{"threadDecisionMaker": {{ "Object detected: green-light" }}}}')
 
-            # if "red-light" in detected_object_dict and time.time() - self.stop_timer > 3:
-            #     # self.signal_sender.send({"WarningName": "red-light", "WarningID": 22})
-            #     self.stop_timer = time.time()
-            #     self._send_speed(0)
-            #
-            #     if self.debugging:
-            #         self.logging.info(
-            #             f'{{"threadDecisionMaker": {{ "Object detected: red-light" }}}}')
-
-            # if ("yellow-light" in detected_object_dict and detected_object_dict["yellow-light"] > MIN_DISTANCE_TO_SIGN):
-            #     self.signal_sender.send({"WarningName": "yellow-light", "WarningID": 23})
-            #     self.stop_timer = time.time()
-            #     self._send_speed(100)
-            #     if self.debugging:
-            #         self.logging.info(
-            #             f'{{"threadDecisionMaker": {{ "Object detected:yellow-light" }}}}')
-
-            # if "green-light" in detected_object_dict:
-            #     # self.signal_sender.send({"WarningName": "green-light", "WarningID": 24})
-            #     if self.debugging:
-            #         self.logging.info(
-            #             f'{{"threadDecisionMaker": {{ "Object detected: green-light" }}}}')
-
-        if int(self.current_speed) < 300 and time.time() - self.stop_timer > 3:
+        if int(self.current_speed) < 300 and time.time() - self.stop_timer > 5:
             self._send_speed(300)
 
-    def _handle_position_message(self):
-        pass
-        # if self.position is not None and self.imu_data is not None:
-        #     self.logging.info(f"Position: {self.position}")
-        #     x = float(self.position["x"])
-        #     y = float(self.position["y"])
-        #     current_node = self.gps.current_node(x, y, 250)
-        #     next_node = self.gps.get_next_node()
-        #     if current_node is not None and self.gps.last():
-        #         self.logging.info("LLEGAMOS")
-        #         self._send_speed(0)
-        #         self.gps.reset()
-        #         time.sleep(10)
-        #     elif current_node is not None:
-        #         self.logging.info(f"Current node: {current_node.id}")
-        #         self.point_to_follow_sender.send({
-        #             "mode": 4,
-        #             "x": next_node.x,
-        #             "y": next_node.y,
-        #         })
-        #         self._send_speed(200)
+    def _handle_node_index_message(self):
+        if self.position is not None and self.lane_keeping is not None:
+            current_node_index = self.gps.get_current_node(self.position)
+            cross_tracking_error = self.lane_keeping["cross_tracking_error"]
+
+            if IS_LANE_KEEPING_ON and time.time() - self.set_position_timer > 0.1:
+                self.set_position_timer = time.time()
+
+                if not self.gps.is_last(current_node_index, 2) and cross_tracking_error:
+                    angle = self.gps.calc_angle_between_previous_n_next_nodes(current_node_index)
+                    if angle == 0 or angle == 180:
+                        self.nav_mode = LANE_DETECTOR
+                        if abs(cross_tracking_error) < 10:
+                            self.raw_config_sender.send(
+                                f"#setPosition:0;{int(self.gps.get_node(current_node_index).y)};;\r\n")
+                    elif angle == 90 or angle == -90:
+                        self.nav_mode = LANE_DETECTOR
+                        if abs(cross_tracking_error) < 10:
+                            self.raw_config_sender.send(
+                                int(f"#setPosition:{int(self.gps.get_node(current_node_index).x)};0;;\r\n"))
+                    elif self.nav_mode == LANE_DETECTOR:
+                        self._node_navigation(current_node_index)
+
+            elif self.nav_mode == LANE_DETECTOR:
+                self._node_navigation(current_node_index)
+
+    def _node_navigation(self, current_node_index):
+        self.nav_mode = NODE_NAVIGATION
+        self.gps.cut_path_from(current_node_index + 2)
+        self.gps.send_to_nucleo()
+        self.raw_config_sender.send("#pointToFollow:1;0;0;;\r\n")
+        self._send_speed(300)
+
+    def _finish_parking_maneuver(self):
+        self.point_to_follow_mode = self.subscribers["PointToFollowMode"].receive()  # Wait for the point to be set
+        if self.point_to_follow_mode is not None and self.point_to_follow_mode == PTF_MODE_0:
+            self.raw_config_sender.send(
+                f"#setParkingMode:{PARKING_MODE_IN};{PARKING_SIDE};{PARKING_SPEED};;\r\n"
+            )
+            self.driving_mode = "stop"
+            self.klem = "0"
 
     def _calculate_steering_angle(self, deviation, cross_tracking_error, current_speed):
         """
@@ -282,7 +370,7 @@ class threadDecisionMaker(ThreadWithStop):
         elif deviation < -180:
             deviation = deviation + 360
 
-        steering = int(deviation + math.atan(0.5 * cross_tracking_error /
+        steering = int(deviation + math.atan(2 * cross_tracking_error /
                                              int(current_speed)) * 180 / math.pi) * 10
         if steering < -230:
             steering = -230
@@ -291,101 +379,25 @@ class threadDecisionMaker(ThreadWithStop):
 
         return steering
 
-    def _activate_parking_mode(self):
-        self._send_speed(0)
-        lane_side = RIGHT_LANE_SIDE
-        self._start_parking_maneuver(lane_side)
-        self.logging.info(f'{{"threadDecisionMaker: im parked, let me rest :| "}}')
-        time.sleep(TIME_BEING_PARKED)
-        self._exit_parking_spot(lane_side)
-        self.logging.info(f'{{"threadDecisionMaker: on track again :) " }}')
+    def _start_parking_maneuver(self):
+        if self.debugging:
+            self.logging.info("nav_mode: PARKING")
 
-    def _move_x_distance(self, distance, speed, direction):
-        self._send_speed(speed*direction)
-        time.sleep(distance/speed)
-        self._send_speed(0)
-        time.sleep(1)
-
-    def _start_parking_maneuver(self, lane_side):
-        self.logging.info(f'{{"carActions: parking maneuver" }}')
-
-        # 1. servos a DIRECTION_PARKING y ANGLE_PARKING y desplazarse en reversa - PARKING_STEP1_DISTANCE
-        self.logging.info(f'{{"carActions: STEP1" }}')
-
-        time.sleep(1)
-        self.steer_sender.send(str(ANGLE_PARKING*lane_side))
-        time.sleep(1)
-
-        self._move_x_distance(PARKING_STEP1_DISTANCE, MANEUVERING_SPEED, REVERSE)
-        self._send_speed(0)
-
-        # 2. servos al lado opuesto ( - DIRECTION_PARKING y ANGLE_PARKING) y desplazarse revesra --> - PARKING_STEP2_DISTANCE
-        self.logging.info(f'{{"carActions: STEP2" }}')
-
-        time.sleep(1)
-        self.steer_sender.send(str(ANGLE_PARKING*lane_side*(-1)))
-        time.sleep(1)
-
-        self._move_x_distance(PARKING_STEP2_DISTANCE, MANEUVERING_SPEED, REVERSE)
-        self._send_speed(0)
-
-        # 3. desplazarse delante ---> PARKING_STEP3_DISTANCE
-        self.logging.info(f'{{"carActions: STEP3" }}')
-
-        time.sleep(1)
-        self.steer_sender.send(str(ANGLE_PARKING*lane_side))
-        time.sleep(1)
-
-        self._move_x_distance(PARKING_STEP3_DISTANCE, MANEUVERING_SPEED, FORWARD)
-        self._send_speed(0)
-
-    def _exit_parking_spot(self, lane_side):
-        self.logging.info(f'{{"carActions: im trying to leave the spot" }}')
-
-        # 3b. desplazarse para atras ---> - PARKING_STEP3_DISTANCE"
-        self.logging.info(f'{{"carActions: STEP3-e" }}')
-
-        time.sleep(1)
-        self.steer_sender.send(str(ANGLE_PARKING*lane_side))
-        time.sleep(1)
-
-        self._move_x_distance(PARKING_STEP3_DISTANCE, MANEUVERING_SPEED, REVERSE)
-        self._send_speed(0)
-
-        # 2b. servos al lado opuesto ( - DIRECTION_PARKING y ANGLE_PARKING) y desplazarse adelante --> PARKING_STEP2_DISTANCE"
-        self.logging.info(f'{{"carActions: STEP2-e" }}')
-
-        time.sleep(1)
-        self.steer_sender.send(str(ANGLE_PARKING*lane_side*(-1)))
-        time.sleep(1)
-
-        self._move_x_distance(PARKING_STEP2_DISTANCE - 30, MANEUVERING_SPEED, FORWARD)
-        self._send_speed(0)
-
-        # 1. servos a DIRECTION_PARKING y ANGLE_PARKING y desplazarse adelante PARKING_STEP1_DISTANCE"
-        self.logging.info(f'{{"carActions: STEP1-e" }}')
-
-        time.sleep(1)
-        self.steer_sender.send(str(ANGLE_PARKING*lane_side))
-        time.sleep(1)
-
-        self._move_x_distance(PARKING_STEP1_DISTANCE - 40, MANEUVERING_SPEED, FORWARD)
-        self._send_speed(0)
-
-        time.sleep(1)
-        self.steer_sender.send("0")
-        time.sleep(1)
-
-    def _turn_until_lane(self, lane, speed):
-        self._send_speed(speed)
-
-        while abs(self.lane_keeping["deviation"]) > 50:
-            if lane == RIGHT_LANE_SIDE:
-                self.steer_sender.send(str(230))
-            else:
-                self.steer_sender.send(str(-230))
+        self.nav_mode = PARKING
+        self.raw_config_sender.send(f"#pointToFollow:{PTF_MODE_3};{PARKING_INIT_X};{PARKING_INIT_Y};;\r\n")
+        self._send_speed(300)
 
     def _send_speed(self, new_speed):
-        # if self.current_speed != str(new_speed):
         self.speed_sender.send(str(new_speed))
         self.current_speed = str(new_speed)
+
+    def _skipping_maneuver(self):
+        if self.debugging:
+            self.logging.info("maneuver: SKIPPING")
+
+        self.raw_config_sender.send(f"#skipCarMode:{1};;\r\n")
+        time.sleep(1)
+        self._node_navigation(self.gps.get_current_node(self.position))
+        
+    def _position_to_meters(self):
+        return [float(self.position['x']) / 1000, float(self.position['y']) / 1000]

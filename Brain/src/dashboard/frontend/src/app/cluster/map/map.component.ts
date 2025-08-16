@@ -26,16 +26,16 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { Component, Input, ViewChild, ElementRef } from '@angular/core';
+import { Component, ElementRef, Input, ViewChild } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { WebSocketService} from '../../webSocket/web-socket.service'
+import { WebSocketService } from '../../webSocket/web-socket.service';
 
 import { CommonModule } from '@angular/common';
 
 import { MapCursorComponent } from './map-cursor/map-cursor.component';
 import { MapSemaphoreComponent } from './map-semaphore/map-semaphore.component';
- 
-interface Semaphore { 
+
+interface Semaphore {
   x: number;
   y: number;
   state: string;
@@ -57,8 +57,8 @@ export class MapComponent {
   private mapX: number = 0;
   private mapY: number = 0;
 
-  private screenSize = {"width": 100, "height": 100}; // screen size in %
-  private mapSize: number = 500; // map size in % for width
+  private screenSize = { "width": 100, "height": 100 }; // screen size in %
+  private mapSize: number = 100; // map size in % for width
   private mapWidth: number = 0;
   private mapHeight: number = 0;
 
@@ -67,20 +67,27 @@ export class MapComponent {
 
   private semaphoreXOffset: number = 10;
   private semaphoreYOffset: number = 1.45;
-  
+
+  // For the competition, the map size is 20.67 x 13.76 meters
+  private readonly MAP_WIDTH_IN_MM = 20670;
+  private readonly MAP_HEIGHT_IN_MM = 13760;
+
+  // For the demo, the map size is 6000 x 6000 mm
+  // private readonly MAP_WIDTH_IN_MM = 6000;
+  // private readonly MAP_HEIGHT_IN_MM = 6000;
+
   public semaphores: Map<number, Semaphore> = new Map<number, Semaphore>();
 
   private locationSubscription: Subscription | undefined;
   private semaphoresAndCarsSubscription: Subscription | undefined;
 
-  constructor( private  webSocketService: WebSocketService) { }
-  
-  ngOnInit()
-  {
-    this.locationSubscription = this.webSocketService.receiveLocation().subscribe(
+  constructor(private webSocketService: WebSocketService) { }
+
+  ngOnInit() {
+    this.locationSubscription = this.webSocketService.receivePosition().subscribe(
       (message) => {
-        this.mapX = (parseFloat(message.value.x)*100/20.67)
-        this.mapY = (100 - parseFloat(message.value.y)*100/13.76) //magic percent + same system of coordinates
+        this.mapX = (parseFloat(message.value.x) * 100 / this.MAP_WIDTH_IN_MM)
+        this.mapY = (100 - parseFloat(message.value.y) * 100 / this.MAP_HEIGHT_IN_MM) //magic percent + same system of coordinates
         this.updateMap()
       },
     );
@@ -88,7 +95,7 @@ export class MapComponent {
     this.semaphoresAndCarsSubscription = this.webSocketService.receiveSemaphores().subscribe(
       (message) => {
         const recv = message.value;
-        this.semaphores.set(recv.id, {x: recv.x, y: recv.y, state: recv.state});
+        this.semaphores.set(recv.id, { x: recv.x, y: recv.y, state: recv.state });
       },
     );
     this.updateMap()
@@ -109,7 +116,7 @@ export class MapComponent {
 
     if (imageContainer) {
       imageContainer.style.width = `${this.screenSize["width"]}%`;
-      imageContainer.style.height = `${this.screenSize["height"]}%`;  
+      imageContainer.style.height = `${this.screenSize["height"]}%`;
     }
 
     this.mapWidth = image.width;
@@ -171,16 +178,16 @@ export class MapComponent {
 
       this.semaphores.forEach((value: Semaphore, key: number) => {
         console.log("???");
-        
+
         const semaphore = document.getElementById("map-semaphore" + key) as HTMLElement;
 
-        if (semaphore) { 
-          const x = (value.x * 100/20.67);
-          const y = (value.y * 100/13.76);
+        if (semaphore) {
+          const x = (value.x * 100 / 20.67);
+          const y = (value.y * 100 / 13.76);
 
           const top_new = (y * this.mapHeight) / 100;
           const left_new = (x * this.mapWidth) / 100;
-          
+
           semaphore.style.top = `${(-top - this.semaphoreXOffset) + top_new}%`;
           semaphore.style.left = `${(-left - this.semaphoreYOffset) + left_new}%`;
         }

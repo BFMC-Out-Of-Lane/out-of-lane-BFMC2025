@@ -34,7 +34,7 @@ from src.hardware.serialhandler.threads.messageconverter import \
     MessageConverter
 from src.templates.threadwithstop import ThreadWithStop
 from src.utils.messages.allMessages import (Brake, Control, Klem,
-                                            PointToFollow, RawConfig, SetNodeList, SpeedMotor,
+                                            PointToFollowMode, RawConfig, SetNodeList, SpeedMotor,
                                             SteerMotor, ToggleBatteryLvl,
                                             ToggleImuData, ToggleInstant,
                                             ToggleResourceMonitor)
@@ -93,7 +93,7 @@ class threadWrite(ThreadWithStop):
             self.queuesList, ToggleResourceMonitor, "lastOnly", True
         )
         self.imuSubscriber = messageHandlerSubscriber(self.queuesList, ToggleImuData, "lastOnly", True)
-        self.pointToFollowSubscriber = messageHandlerSubscriber(self.queuesList, PointToFollow, "lastOnly", True)
+        self.pointToFollowSubscriber = messageHandlerSubscriber(self.queuesList, PointToFollowMode, "lastOnly", True)
         self.setNodeListSubscriber = messageHandlerSubscriber(self.queuesList, SetNodeList, "fifo", True)
         self.rawConfigSubscriber = messageHandlerSubscriber(self.queuesList, RawConfig, "fifo", True)
 

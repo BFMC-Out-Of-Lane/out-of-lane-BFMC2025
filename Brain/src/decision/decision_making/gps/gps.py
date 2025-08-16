@@ -1,8 +1,8 @@
 import time
 
 import networkx as nx
+import numpy as np
 from src.decision.decision_making.gps.node import Node
-
 from src.utils.messages import messageHandlerSender
 
 
@@ -39,96 +39,74 @@ class GPS:
             self.raw_config_sender.send(f"#setNodeList:{i};{int(x)};{int(y)};;\r\n")
             time.sleep(0.01)
 
-    # def current_node(self, x: float, y: float, max_distance=float('inf')) -> (Node | None):
-    #     """
-    #     Get the current node based on the given coordinates (x, y).
-    #     """
-    #     current_node_id = self._closest_node(x, y, max_distance)
-    #     if current_node_id is not None:
-    #         self.path.remove(str(current_node_id))
-    #         return self._get_node_by_id(current_node_id)
-    #     else:
-    #         return None
+    def is_last(self, index: int, offset: int = 1) -> bool:
+        """
+        Check if the current node is the last node in the path.
+        """
+        return index == len(self.path) - offset
 
-    # def last(self):
-    #     return len(self.path) == 0
+    def calc_angle_between_previous_n_next_nodes(self, current_node_index: int) -> float:
+        prev_node = self.G.nodes[self.path[current_node_index - 1]]
+        next_node = self.G.nodes[self.path[current_node_index + 2]]
 
-    # def get_next_node(self) -> (Node | None):
-    #     """
-    #     Get the next node in the path from the current node.
-    #     """
+        return np.arctan2(
+            next_node['y'] - prev_node['y'],
+            next_node['x'] - prev_node['x']
+        ) * 180 / np.pi
 
-    #     if len(self.path) != 0:
-    #         return self._get_node_by_id(self.path[0])
-    #     else:
-    #         return None
+    def get_node(self, index: int) -> Node:
+        """
+        Get the Node object for the given index in the path.
+        """
+        if 0 <= index < len(self.path):
+            node_data = self.G.nodes[self.path[index]]
+            return Node(
+                id=self.path[index],
+                x=node_data['x'],
+                y=node_data['y'],
+            )
+        else:
+            raise IndexError("Index out of bounds for the path.")
 
-    # def vector_to_node(self, x, y, node_id):
-    #     """
-    #     Get the difference between two nodes.
-    #     """
+    def cut_path_from(self, index: int) -> None:
+        """
+        Cut the path from the given index.
+        """
+        if 0 <= index < len(self.path):
+            self.path = self.path[index:]
 
-    #     node = self.G.nodes[node_id]
+    def get_current_node(self, position) -> Node:
+        """
+        Get the current node based on the position.
+        """
+        self.min_distance = float('inf')
+        self.current_node = None
+        for i, node in enumerate(self.path):
+            map_node = self.G.nodes[node]
+            dist = self.distance(position, map_node)
+            if dist < self.min_distance:
+                self.min_distance = dist
+                self.current_node_index = i
+        return self.current_node_index
 
-    #     return (node['x'] - x, node['y'] - y)
+    def distance(self, current_pos, node_pos) -> float:
+        """
+        Calculate the distance between the current position and a node position.
+        """
+        return np.sqrt(
+            (node_pos['x'] - float(current_pos['x'])) ** 2 +
+            (node_pos['y'] - float(current_pos['y'])) ** 2
+        )
 
-    # def distance_to(self, node_id, x, y):
-    #     node = self.G.nodes[node_id]
-    #     node_x = node['x']
-    #     node_y = node['y']
 
-    #     return ((node_x - x) ** 2 + (node_y - y) ** 2) ** 0.5
+    def get_target(self, source_id, attr_key="d2", attr_value=True):
+        """
+        Devuelve una lista de nodos de destino conectados desde `source_id`
+        donde la arista tiene un atributo con clave `attr_key` y valor `attr_value`.
+        """
 
-    # def reset(self):
-    #     """
-    #     Reset the map to its original state.
-    #     """
-
-    #     self.path = self.original_path.copy()
-    #     self.current_time = time.time()
-
-    # def _get_node_by_id(self, node_id) -> (Node | None):
-    #     """
-    #     Get the data of a node by its ID.
-    #     """
-
-    #     if node_id in self.G.nodes:
-    #         node = self.G.nodes[node_id]
-    #         node_x = node['x']
-    #         node_y = node['y']
-
-    #         return Node(node_id, node_x, node_y)
-    #     else:
-    #         return None
-
-    # def _closest_node(self, x: float, y: float, max_distance=float('inf')):
-    #     """
-    #     Get the node closest to the given coordinates (x, y).
-    #     """
-
-    #     closest_node = None
-    #     min_distance = float('inf')
-    #     for node in self.G.nodes(data=True):
-    #         distance = self.distance_to(node[0], x, y)
-    #         if distance < min_distance and node[0] in self.path and distance < max_distance:
-    #             min_distance = distance
-    #             closest_node = node[0]
-
-    #     return closest_node
-
-    # def _actual_closest_node(self, x: float, y: float, max_distance=float('inf')):
-    #     """
-    #     Get the node closest to the given coordinates (x, y) without considering the path.
-    #     """
-
-    #     closest_node = None
-    #     for node in self.G.nodes(data=True):
-    #         distance = self.distance_to(node[0], x, y)
-    #         if distance < max_distance:
-    #             max_distance = distance
-    #             closest_node = node[0]
-
-    #     if time.time() - self.current_time > 1:
-    #         self.current_time = time.time()
-
-    #     return closest_node
+        targets = []
+        for _, v, data in self.G.out_edges(source_id, data=True):
+            if data.get(attr_key) == attr_value:
+                targets.append(v)
+        return targets

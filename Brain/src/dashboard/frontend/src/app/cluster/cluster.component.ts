@@ -39,6 +39,7 @@ import { StateSwitchComponent } from './state-switch/state-switch.component';
 import { KlSwitchComponent } from './kl-switch/kl-switch.component';
 import { SteeringComponent } from './steering/steering.component';
 import { LiveCameraComponent } from './live-camera/live-camera.component';
+import { SecondaryCameraComponent } from './secondary-camera/secondary-camera.component';
 import { WarningLightComponent } from './warning-light/warning-light.component';
 import { HardwareDataComponent} from './hardware-data/hardware-data.component';
 import { RecordComponent} from './record/record.component';
@@ -51,8 +52,8 @@ import { CommonModule } from '@angular/common';
   imports: [SpeedometerComponent, BatteryLevelComponent, MapComponent, 
             CarComponent, InstantConsumptionComponent, StateSwitchComponent,
             KlSwitchComponent, SteeringComponent, LiveCameraComponent,
-            WarningLightComponent, HardwareDataComponent, RecordComponent,
-            TimeSpeedSteerComponent, SideMarkerComponent, CommonModule],
+            SecondaryCameraComponent, WarningLightComponent, HardwareDataComponent, 
+            RecordComponent, TimeSpeedSteerComponent, SideMarkerComponent, CommonModule],
   templateUrl: './cluster.component.html',
   styleUrl: './cluster.component.css'
 })

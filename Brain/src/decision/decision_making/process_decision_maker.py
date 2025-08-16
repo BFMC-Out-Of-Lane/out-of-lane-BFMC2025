@@ -18,21 +18,22 @@ class processDecisionMaker(WorkerProcess):
         debugging (bool, optional): A flag for debugging. Defaults to False.
     """
 
-    def __init__(self, queueList, logging, debugging=False):
+    def __init__(self, queueList, logging, shared_memory, debugging=False):
         self.queuesList = queueList
         self.logging = logging
         self.debugging = debugging
+        self.shared_memory = shared_memory
         super(processDecisionMaker, self).__init__(self.queuesList)
 
     def run(self):
         """Apply the initializing methods and start the threads."""
-        set_highest_priority()
+        # set_highest_priority()
         super(processDecisionMaker, self).run()
 
     def _init_threads(self):
         """Create the decision_making Publisher thread and add to the list of threads."""
         decision_makingTh = threadDecisionMaker(
-            self.queuesList, self.logging, self.debugging
+            self.queuesList, self.logging, self.shared_memory, self.debugging
         )
         self.threads.append(decision_makingTh)
 
